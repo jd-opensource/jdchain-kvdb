@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.service;
+package com.jd.blockchain.kvdb;
 
 public class DBException extends RuntimeException {
 

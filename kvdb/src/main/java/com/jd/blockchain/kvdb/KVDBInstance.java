@@ -1,8 +1,8 @@
-package com.jd.blockchain.kvdb.service;
+package com.jd.blockchain.kvdb;
 
 import com.jd.blockchain.utils.io.BytesUtils;
 
-public abstract class DBInstance implements KVStorage {
+public abstract class KVDBInstance implements KVStorage {
 
 	@Override
 	public String get(String key) {

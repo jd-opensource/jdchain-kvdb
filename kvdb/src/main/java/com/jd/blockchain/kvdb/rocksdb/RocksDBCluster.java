@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.service.rocksdb;
+package com.jd.blockchain.kvdb.rocksdb;
 
 import java.io.File;
 import java.util.concurrent.ExecutorService;
@@ -7,12 +7,12 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jd.blockchain.kvdb.service.DBInstance;
-import com.jd.blockchain.kvdb.service.KVWriteBatch;
+import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
 
-public class RocksDBCluster extends DBInstance {
+public class RocksDBCluster extends KVDBInstance {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(RocksDBCluster.class);
 

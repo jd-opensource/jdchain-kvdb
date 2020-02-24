@@ -1,9 +1,7 @@
-package com.jd.blockchain.kvdb.service.rocksdb;
+package com.jd.blockchain.kvdb.rocksdb;
 
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.CompressionType;
 import org.rocksdb.MutableColumnFamilyOptions;
-import org.rocksdb.MutableColumnFamilyOptions.MutableColumnFamilyOptionsBuilder;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -12,13 +10,13 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jd.blockchain.kvdb.service.DBException;
-import com.jd.blockchain.kvdb.service.DBInstance;
-import com.jd.blockchain.kvdb.service.KVWriteBatch;
+import com.jd.blockchain.kvdb.DBException;
+import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
 
-public class RocksDBProxy extends DBInstance {
+public class RocksDBProxy extends KVDBInstance {
 
 	private static Logger LOGGER = LoggerFactory.getLogger(RocksDBProxy.class);
 

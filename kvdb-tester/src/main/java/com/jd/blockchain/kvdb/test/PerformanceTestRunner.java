@@ -11,17 +11,17 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import com.jd.blockchain.kvdb.service.DBInstance;
-import com.jd.blockchain.kvdb.service.KVStorage;
-import com.jd.blockchain.kvdb.service.KVWriteBatch;
-import com.jd.blockchain.kvdb.service.rocksdb.RocksDBCluster;
-import com.jd.blockchain.kvdb.service.rocksdb.RocksDBProxy;
+import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.KVStorage;
+import com.jd.blockchain.kvdb.KVWriteBatch;
+import com.jd.blockchain.kvdb.rocksdb.RocksDBCluster;
+import com.jd.blockchain.kvdb.rocksdb.RocksDBProxy;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
 
 @Component
-public class DBTester implements ApplicationRunner {
-	public static Logger LOGGER = LoggerFactory.getLogger(DBTester.class);
+public class PerformanceTestRunner implements ApplicationRunner {
+	public static Logger LOGGER = LoggerFactory.getLogger(PerformanceTestRunner.class);
 
 	@Value("${test.cluster}")
 	private boolean useCluster;
@@ -38,12 +38,12 @@ public class DBTester implements ApplicationRunner {
 		LOGGER.info("start rocks db test... [cluster={}][test.partitions={}][test.threads={}][test.batch={}]",
 				useCluster, partitions, threads, batch);
 
-		DBInstance[] dbs;
+		KVDBInstance[] dbs;
 		if (useCluster) {
-			dbs = new DBInstance[1];
+			dbs = new KVDBInstance[1];
 			dbs[0] = initDBCluster("./testdbcluster", partitions);
 		} else {
-			dbs = new DBInstance[partitions];
+			dbs = new KVDBInstance[partitions];
 			for (int i = 0; i < partitions; i++) {
 				String path = "./testdb" + i;
 				dbs[i] = initDB(path);
@@ -106,6 +106,8 @@ public class DBTester implements ApplicationRunner {
 			FileUtils.deleteFile(path);
 		}
 		RocksDBCluster db = RocksDBCluster.open(path, partitions);
+		
+		//写一条测试数据；
 		db.set("INIT-KEY", "INIT-VALUE");
 
 		return db;
@@ -190,7 +192,7 @@ public class DBTester implements ApplicationRunner {
 		public void run() {
 			// 测试写入；
 			try {
-				DBTester.testWrite(count, taskId, db);
+				PerformanceTestRunner.testWrite(count, taskId, db);
 
 				int n = taskCounter.decrementAndGet();
 				if (n == 0) {

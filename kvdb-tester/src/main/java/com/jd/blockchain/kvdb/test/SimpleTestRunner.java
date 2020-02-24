@@ -3,16 +3,16 @@ package com.jd.blockchain.kvdb.test;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 
-import com.jd.blockchain.kvdb.service.rocksdb.RocksDBProxy;
+import com.jd.blockchain.kvdb.rocksdb.RocksDBProxy;
 
 //@Component
-public class SimpleTest implements ApplicationRunner {
+public class SimpleTestRunner implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
 		String path = "./testdb";
 		
-		RocksDBProxy db = DBTester.initDB(path);
+		RocksDBProxy db = PerformanceTestRunner.initDB(path);
 		
 		
 		int n = 1000;

@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.service.rocksdb;
+package com.jd.blockchain.kvdb.rocksdb;
 
 /**
  * 分区计算器；

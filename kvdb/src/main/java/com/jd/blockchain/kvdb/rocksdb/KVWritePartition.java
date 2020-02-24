@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.service.rocksdb;
+package com.jd.blockchain.kvdb.rocksdb;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,9 +8,8 @@ import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jd.blockchain.kvdb.cache.DisruptorCache;
-import com.jd.blockchain.kvdb.service.KVWrite;
-import com.jd.blockchain.kvdb.service.KVWriteBatch;
+import com.jd.blockchain.kvdb.KVWrite;
+import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.utils.io.BytesUtils;
 
 /**

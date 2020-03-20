@@ -1,68 +1,60 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>com.jd.blockchain</groupId>
-		<artifactId>db-root</artifactId>
-		<version>0.6.0-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>com.jd.blockchain</groupId>
+        <artifactId>db-root</artifactId>
+        <version>0.6.0-SNAPSHOT</version>
+    </parent>
 
-	<artifactId>kvdb-server</artifactId>
+    <artifactId>kvdb-server</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.jd.blockchain</groupId>
+            <artifactId>kvdb-protocol</artifactId>
+            <version>${version}</version>
+        </dependency>
 
-	<dependencies>
+        <dependency>
+            <groupId>com.jd.blockchain</groupId>
+            <artifactId>kvdb</artifactId>
+            <version>${version}</version>
+        </dependency>
+    </dependencies>
 
-		<dependency>
-			<groupId>com.jd.blockchain</groupId>
-			<artifactId>kvdb</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+    <build>
+        <plugins>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>ch.qos.logback</groupId>
-					<artifactId>logback-classic</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.apache.logging.log4j</groupId>
-					<artifactId>log4j-to-slf4j</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <finalName>kvdb-server</finalName>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.jd.blockchain.kvdb.server.KVDBServer</mainClass>
+                        </manifest>
+                    </archive>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-log4j2</artifactId>
-		</dependency>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-	</dependencies>
-
-	<build>
-
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
-					<encoding>UTF-8</encoding>
-					<optimize>false</optimize>
-					<debug>true</debug>
-					<showDeprecation>false</showDeprecation>
-					<showWarnings>false</showWarnings>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+        </plugins>
+    </build>
 </project>

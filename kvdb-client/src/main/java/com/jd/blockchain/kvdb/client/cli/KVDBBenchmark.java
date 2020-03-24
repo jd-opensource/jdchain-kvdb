@@ -3,12 +3,11 @@ package com.jd.blockchain.kvdb.client.cli;
 import com.jd.blockchain.kvdb.client.ClientConfig;
 import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
-import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.utils.ArgumentSet;
 import com.jd.blockchain.utils.Bytes;
 
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class KVDBBenchmark {
 
@@ -124,11 +123,7 @@ public class KVDBBenchmark {
         KVDBBenchmark bm = new KVDBBenchmark(args);
         ClientConfig config = new ClientConfig(bm.getHost(), bm.getPort());
         config.setKeepAlive(bm.keepAlive);
-
-        ArrayBlockingQueue queue = new ArrayBlockingQueue(bm.getRequests());
-        for (int i = 0; i < bm.getRequests(); i++) {
-            queue.add(KVDBMessage.put(Bytes.fromInt(2 * i), Bytes.fromInt(2 * i + 1)));
-        }
+        AtomicLong requests = new AtomicLong(bm.requests);
         CountDownLatch startCdl = new CountDownLatch(1);
         CountDownLatch endCdl = new CountDownLatch(bm.getClients());
         for (int i = 0; i < bm.getClients(); i++) {
@@ -136,23 +131,20 @@ public class KVDBBenchmark {
             new Thread(() -> {
                 KVDBClient client = new KVDBClient(config);
                 client.start();
-                Message[] messages = new Message[bm.getRequests() / bm.getClients()];
-                for (int j = 0; j < messages.length; j++) {
-                    messages[j] = KVDBMessage.put(Bytes.fromString(String.valueOf(messages.length * index + j)), Bytes.fromInt(1));
-                }
                 if (bm.batch) {
-                    client.send(KVDBMessage.batchBegin(), Integer.MIN_VALUE);
+                    client.send(KVDBMessage.batchBegin(), Integer.MAX_VALUE);
                 }
                 try {
                     startCdl.await();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                for (Message msg : messages) {
-                    client.send(msg, Integer.MAX_VALUE);
+                int j = 0;
+                while (requests.getAndDecrement() > 0) {
+                    client.send(KVDBMessage.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1)), Integer.MAX_VALUE);
                 }
                 if (bm.batch) {
-                    client.send(KVDBMessage.batchCommit(), Integer.MIN_VALUE);
+                    client.send(KVDBMessage.batchCommit(), Integer.MAX_VALUE);
                 }
                 endCdl.countDown();
                 client.stop();

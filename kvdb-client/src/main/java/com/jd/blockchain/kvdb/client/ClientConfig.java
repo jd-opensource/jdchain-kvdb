@@ -33,31 +33,31 @@ public class ClientConfig {
             this.host = DEFAULT_HOST;
         }
         ArgumentSet.ArgEntry portArg = arguments.getArg(PORT);
-        if (null != hostArg) {
+        if (null != portArg) {
             this.port = Integer.valueOf(portArg.getValue());
         } else {
             this.port = DEFAULT_PORT;
         }
         ArgumentSet.ArgEntry timeoutArg = arguments.getArg(TIMEOUT);
-        if (null != hostArg) {
+        if (null != timeoutArg) {
             this.timeout = Integer.valueOf(timeoutArg.getValue());
         } else {
             this.timeout = DEFAULT_TIMEOUT;
         }
         ArgumentSet.ArgEntry bufSizeArg = arguments.getArg(BUFFER_SIZE);
-        if (null != hostArg) {
+        if (null != bufSizeArg) {
             this.bufferSize = Integer.valueOf(bufSizeArg.getValue());
         } else {
             this.bufferSize = DEFAULT_BUFFER_SIZE;
         }
         ArgumentSet.ArgEntry rtArg = arguments.getArg(RETRY_TIME);
-        if (null != hostArg) {
+        if (null != rtArg) {
             this.retryTimes = Integer.valueOf(rtArg.getValue());
         } else {
             this.retryTimes = DEFAULT_RETRY_TIMES;
         }
         ArgumentSet.ArgEntry kaArg = arguments.getArg(KEEP_ALIVE);
-        if (null != hostArg) {
+        if (null != kaArg) {
             this.keepAlive = Integer.valueOf(kaArg.getValue()) == 1 ? true : false;
         } else {
             this.keepAlive = DEFAULT_KEEP_ALIVE;
@@ -66,18 +66,6 @@ public class ClientConfig {
 
     public ClientConfig(String host, int port) {
         this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, DEFAULT_KEEP_ALIVE);
-    }
-
-    public ClientConfig(String host, int port, int timeout) {
-        this(host, port, timeout, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, DEFAULT_KEEP_ALIVE);
-    }
-
-    public ClientConfig(String host, int port, boolean keepAlive) {
-        this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, keepAlive);
-    }
-
-    public ClientConfig(String host, int port, int timeout, boolean keepAlive) {
-        this(host, port, timeout, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, keepAlive);
     }
 
     public ClientConfig(String host, int port, int timeout, int bufferSize, int retryTimes, boolean keepAlive) {

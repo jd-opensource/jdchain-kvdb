@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.client.cli;
 
-import com.jd.blockchain.kvdb.protocol.Message;
-import com.jd.blockchain.kvdb.protocol.KVDBMessage;
 import com.jd.blockchain.kvdb.client.ClientConfig;
 import com.jd.blockchain.kvdb.client.KVDBClient;
+import com.jd.blockchain.kvdb.protocol.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.utils.ArgumentSet;
 import com.jd.blockchain.utils.Bytes;
 
@@ -89,31 +89,31 @@ public class KVDBBenchmark {
             this.host = DEFAULT_HOST;
         }
         ArgumentSet.ArgEntry portArg = arguments.getArg(PORT);
-        if (null != hostArg) {
+        if (null != portArg) {
             this.port = Integer.valueOf(portArg.getValue());
         } else {
             this.port = DEFAULT_PORT;
         }
         ArgumentSet.ArgEntry clientsArg = arguments.getArg(CLIENTS);
-        if (null != hostArg) {
+        if (null != clientsArg) {
             this.clients = Integer.valueOf(clientsArg.getValue());
         } else {
             this.clients = DEFAULT_CLIENT;
         }
         ArgumentSet.ArgEntry requestsArg = arguments.getArg(REQUESTS);
-        if (null != hostArg) {
+        if (null != requestsArg) {
             this.requests = Integer.valueOf(requestsArg.getValue());
         } else {
             this.requests = DEFAULT_REQUESTS;
         }
         ArgumentSet.ArgEntry keepArg = arguments.getArg(KEEPALIVE);
-        if (null != hostArg) {
+        if (null != keepArg) {
             this.keepAlive = Integer.valueOf(keepArg.getValue()) == 1 ? true : false;
         } else {
             this.keepAlive = DEFAULT_KEEP_ALIVE;
         }
         ArgumentSet.ArgEntry batchArg = arguments.getArg(BATCH);
-        if (null != hostArg) {
+        if (null != batchArg) {
             this.batch = Integer.valueOf(batchArg.getValue()) == 1 ? true : false;
         } else {
             this.batch = DEFAULT_BATCH;
@@ -122,7 +122,8 @@ public class KVDBBenchmark {
 
     public static void main(String[] args) {
         KVDBBenchmark bm = new KVDBBenchmark(args);
-        ClientConfig config = new ClientConfig(bm.getHost(), bm.getPort(), bm.getKeepAlive());
+        ClientConfig config = new ClientConfig(bm.getHost(), bm.getPort());
+        config.setKeepAlive(bm.keepAlive);
 
         ArrayBlockingQueue queue = new ArrayBlockingQueue(bm.getRequests());
         for (int i = 0; i < bm.getRequests(); i++) {

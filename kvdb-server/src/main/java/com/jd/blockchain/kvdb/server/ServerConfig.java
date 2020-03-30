@@ -3,11 +3,14 @@ package com.jd.blockchain.kvdb.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.util.Properties;
 
 public class ServerConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConfig.class);
+
+    private static final String DEFAULT_CONFIG_FILE = "server.properties";
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
     private static final String DEFAULT_DB_PATH = "kvdb";
@@ -26,7 +29,11 @@ public class ServerConfig {
     public ServerConfig(String configFile) {
         try {
             Properties properties = new Properties();
-            properties.load(this.getClass().getClassLoader().getResourceAsStream(configFile));
+            if (null != configFile) {
+                properties.load(new FileInputStream(configFile));
+            } else {
+                properties.load(this.getClass().getClassLoader().getResourceAsStream(DEFAULT_CONFIG_FILE));
+            }
             this.host = properties.getProperty("server.host", DEFAULT_HOST);
             this.port = Integer.parseInt(properties.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
             this.bufferSize = Integer.parseInt(properties.getProperty("buffer_size", String.valueOf(DEFAULT_BUFFER_SIZE)));

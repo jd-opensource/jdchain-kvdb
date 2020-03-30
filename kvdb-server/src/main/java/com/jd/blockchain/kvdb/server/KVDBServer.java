@@ -28,7 +28,6 @@ public class KVDBServer implements KVDB {
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBServer.class);
 
     private static final String CONFIG_FILE = "-c";
-    private static final String DEFAULT_CONFIG_FILE = "server.properties";
 
     private final DefaultServerContext serverContext;
 
@@ -148,7 +147,7 @@ public class KVDBServer implements KVDB {
     public static void main(String[] args) {
         ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(CONFIG_FILE));
         ArgumentSet.ArgEntry configArg = arguments.getArg(CONFIG_FILE);
-        String configFile = DEFAULT_CONFIG_FILE;
+        String configFile = null;
         if (null != configArg) {
             configFile = configArg.getValue();
         }

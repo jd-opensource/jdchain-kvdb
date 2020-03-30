@@ -10,12 +10,14 @@ public class ClientConfig {
     private static final String BUFFER_SIZE = "-bs";
     private static final String RETRY_TIME = "-rt";
     private static final String KEEP_ALIVE = "-k";
+    private static final String DB = "-db";
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_PORT = 6380;
     private static final int DEFAULT_TIMEOUT = 60000;
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
     private static final int DEFAULT_RETRY_TIMES = 5;
     private static final boolean DEFAULT_KEEP_ALIVE = true;
+    private static final int DEFAULT_DB = 0;
 
     private String host;
     private int port;
@@ -23,6 +25,7 @@ public class ClientConfig {
     private int bufferSize;
     private int retryTimes;
     private boolean keepAlive;
+    private int db;
 
     public ClientConfig(String[] args) {
         ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, TIMEOUT, BUFFER_SIZE, RETRY_TIME, KEEP_ALIVE));
@@ -62,19 +65,30 @@ public class ClientConfig {
         } else {
             this.keepAlive = DEFAULT_KEEP_ALIVE;
         }
+        ArgumentSet.ArgEntry dbArg = arguments.getArg(DB);
+        if (null != dbArg) {
+            this.db = Integer.valueOf(dbArg.getValue());
+        } else {
+            this.db = DEFAULT_DB;
+        }
     }
 
     public ClientConfig(String host, int port) {
-        this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, DEFAULT_KEEP_ALIVE);
+        this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, DEFAULT_KEEP_ALIVE, DEFAULT_DB);
     }
 
-    public ClientConfig(String host, int port, int timeout, int bufferSize, int retryTimes, boolean keepAlive) {
+    public ClientConfig(String host, int port, int db) {
+        this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, DEFAULT_KEEP_ALIVE, db);
+    }
+
+    public ClientConfig(String host, int port, int timeout, int bufferSize, int retryTimes, boolean keepAlive, int db) {
         this.host = host;
         this.port = port;
         this.timeout = timeout;
         this.bufferSize = bufferSize;
         this.retryTimes = retryTimes;
         this.keepAlive = keepAlive;
+        this.db = db;
     }
 
     public String getHost() {
@@ -123,5 +137,13 @@ public class ClientConfig {
 
     public void setKeepAlive(boolean keepAlive) {
         this.keepAlive = keepAlive;
+    }
+
+    public int getDb() {
+        return db;
+    }
+
+    public void setDb(int db) {
+        this.db = db;
     }
 }

@@ -94,13 +94,9 @@ public class KVDBClient implements KVDB, DBOperations {
     public void connected(ChannelHandlerContext ctx) {
         LOGGER.info("channel active");
         this.context = ctx;
-        try {
-            if (config.getDb() > 0) {
-                LOGGER.info("switch to db {}", config.getDb());
-                select(config.getDb());
-            }
-        } catch (KVDBException e) {
-            LOGGER.error("switch to db {} error", config.getDb(), e);
+        if (config.getDb() > 0) {
+            LOGGER.info("switch to db {}", config.getDb());
+            context.writeAndFlush(KVDBMessage.select(Bytes.fromInt(config.getDb())));
         }
     }
 

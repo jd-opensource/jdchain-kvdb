@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.client.cli.cmds;
 
-import com.jd.blockchain.kvdb.client.KVDBClient;
+import com.jd.blockchain.kvdb.client.KVDBSingle;
 import com.jd.blockchain.kvdb.client.cli.utils.ReadWriter;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 
@@ -44,6 +44,6 @@ public interface Cmd {
         }
     }
 
-    void execute(KVDBClient client, ReadWriter rw, String... parameters) throws KVDBException;
+    void execute(KVDBSingle client, ReadWriter rw, String... parameters) throws KVDBException;
 
 }

@@ -1,7 +1,7 @@
 package com.jd.blockchain.kvdb.client.cli;
 
 import com.jd.blockchain.kvdb.client.ClientConfig;
-import com.jd.blockchain.kvdb.client.KVDBClient;
+import com.jd.blockchain.kvdb.client.KVDBSingle;
 import com.jd.blockchain.kvdb.client.cli.cmds.*;
 import com.jd.blockchain.kvdb.client.cli.utils.ConsoleUtils;
 import com.jd.blockchain.kvdb.client.cli.utils.ReadWriter;
@@ -30,7 +30,7 @@ public class KVDBCli {
 
     public static void main(String[] args) {
         ClientConfig config = new ClientConfig(args);
-        KVDBClient client = new KVDBClient(config);
+        KVDBSingle client = new KVDBSingle(config);
         client.start();
         ReadWriter rw = ConsoleUtils.getReadWriter();
         while (true) {

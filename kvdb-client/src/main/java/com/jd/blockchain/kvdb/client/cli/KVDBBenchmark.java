@@ -1,7 +1,7 @@
 package com.jd.blockchain.kvdb.client.cli;
 
 import com.jd.blockchain.kvdb.client.ClientConfig;
-import com.jd.blockchain.kvdb.client.KVDBClient;
+import com.jd.blockchain.kvdb.client.KVDBSingle;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
 import com.jd.blockchain.utils.ArgumentSet;
 import com.jd.blockchain.utils.Bytes;
@@ -129,7 +129,7 @@ public class KVDBBenchmark {
         for (int i = 0; i < bm.getClients(); i++) {
             final int index = i;
             new Thread(() -> {
-                KVDBClient client = new KVDBClient(config);
+                KVDBSingle client = new KVDBSingle(config);
                 client.start();
                 if (bm.batch) {
                     client.send(KVDBMessage.batchBegin(), Integer.MAX_VALUE);

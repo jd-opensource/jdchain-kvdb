@@ -25,10 +25,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>kvdb-cli</finalName>
+                    <finalName>kvdb-benchmark</finalName>
                     <archive>
                         <manifest>
-                            <mainClass>com.jd.blockchain.kvdb.client.cli.KVDBCli</mainClass>
+                            <mainClass>com.jd.blockchain.kvdb.client.cli.KVDBBenchmark</mainClass>
                         </manifest>
                     </archive>
                     <appendAssemblyId>false</appendAssemblyId>

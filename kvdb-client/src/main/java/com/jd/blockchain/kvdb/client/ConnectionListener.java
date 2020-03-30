@@ -6,9 +6,9 @@ import io.netty.channel.ChannelFutureListener;
 import java.util.concurrent.TimeUnit;
 
 public class ConnectionListener implements ChannelFutureListener {
-    private final KVDBClient client;
+    private final KVDBSingle client;
 
-    public ConnectionListener(KVDBClient client) {
+    public ConnectionListener(KVDBSingle client) {
         this.client = client;
     }
 

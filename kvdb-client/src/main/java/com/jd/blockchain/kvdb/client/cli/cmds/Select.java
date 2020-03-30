@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.client.cli.cmds;
 
-import com.jd.blockchain.kvdb.client.KVDBClient;
+import com.jd.blockchain.kvdb.client.KVDBSingle;
 import com.jd.blockchain.kvdb.client.cli.exception.ErrorParametersException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.client.cli.utils.ReadWriter;
@@ -8,7 +8,7 @@ import com.jd.blockchain.kvdb.client.cli.utils.ReadWriter;
 public class Select implements Cmd {
 
     @Override
-    public void execute(KVDBClient client, ReadWriter rw, String... parameters) throws KVDBException {
+    public void execute(KVDBSingle client, ReadWriter rw, String... parameters) throws KVDBException {
         if (null == parameters || parameters.length != 1) {
             throw new ErrorParametersException("please input one and only one digit");
         }

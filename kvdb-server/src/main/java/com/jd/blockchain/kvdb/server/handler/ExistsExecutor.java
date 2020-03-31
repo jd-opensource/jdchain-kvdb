@@ -37,7 +37,7 @@ public class ExistsExecutor implements Executor {
             return KVDBMessage.success(request.getId(), values);
         } catch (RocksDBException e) {
             LOGGER.error("execute exists error", e);
-            return KVDBMessage.error(request.getId(), e.getMessage());
+            return KVDBMessage.error(request.getId(), e.toString());
         }
     }
 }

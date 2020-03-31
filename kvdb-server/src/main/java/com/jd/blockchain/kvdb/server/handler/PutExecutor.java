@@ -38,7 +38,7 @@ public class PutExecutor implements Executor {
                 }
             } catch (RocksDBException e) {
                 LOGGER.debug("execute put error", e);
-                return KVDBMessage.error(request.getId(), e.getMessage());
+                return KVDBMessage.error(request.getId(), e.toString());
             }
         } else {
             KVDBInstance db = request.getSession().getDB();
@@ -48,7 +48,7 @@ public class PutExecutor implements Executor {
                     db.set(kvs[0].toBytes(), kvs[1].toBytes());
                 } catch (Exception e) {
                     LOGGER.debug("execute put error", e);
-                    return KVDBMessage.error(request.getId(), e.getMessage());
+                    return KVDBMessage.error(request.getId(), e.toString());
                 }
             } else {
                 KVWriteBatch wb = request.getSession().getDB().beginBatch();
@@ -61,7 +61,7 @@ public class PutExecutor implements Executor {
                     wb.commit();
                 } catch (Exception e) {
                     LOGGER.debug("execute put error", e);
-                    return KVDBMessage.error(request.getId(), e.getMessage());
+                    return KVDBMessage.error(request.getId(), e.toString());
                 }
             }
         }

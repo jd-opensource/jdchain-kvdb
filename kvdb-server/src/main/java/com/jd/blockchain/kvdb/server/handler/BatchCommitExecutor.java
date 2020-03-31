@@ -23,7 +23,7 @@ public class BatchCommitExecutor implements Executor {
                 return KVDBMessage.success(request.getId());
             } catch (RocksDBException e) {
                 LOGGER.debug("execute batch commit error", e);
-                return KVDBMessage.error(request.getId(), e.getMessage());
+                return KVDBMessage.error(request.getId(), e.toString());
             }
         } else {
             return KVDBMessage.error(request.getId(), "not in batch mode");

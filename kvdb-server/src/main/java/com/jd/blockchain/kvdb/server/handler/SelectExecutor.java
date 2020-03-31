@@ -24,7 +24,7 @@ public class SelectExecutor implements Executor {
             }
         } catch (Exception e) {
             LOGGER.error("execute select error", e);
-            return KVDBMessage.error(request.getId(), e.getMessage());
+            return KVDBMessage.error(request.getId(), e.toString());
         }
     }
 }

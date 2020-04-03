@@ -1,14 +1,15 @@
 package com.jd.blockchain.kvdb.server;
 
+import com.jd.blockchain.kvdb.KVDB;
+import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.Command;
 import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.server.handler.Executor;
 import com.jd.blockchain.kvdb.server.handler.UnknowExecutor;
-import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.KVDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,15 @@ public class DefaultServerContext implements ServerContext {
 
     private final KVDBInstance[] rocksdbs;
 
+    public DefaultServerContext() {
+        this(null);
+    }
+
+    /**
+     * Giving the absolute file path.
+     * If null is absent, configs in resources/server.properties will be used.
+     * @param configFile
+     */
     public DefaultServerContext(String configFile) {
         config = new ServerConfig(configFile);
         rocksdbs = KVDB.getRocksDBs(config.getDbPath(), config.getDbSize(), config.getDbPartition());

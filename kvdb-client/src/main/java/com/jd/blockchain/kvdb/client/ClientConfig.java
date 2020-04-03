@@ -28,7 +28,7 @@ public class ClientConfig {
     private int db;
 
     public ClientConfig(String[] args) {
-        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, TIMEOUT, BUFFER_SIZE, RETRY_TIME, KEEP_ALIVE));
+        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, TIMEOUT, BUFFER_SIZE, RETRY_TIME, KEEP_ALIVE, DB));
         ArgumentSet.ArgEntry hostArg = arguments.getArg(HOST);
         if (null != hostArg) {
             this.host = hostArg.getValue();

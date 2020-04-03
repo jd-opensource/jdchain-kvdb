@@ -26,6 +26,10 @@ public class ServerConfig {
     private int dbSize;
     private int dbPartition;
 
+    public ServerConfig() {
+        this(null);
+    }
+
     public ServerConfig(String configFile) {
         try {
             Properties properties = new Properties();

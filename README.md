@@ -11,7 +11,7 @@ mvn clean package
 ```bash
 java -jar kvdb-server.jar
 ```
-use `-c config_file_path` to change the default configurations.
+use `-c config_file_absolute_path` to change the default configurations.
 
 configs:
 ```bash
@@ -51,10 +51,10 @@ support commands:
 #### client
 
 ```java
-// new single client
+// new cluster client
 KVDBClient kvdbClient = new KVDBCluster(ClientConfig...;
 
-// new cluster client
+// new single client
 KVDBClient kvdbClient = new KVDBSingle(HOST, PORT);
 KVDBClient kvdbClient = new KVDBSingle(ClientConfig);
 

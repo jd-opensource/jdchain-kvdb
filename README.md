@@ -11,6 +11,19 @@ mvn clean package
 ```bash
 java -jar kvdb-server.jar
 ```
+use `-c config_file_path` to change the default configurations.
+
+configs:
+```bash
+server.host=localhost
+server.port=6380
+buffer_size=1048576
+db.path=db
+// db size, use `select` command to change
+db.size=4
+// partitions for single db, values gt 1 use `RocksDBCluster`, otherwise use `RocksDBProxy`.
+db.partition=4
+```
 
 #### cli
 
@@ -38,8 +51,13 @@ support commands:
 #### client
 
 ```java
-// new client
-KVDBClient kvdbClient = new KVDBClient(HOST, PORT);
+// new single client
+KVDBClient kvdbClient = new KVDBCluster(ClientConfig...;
+
+// new cluster client
+KVDBClient kvdbClient = new KVDBSingle(HOST, PORT);
+KVDBClient kvdbClient = new KVDBSingle(ClientConfig);
+
 kvdbClient.start();
 
 // select db

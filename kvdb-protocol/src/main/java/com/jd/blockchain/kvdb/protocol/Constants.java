@@ -15,4 +15,6 @@ public class Constants {
     public static final int MESSAGE_CONTENT = 11;
     public static final int COMMAND = 2;
     public static final int RESPONSE = 3;
+    public static final int INFO = 4;
+    public static final int CLUSTER_INFO = 5;
 }

@@ -1,6 +1,7 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.server.handler.*;
+import com.jd.blockchain.kvdb.server.config.ServerConfig;
+import com.jd.blockchain.kvdb.server.executor.*;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -16,19 +17,21 @@ public class ContextTest {
     private DefaultServerContext context;
 
     @Before
-    public void setUp() {
-        context = new DefaultServerContext();
+    public void setUp() throws Exception {
+        context = new DefaultServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
     }
 
     @After
     public void tearDown() {
         context.stop();
-        FileUtils.deletePath(new File(context.getConfig().getDbPath()), true);
+        FileUtils.deletePath(new File(context.getConfig().getKvdbConfig().getDbsRootdir()), true);
     }
 
     @Test
     public void test() {
-        context.addExecutor(SELECT.getCommand(), new SelectExecutor());
+        context.addExecutor(USE.getCommand(), new UseExecutor());
+        context.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
+        context.addExecutor(INFO.getCommand(), new InfoExecutor());
         context.addExecutor(EXISTS.getCommand(), new ExistsExecutor());
         context.addExecutor(GET.getCommand(), new GetExecutor());
         context.addExecutor(PUT.getCommand(), new PutExecutor());
@@ -36,9 +39,10 @@ public class ContextTest {
         context.addExecutor(BATCH_ABORT.getCommand(), new BatchAbortExecutor());
         context.addExecutor(BATCH_COMMIT.getCommand(), new BatchCommitExecutor());
 
-        Assert.assertEquals(4, context.dbSize());
         Assert.assertEquals(0, context.getClients());
-        Assert.assertTrue(context.getExecutor(SELECT.getCommand()) instanceof SelectExecutor);
+        Assert.assertTrue(context.getExecutor(USE.getCommand()) instanceof UseExecutor);
+        Assert.assertTrue(context.getExecutor(CREATE_DATABASE.getCommand()) instanceof CreateDatabaseExecutor);
+        Assert.assertTrue(context.getExecutor(INFO.getCommand()) instanceof InfoExecutor);
         Assert.assertTrue(context.getExecutor(EXISTS.getCommand()) instanceof ExistsExecutor);
         Assert.assertTrue(context.getExecutor(GET.getCommand()) instanceof GetExecutor);
         Assert.assertTrue(context.getExecutor(PUT.getCommand()) instanceof PutExecutor);

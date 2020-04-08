@@ -41,8 +41,20 @@ public class KVDBMessage implements Message {
 
     //----------- Messages for request
 
-    public static Message select(Bytes key) {
-        return new KVDBMessage(new KVDBCommand(SELECT.getCommand(), key));
+    public static Message use(Bytes key) {
+        return new KVDBMessage(new KVDBCommand(USE.getCommand(), key));
+    }
+
+    public static Message createDB(Bytes key) {
+        return new KVDBMessage(new KVDBCommand(CREATE_DATABASE.getCommand(), key));
+    }
+
+    public static Message info() {
+        return new KVDBMessage(new KVDBCommand(INFO.getCommand()));
+    }
+
+    public static Message showDBs() {
+        return new KVDBMessage(new KVDBCommand(SHOW_DATABASES.getCommand()));
     }
 
     public static Message put(Bytes... kvs) {

@@ -12,13 +12,16 @@ import com.jd.blockchain.utils.Bytes;
 public interface Command extends MessageContent {
 
     enum CommandType {
-        SELECT("select"),
+        USE("use"),
+        CREATE_DATABASE("create database"),
+        INFO("info"),
+        SHOW_DATABASES("show databases"),
         PUT("put"),
         GET("get"),
         EXISTS("exists"),
-        BATCH_BEGIN("batch-begin"),
-        BATCH_ABORT("batch-abort"),
-        BATCH_COMMIT("batch-commit");
+        BATCH_BEGIN("batch begin"),
+        BATCH_ABORT("batch abort"),
+        BATCH_COMMIT("batch commit");
 
         String command;
 

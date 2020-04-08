@@ -6,9 +6,9 @@ import io.netty.channel.socket.SocketChannel;
 
 public class KVDBInitializerHandler extends ChannelInitializer<SocketChannel> {
 
-    private final KVDB impl;
+    private final KVDBHandler impl;
 
-    public KVDBInitializerHandler(KVDB impl) {
+    public KVDBInitializerHandler(KVDBHandler impl) {
         this.impl = impl;
     }
 

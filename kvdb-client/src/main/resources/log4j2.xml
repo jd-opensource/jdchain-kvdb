@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="ERROR">
     <Appenders>
-        <RollingFile name="RollingFile" fileName="logs/kvdb.log"
+        <RollingFile name="RollingFile" fileName="../logs/client.log"
                      filePattern="logs/$${date:yyyy-MM}/yadou-manage-%d{MM-dd-yyyy}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d %-5level [%t]%l - %msg%n</Pattern>

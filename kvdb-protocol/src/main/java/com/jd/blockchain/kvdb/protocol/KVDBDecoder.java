@@ -19,6 +19,8 @@ public class KVDBDecoder extends MessageToMessageDecoder<ByteBuf> {
         DataContractRegistry.register(Command.class);
         DataContractRegistry.register(MessageContent.class);
         DataContractRegistry.register(Response.class);
+        DataContractRegistry.register(Info.class);
+        DataContractRegistry.register(ClusterInfo.class);
     }
 
     @Override

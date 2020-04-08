@@ -12,9 +12,9 @@ public class KVDBConnectionHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBConnectionHandler.class);
 
-    private final KVDB impl;
+    private final KVDBHandler impl;
 
-    public KVDBConnectionHandler(KVDB impl) {
+    public KVDBConnectionHandler(KVDBHandler impl) {
         this.impl = impl;
     }
 

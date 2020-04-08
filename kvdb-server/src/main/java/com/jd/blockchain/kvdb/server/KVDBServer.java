@@ -1,8 +1,11 @@
 package com.jd.blockchain.kvdb.server;
 
+import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.*;
-import com.jd.blockchain.kvdb.server.handler.*;
-import com.jd.blockchain.utils.ArgumentSet;
+import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
+import com.jd.blockchain.kvdb.protocol.client.NettyClient;
+import com.jd.blockchain.kvdb.server.config.ClusterConfig;
+import com.jd.blockchain.kvdb.server.executor.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -20,14 +23,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.jd.blockchain.kvdb.protocol.Command.CommandType.*;
 
-public class KVDBServer implements KVDB {
+public class KVDBServer implements KVDBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBServer.class);
-
-    private static final String CONFIG_FILE = "-c";
 
     private final DefaultServerContext serverContext;
 
@@ -41,7 +44,10 @@ public class KVDBServer implements KVDB {
     }
 
     private void bindExecutors() {
-        serverContext.addExecutor(SELECT.getCommand(), new SelectExecutor());
+        serverContext.addExecutor(USE.getCommand(), new UseExecutor());
+        serverContext.addExecutor(SHOW_DATABASES.getCommand(), new ShowDatabasesExecutor());
+        serverContext.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
+        serverContext.addExecutor(INFO.getCommand(), new InfoExecutor());
         serverContext.addExecutor(EXISTS.getCommand(), new ExistsExecutor());
         serverContext.addExecutor(GET.getCommand(), new GetExecutor());
         serverContext.addExecutor(PUT.getCommand(), new PutExecutor());
@@ -62,16 +68,79 @@ public class KVDBServer implements KVDB {
                 .childHandler(new KVDBInitializerHandler(this))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.TCP_NODELAY, true)
-                .option(ChannelOption.SO_RCVBUF, serverContext.getConfig().getBufferSize())
-                .option(ChannelOption.SO_SNDBUF, serverContext.getConfig().getBufferSize())
+                .option(ChannelOption.SO_RCVBUF, 1024 * 1024)
+                .option(ChannelOption.SO_SNDBUF, 1024 * 1024)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 
-        future = bootstrap.bind(serverContext.getHost(), serverContext.getPort());
+        future = bootstrap.bind(serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
         // Bind and start to accept incoming connections.
         future.syncUninterruptibly();
 
-        LOGGER.info("server started: {}:{}", serverContext.getHost(), serverContext.getPort());
+        LOGGER.info("server started: {}:{}", serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
+
+        // Confirm cluster settings
+        if (serverContext.getConfig().isClusterMode()) {
+            clusterConfirm();
+        }
+    }
+
+    private void clusterConfirm() {
+        boolean confirmed = false;
+        LOGGER.info("cluster confirming ... ");
+        while (!confirmed) {
+            ClusterInfo[] localClusterInfo = serverContext.getConfig().getClusterInfoList();
+            Set<String> confirmedHosts = new HashSet<>();
+            for (ClusterInfo entry : localClusterInfo) {
+                boolean ok = true;
+                for (String url : entry.getURLs()) {
+                    KVDBURI uri = new KVDBURI(url);
+                    // Skip self and confirmed
+                    if (!(KVDBURI.isLocalhost(uri.getHost()) && uri.getPort() == serverContext.getConfig().getKvdbConfig().getPort())
+                            && !confirmedHosts.contains(uri.getHost() + uri.getPort())) {
+                        NettyClient client = null;
+                        try {
+                            LOGGER.info("cluster confirm {}", url);
+                            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()), false);
+                            // TODO 延迟待处理
+                            Thread.sleep(2000);
+                            Response response = client.send(KVDBMessage.info());
+                            if (null == response || response.getCode() == Constants.ERROR) {
+                                ok = false;
+                                break;
+                            }
+                            Info info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), Info.class);
+                            if (!info.isClusterMode()) {
+                                ok = false;
+                                break;
+                            }
+                            if (!ClusterConfig.equals(localClusterInfo, info.getCluster())) {
+                                ok = false;
+                                break;
+                            }
+                            confirmedHosts.add(uri.getHost() + uri.getPort());
+                        } catch (Exception e) {
+                            ok = false;
+                            LOGGER.error("cluster confirm {} error", url, e);
+                        } finally {
+                            if (null != client) {
+                                client.stop();
+                            }
+                        }
+                    }
+                }
+                confirmed = ok;
+                if (!ok) {
+                    break;
+                }
+            }
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                LOGGER.error("sleep interrupted", e);
+            }
+        }
+        LOGGER.info("cluster confirmed");
     }
 
     public void stop() {
@@ -114,7 +183,7 @@ public class KVDBServer implements KVDB {
         channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024 * 1024, 0, 4, 0, 4))
                 .addLast("kvdbDecoder", new KVDBDecoder())
                 .addLast(new LengthFieldPrepender(4, 0, false))
-                .addLast("kvdbEncoder", new KVDBEecoder())
+                .addLast("kvdbEncoder", new KVDBEncoder())
                 .addLast(new KVDBConnectionHandler(this));
     }
 
@@ -125,7 +194,7 @@ public class KVDBServer implements KVDB {
     }
 
     private Session getSession(ChannelHandlerContext ctx, String sourceKey) {
-        return serverContext.getSession(sourceKey, key -> new DefaultSession(key, ctx, serverContext.getDB(0)));
+        return serverContext.getSession(sourceKey, key -> new DefaultSession(key, ctx));
     }
 
     public void disconnected(ChannelHandlerContext ctx) {
@@ -142,15 +211,5 @@ public class KVDBServer implements KVDB {
         LOGGER.debug("message received: {}", sourceKey);
 
         serverContext.processCommand(sourceKey, message);
-    }
-
-    public static void main(String[] args) {
-        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(CONFIG_FILE));
-        ArgumentSet.ArgEntry configArg = arguments.getArg(CONFIG_FILE);
-        String configFile = null;
-        if (null != configArg) {
-            configFile = configArg.getValue();
-        }
-        new KVDBServer(new DefaultServerContext(configFile)).start();
     }
 }

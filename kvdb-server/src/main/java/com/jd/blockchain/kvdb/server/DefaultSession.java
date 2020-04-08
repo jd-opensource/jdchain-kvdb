@@ -1,8 +1,8 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.KVWriteBatch;
+import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.utils.Bytes;
 import io.netty.channel.ChannelHandlerContext;
 import org.rocksdb.RocksDBException;
@@ -15,14 +15,14 @@ public class DefaultSession implements Session {
 
     private final String id;
     private final ChannelHandlerContext ctx;
-    private KVDBInstance db;
+    private String dbName;
+    private KVDBInstance instance;
     private boolean batchMode;
     private ConcurrentHashMap<Bytes, byte[]> batch;
 
-    public DefaultSession(String id, ChannelHandlerContext ctx, KVDBInstance db) {
+    public DefaultSession(String id, ChannelHandlerContext ctx) {
         this.id = id;
         this.ctx = ctx;
-        this.db = db;
     }
 
     @Override
@@ -31,14 +31,20 @@ public class DefaultSession implements Session {
     }
 
     @Override
-    public void setDB(KVDBInstance db) throws RocksDBException {
+    public synchronized void setDB(String dbName, KVDBInstance instance) throws RocksDBException {
         batchAbort();
-        this.db = db;
+        this.dbName = dbName;
+        this.instance = instance;
     }
 
     @Override
-    public KVDBInstance getDB() {
-        return db;
+    public KVDBInstance getDBInstance() {
+        return instance;
+    }
+
+    @Override
+    public String getDBName() {
+        return dbName;
     }
 
     @Override
@@ -84,7 +90,7 @@ public class DefaultSession implements Session {
     public synchronized void batchCommit() throws RocksDBException {
         batchMode = false;
         if (null != batch) {
-            KVWriteBatch writeBatch = db.beginBatch();
+            KVWriteBatch writeBatch = instance.beginBatch();
             Iterator<Map.Entry<Bytes, byte[]>> iterator = batch.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<Bytes, byte[]> entry = iterator.next();

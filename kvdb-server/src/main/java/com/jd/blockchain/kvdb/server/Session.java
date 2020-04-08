@@ -8,9 +8,11 @@ public interface Session {
 
     String getId();
 
-    void setDB(KVDBInstance db) throws RocksDBException;
+    void setDB(String dbName, KVDBInstance instance) throws RocksDBException;
 
-    KVDBInstance getDB();
+    KVDBInstance getDBInstance();
+
+    String getDBName();
 
     void publish(Message msg);
 

@@ -12,6 +12,13 @@
     <artifactId>kvdb-client</artifactId>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.shell</groupId>
+            <artifactId>spring-shell-starter</artifactId>
+            <version>2.0.0.RELEASE</version>
+        </dependency>
+
         <dependency>
             <groupId>com.jd.blockchain</groupId>
             <artifactId>kvdb-protocol</artifactId>
@@ -23,29 +30,17 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <finalName>kvdb-cli</finalName>
                     <archive>
                         <manifest>
-                            <mainClass>com.jd.blockchain.kvdb.client.cli.KVDBCli</mainClass>
+                            <mainClass>com.jd.blockchain.kvdb.client.cli.CliBooter</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>.</classpathPrefix>
+                            <useUniqueVersions>false</useUniqueVersions>
                         </manifest>
                     </archive>
-                    <appendAssemblyId>false</appendAssemblyId>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
                 </configuration>
-
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

@@ -1,15 +1,17 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.KVDB;
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.Command;
 import com.jd.blockchain.kvdb.protocol.Message;
-import com.jd.blockchain.kvdb.server.handler.Executor;
-import com.jd.blockchain.kvdb.server.handler.UnknowExecutor;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.server.config.ServerConfig;
+import com.jd.blockchain.kvdb.server.executor.Executor;
+import com.jd.blockchain.kvdb.server.executor.UnknowExecutor;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,32 +27,17 @@ public class DefaultServerContext implements ServerContext {
 
     private final ServerConfig config;
 
-    private final KVDBInstance[] rocksdbs;
+    // Hold all the databases
+    private final Map<String, KVDBInstance> rocksdbs;
 
-    public DefaultServerContext() {
-        this(null);
-    }
 
-    /**
-     * Giving the absolute file path.
-     * If null is absent, configs in resources/server.properties will be used.
-     * @param configFile
-     */
-    public DefaultServerContext(String configFile) {
-        config = new ServerConfig(configFile);
-        rocksdbs = KVDB.getRocksDBs(config.getDbPath(), config.getDbSize(), config.getDbPartition());
+    public DefaultServerContext(ServerConfig config) throws RocksDBException, IOException {
+        this.config = config;
+        rocksdbs = KVDB.initDBs(config.getDbList());
     }
 
     public ServerConfig getConfig() {
         return config;
-    }
-
-    public String getHost() {
-        return config.getHost();
-    }
-
-    public int getPort() {
-        return config.getPort();
     }
 
     public int getClients() {
@@ -62,22 +49,30 @@ public class DefaultServerContext implements ServerContext {
     }
 
     @Override
-    public int dbSize() {
-        return rocksdbs.length;
+    public Map<String, KVDBInstance> getDBs() {
+        return rocksdbs;
     }
 
     @Override
-    public KVDBInstance getDB(int index) {
-        if (index < 0 || index >= rocksdbs.length) {
-            index = 0;
-            LOGGER.warn("index out of bounds, reset to zero, you can input values in [{}, {}]", 0, rocksdbs.length - 1);
+    public KVDBInstance getDB(String name) {
+        return rocksdbs.get(name);
+    }
+
+    public synchronized KVDBInstance createDB(String dbName) throws KVDBException, RocksDBException, IOException {
+        if (rocksdbs.containsKey(dbName)) {
+            throw new KVDBException("database exists");
         }
-        return rocksdbs[index];
+
+        KVDBInstance kvdbInstance = KVDB.createDB(config.getKvdbConfig(), dbName);
+        config.getKvdbConfig().createDatabase(dbName);
+        rocksdbs.put(dbName, kvdbInstance);
+
+        return kvdbInstance;
     }
 
     public void stop() {
         clients.clear();
-        for (KVDBInstance db : rocksdbs) {
+        for (KVDBInstance db : rocksdbs.values()) {
             db.close();
         }
     }

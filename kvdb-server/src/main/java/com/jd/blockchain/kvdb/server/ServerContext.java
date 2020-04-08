@@ -1,13 +1,15 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.server.handler.Executor;
 import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.server.config.ServerConfig;
+import com.jd.blockchain.kvdb.server.executor.Executor;
+import org.rocksdb.RocksDBException;
+
+import java.io.IOException;
+import java.util.Map;
 
 public interface ServerContext {
-
-    String getHost();
-
-    int getPort();
 
     ServerConfig getConfig();
 
@@ -17,7 +19,9 @@ public interface ServerContext {
 
     Executor getExecutor(String command);
 
-    int dbSize();
+    Map<String, KVDBInstance> getDBs();
 
-    KVDBInstance getDB(int index);
+    KVDBInstance getDB(String name);
+
+    KVDBInstance createDB(String name) throws KVDBException, RocksDBException, IOException;
 }

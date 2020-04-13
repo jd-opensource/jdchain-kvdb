@@ -6,6 +6,7 @@ import com.jd.blockchain.utils.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 public class ServerConfig {
@@ -31,19 +32,8 @@ public class ServerConfig {
             dblistFile = file.getAbsolutePath() + File.separator + SYSTEM_DIR + File.separator + DBLIST;
         }
         kvdbConfig = new KVDBConfig(kvdbConfigFile);
-        if (kvdbConfig.isClusterMode()) {
-            clusterConfig = new ClusterConfig(clusterConfigFile);
-        }
+        clusterConfig = new ClusterConfig(clusterConfigFile);
         dbList = new DBList(dblistFile, kvdbConfig);
-    }
-
-    /**
-     * Whether in cluster mode.
-     *
-     * @return
-     */
-    public boolean isClusterMode() {
-        return kvdbConfig.isClusterMode();
     }
 
     /**
@@ -60,32 +50,25 @@ public class ServerConfig {
      *
      * @return
      */
-    public Map<String, String[]> getClusterMapping() {
-        return clusterConfig.getCluster();
+    public Map<String, ClusterInfo> getClusterMapping() {
+        Map<String, ClusterInfo> clusterMapping = new HashMap<>();
+        for (Map.Entry<String, String[]> cluster : clusterConfig.getCluster().entrySet()) {
+            clusterMapping.put(cluster.getKey(), new KVDBClusterInfo(cluster.getKey(), cluster.getValue()));
+        }
+
+        return clusterMapping;
     }
 
     public ClusterInfo[] getClusterInfoList() {
-        Map<String, String[]> clusterMapping = getClusterMapping();
+        Map<String, String[]> clusterMapping = clusterConfig.getCluster();
         ClusterInfo[] clusterInfos = new ClusterInfo[clusterMapping.size()];
         int i = 0;
         for (Map.Entry<String, String[]> cluster : clusterMapping.entrySet()) {
-            KVDBClusterInfo clusterInfo = new KVDBClusterInfo();
-            clusterInfo.setName(cluster.getKey());
-            clusterInfo.setURLs(cluster.getValue());
-            clusterInfos[i] = clusterInfo;
+            clusterInfos[i] = new KVDBClusterInfo(cluster.getKey(), cluster.getValue());
             i++;
         }
 
         return clusterInfos;
-    }
-
-    /**
-     * Return URLs in the giving cluster
-     *
-     * @return
-     */
-    public String[] getClusterURLs(String clusterName) {
-        return getClusterMapping().get(clusterName);
     }
 
     public KVDBConfig getKvdbConfig() {

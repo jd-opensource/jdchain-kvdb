@@ -14,14 +14,15 @@ public interface Command extends MessageContent {
     enum CommandType {
         USE("use"),
         CREATE_DATABASE("create database"),
-        INFO("info"),
+        CLUSTER_INFO("cluster"),
         SHOW_DATABASES("show databases"),
         PUT("put"),
         GET("get"),
         EXISTS("exists"),
         BATCH_BEGIN("batch begin"),
         BATCH_ABORT("batch abort"),
-        BATCH_COMMIT("batch commit");
+        BATCH_COMMIT("batch commit"),
+        UNKNOWN("unknown");
 
         String command;
 

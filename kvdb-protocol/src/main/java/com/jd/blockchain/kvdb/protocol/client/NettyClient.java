@@ -2,7 +2,6 @@ package com.jd.blockchain.kvdb.protocol.client;
 
 import com.jd.blockchain.kvdb.protocol.*;
 import com.jd.blockchain.utils.Bytes;
-import com.jd.blockchain.utils.StringUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -19,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class NettyClient implements KVDBHandler {
@@ -31,18 +31,13 @@ public class NettyClient implements KVDBHandler {
     private ChannelHandlerContext context;
 
     private final ClientConfig config;
-    private boolean runUseAfterConnected;
+    private CountDownLatch contextReadyCdl;
 
     private ConcurrentHashMap<String, ChannelPromise> promises = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Response> responses = new ConcurrentHashMap<>();
 
     public NettyClient(ClientConfig config) {
-        this(config, true);
-    }
-
-    public NettyClient(ClientConfig config, boolean runUseAfterConnected) {
         this.config = config;
-        this.runUseAfterConnected = runUseAfterConnected;
         start();
     }
 
@@ -60,6 +55,13 @@ public class NettyClient implements KVDBHandler {
                 .handler(new KVDBInitializerHandler(this));
 
         future = connect();
+
+        contextReadyCdl = new CountDownLatch(1);
+        try {
+            contextReadyCdl.await();
+        } catch (InterruptedException e) {
+            LOGGER.error("context countDownLatch");
+        }
     }
 
     private ChannelFuture connect() {
@@ -95,10 +97,8 @@ public class NettyClient implements KVDBHandler {
     public void connected(ChannelHandlerContext ctx) {
         LOGGER.info("channel active");
         this.context = ctx;
-
-        if (runUseAfterConnected && !StringUtils.isEmpty(config.getDb())) {
-            LOGGER.info("switch to db {}", config.getDb());
-            context.writeAndFlush(KVDBMessage.use(Bytes.fromString(config.getDb())));
+        if (contextReadyCdl.getCount() > 0) {
+            contextReadyCdl.countDown();
         }
     }
 
@@ -156,9 +156,7 @@ public class NettyClient implements KVDBHandler {
     }
 
     private void writeAndFlush(Object message) {
-        if (context != null) {
-            context.writeAndFlush(message);
-        }
+        context.writeAndFlush(message);
     }
 
 }

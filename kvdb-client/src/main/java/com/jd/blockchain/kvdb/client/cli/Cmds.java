@@ -2,6 +2,7 @@ package com.jd.blockchain.kvdb.client.cli;
 
 import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.DBInfo;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -10,8 +11,6 @@ import org.springframework.shell.ExitRequest;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.commands.Quit;
-
-import java.util.Arrays;
 
 @ShellComponent
 public class Cmds implements Quit.Command {
@@ -30,21 +29,21 @@ public class Cmds implements Quit.Command {
     }
 
     @ShellMethod(group = "KVDB Commands",
-            value = "Server information.")
-    public String info() throws KVDBException {
-        com.jd.blockchain.kvdb.protocol.Info info = client.info();
+            value = "Server cluster information.",
+            key = "cluster info")
+    public String clusterInfo() throws KVDBException {
+        ClusterInfo[] infos = client.clusterInfo();
         StringBuilder builder = new StringBuilder();
-        builder.append("mode: ");
-        builder.append(info.isClusterMode() ? "cluster" : "single");
-        builder.append("\n");
-        if (info.isClusterMode()) {
-            builder.append("cluster: \n");
-            ClusterInfo[] clusterInfos = info.getCluster();
-            for (int i = 0; i < clusterInfos.length; i++) {
-                builder.append("    " + clusterInfos[i].getName() + ": " + Arrays.toString(clusterInfos[i].getURLs()));
-                if (i != clusterInfos.length - 1) {
-                    builder.append("\n");
-                }
+        for (int i = 0; i < infos.length; i++) {
+            builder.append(infos[i].getName());
+            builder.append(": \n");
+            String[] urls = infos[i].getURLs();
+            for (int j = 0; j < urls.length; j++) {
+                builder.append("    " + urls[j]);
+                builder.append("\n");
+            }
+            if (i != infos.length - 1) {
+                builder.append("\n");
             }
         }
 
@@ -102,9 +101,25 @@ public class Cmds implements Quit.Command {
 
     @ShellMethod(group = "KVDB Commands",
             value = "Switch to the database with the specified name")
-    public boolean use(String name) throws KVDBException {
-
-        return client.use(name);
+    public String use(String name) throws KVDBException {
+        DBInfo info = client.use(name);
+        StringBuilder builder = new StringBuilder();
+        builder.append("mode: ");
+        builder.append(info.isClusterMode() ? "cluster" : "single");
+        if (info.isClusterMode()) {
+            builder.append("\n");
+            ClusterInfo cluster = info.getCluster();
+            builder.append(cluster.getName());
+            builder.append(": \n");
+            String[] urls = cluster.getURLs();
+            for (int i = 0; i < urls.length; i++) {
+                builder.append("    " + urls[i]);
+                if (i != urls.length - 1) {
+                    builder.append("\n");
+                }
+            }
+        }
+        return builder.toString();
     }
 
     @ShellMethod(group = "KVDB Commands",

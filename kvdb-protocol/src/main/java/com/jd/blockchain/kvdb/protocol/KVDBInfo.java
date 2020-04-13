@@ -3,12 +3,12 @@ package com.jd.blockchain.kvdb.protocol;
 /**
  * Server information
  */
-public class KVDBInfo implements Info {
+public class KVDBInfo implements DBInfo {
 
     // Whether is cluster mode
     private boolean clusterMode;
     // Cluster info
-    private ClusterInfo[] cluster;
+    private ClusterInfo cluster;
 
     @Override
     public boolean isClusterMode() {
@@ -20,11 +20,11 @@ public class KVDBInfo implements Info {
     }
 
     @Override
-    public ClusterInfo[] getCluster() {
+    public ClusterInfo getCluster() {
         return cluster;
     }
 
-    public void setCluster(ClusterInfo[] cluster) {
+    public void setCluster(ClusterInfo cluster) {
         this.cluster = cluster;
     }
 

@@ -6,6 +6,7 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.server.config.ClusterConfig;
 import com.jd.blockchain.kvdb.server.executor.*;
+import com.jd.blockchain.utils.Bytes;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -53,13 +54,14 @@ public class KVDBServer implements KVDBHandler {
         serverContext.addExecutor(USE.getCommand(), new UseExecutor());
         serverContext.addExecutor(SHOW_DATABASES.getCommand(), new ShowDatabasesExecutor());
         serverContext.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
-        serverContext.addExecutor(INFO.getCommand(), new InfoExecutor());
+        serverContext.addExecutor(CLUSTER_INFO.getCommand(), new ClusterInfoExecutor());
         serverContext.addExecutor(EXISTS.getCommand(), new ExistsExecutor());
         serverContext.addExecutor(GET.getCommand(), new GetExecutor());
         serverContext.addExecutor(PUT.getCommand(), new PutExecutor());
         serverContext.addExecutor(BATCH_BEGIN.getCommand(), new BatchBeginExecutor());
         serverContext.addExecutor(BATCH_ABORT.getCommand(), new BatchAbortExecutor());
         serverContext.addExecutor(BATCH_COMMIT.getCommand(), new BatchCommitExecutor());
+        serverContext.addExecutor(UNKNOWN.getCommand(), new UnknowExecutor());
     }
 
     public void start() {
@@ -86,9 +88,7 @@ public class KVDBServer implements KVDBHandler {
         LOGGER.info("server started: {}:{}", serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
 
         // Confirm cluster settings
-        if (serverContext.getConfig().isClusterMode()) {
-            clusterConfirm();
-        }
+        clusterConfirm();
 
         ready = true;
     }
@@ -96,8 +96,11 @@ public class KVDBServer implements KVDBHandler {
     private void clusterConfirm() {
         boolean confirmed = false;
         LOGGER.info("cluster confirming ... ");
+        ClusterInfo[] localClusterInfo = serverContext.getConfig().getClusterInfoList();
+        if (localClusterInfo.length == 0) {
+            return;
+        }
         while (!confirmed) {
-            ClusterInfo[] localClusterInfo = serverContext.getConfig().getClusterInfoList();
             Set<String> confirmedHosts = new HashSet<>();
             for (ClusterInfo entry : localClusterInfo) {
                 boolean ok = true;
@@ -109,20 +112,18 @@ public class KVDBServer implements KVDBHandler {
                         NettyClient client = null;
                         try {
                             LOGGER.info("cluster confirm {}", url);
-                            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()), false);
-                            // TODO 延迟待处理
-                            Thread.sleep(2000);
-                            Response response = client.send(KVDBMessage.info());
+                            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()));
+                            Response response = client.send(KVDBMessage.clusterInfo());
                             if (null == response || response.getCode() == Constants.ERROR) {
                                 ok = false;
                                 break;
                             }
-                            Info info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), Info.class);
-                            if (!info.isClusterMode()) {
-                                ok = false;
-                                break;
+                            Bytes[] clusterInfos = response.getResult();
+                            ClusterInfo[] infos = new ClusterInfo[clusterInfos.length];
+                            for (int i = 0; i < clusterInfos.length; i++) {
+                                infos[i] = BinaryProtocol.decodeAs(clusterInfos[i].toBytes(), ClusterInfo.class);
                             }
-                            if (!ClusterConfig.equals(localClusterInfo, info.getCluster())) {
+                            if (!ClusterConfig.equals(localClusterInfo, infos)) {
                                 ok = false;
                                 break;
                             }
@@ -222,7 +223,7 @@ public class KVDBServer implements KVDBHandler {
          * Only info command can be execute when the server has started but not ready.
          * For the info command may be send in cluster confirming.
          */
-        if (!ready && !((Command) message.getContent()).getName().equals(INFO.getCommand())) {
+        if (!ready && !((Command) message.getContent()).getName().equals(CLUSTER_INFO.getCommand())) {
             ctx.writeAndFlush(KVDBMessage.error(message.getId(), "server not ready"));
         } else {
             serverContext.processCommand(sourceKey, message);

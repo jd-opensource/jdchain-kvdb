@@ -15,13 +15,11 @@ public class KVDBConfig {
     private static final String DEFAULT_DB_PATH = "dbs";
     private static final String DEFAULT_HOST = "0.0.0.0";
     private static final int DEFAULT_PORT = 7078;
-    private static final String DEFAULT_MODE = "single";
     private static final int DEFAULT_DB_PARTITIONS = 4;
 
     private String configFile;
     private String host;
     private int port;
-    private boolean clusterMode;
     private String dbsRootdir;
     private int dbsPartitions;
 
@@ -33,7 +31,6 @@ public class KVDBConfig {
         this.port = Integer.parseInt(properties.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
         this.dbsRootdir = properties.getProperty("dbs.rootdir", DEFAULT_DB_PATH);
         this.dbsPartitions = Integer.parseInt(properties.getProperty("dbs.partitions", String.valueOf(DEFAULT_DB_PARTITIONS)));
-        this.clusterMode = properties.getProperty("server.mode", DEFAULT_MODE).equals("cluster");
     }
 
     public String getHost() {
@@ -68,15 +65,7 @@ public class KVDBConfig {
         this.dbsPartitions = dbsPartitions;
     }
 
-    public boolean isClusterMode() {
-        return clusterMode;
-    }
-
-    public void setClusterMode(boolean clusterMode) {
-        this.clusterMode = clusterMode;
-    }
-
-    public synchronized void createDatabase(String database) throws IOException {
+    public void createDatabase(String database) throws IOException {
         FileWriter fw = null;
         try {
             fw = new FileWriter(configFile, true);

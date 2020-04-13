@@ -1,9 +1,12 @@
 package com.jd.blockchain.kvdb.server.executor;
 
+import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.protocol.DBInfo;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.server.Request;
+import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
@@ -21,10 +24,11 @@ public class UseExecutor implements Executor {
             if (StringUtils.isEmpty(db)) {
                 return KVDBMessage.error(request.getId(), "db name empty");
             } else {
-                KVDBInstance kvdbInstance = request.getServerContext().getDB(db);
+                KVDBInstance kvdbInstance = request.getServerContext().getDatabase(db);
                 if (null != kvdbInstance) {
                     request.getSession().setDB(db, kvdbInstance);
-                    return KVDBMessage.success(request.getId());
+                    return KVDBMessage.success(request.getId(),
+                            new Bytes(BinaryProtocol.encode(request.getServerContext().getDatabaseInfo(db), DBInfo.class)));
                 } else {
                     return KVDBMessage.error(request.getId(), "db not exists");
                 }

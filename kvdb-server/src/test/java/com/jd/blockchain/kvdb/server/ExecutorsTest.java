@@ -7,7 +7,10 @@ import com.jd.blockchain.kvdb.server.executor.*;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.rocksdb.RocksDBException;
 
 import java.io.File;
@@ -35,7 +38,7 @@ public class ExecutorsTest {
     private Session newSessionWithTestDB() throws RocksDBException {
         Session session = context.getSession(UUID.randomUUID().toString(), key -> new DefaultSession(key, null));
 
-        session.setDB("test", context.getDB("test"));
+        session.setDB("test1", context.getDatabase("test1"));
 
         return session;
     }
@@ -206,13 +209,13 @@ public class ExecutorsTest {
     public void testUse() {
         Session session = newSession();
 
-        Response response = execute(session, new UseExecutor(), KVDBMessage.use(Bytes.fromString("db0")));
+        Response response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));
         Assert.assertEquals(Constants.ERROR, response.getCode());
 
-        response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDB(Bytes.fromString("db0")));
+        response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDatabase(Bytes.fromString("db0")));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
 
-        response = execute(session, new UseExecutor(), KVDBMessage.use(Bytes.fromString("db0")));
+        response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
 
     }
@@ -221,24 +224,22 @@ public class ExecutorsTest {
     public void testCreateDB() {
         Session session = newSession();
 
-        Response response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDB(Bytes.fromString("db0")));
+        Response response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDatabase(Bytes.fromString("db0")));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
 
-        response = execute(session, new UseExecutor(), KVDBMessage.use(Bytes.fromString("db0")));
+        response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
     }
 
     @Test
-    @Ignore
-    public void testInfo() throws RocksDBException {
+    public void testClusterInfo() throws RocksDBException {
         Session session = newSessionWithTestDB();
 
-        Response response = execute(session, new InfoExecutor(), KVDBMessage.info());
+        Response response = execute(session, new ClusterInfoExecutor(), KVDBMessage.clusterInfo());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
-        Info info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), Info.class);
+        Assert.assertEquals(2, response.getResult().length);
+        ClusterInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class);
         Assert.assertNotNull(info);
-        Assert.assertTrue(info.isClusterMode());
-        Assert.assertEquals(1, info.getCluster().length);
     }
 
 }

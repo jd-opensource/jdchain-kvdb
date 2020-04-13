@@ -2,10 +2,12 @@ package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.utils.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 
+@Ignore
 public class ServerTest {
 
     @Test

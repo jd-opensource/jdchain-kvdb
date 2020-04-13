@@ -18,7 +18,7 @@ public class ShowDatabasesExecutor implements Executor {
     public Message execute(Request request) {
         try {
             LOGGER.debug("execute show databases");
-            Map<String, KVDBInstance> dbs = request.getServerContext().getDBs();
+            Map<String, KVDBInstance> dbs = request.getServerContext().getDatabases();
             Bytes[] names = new Bytes[dbs.size()];
             int i = 0;
             for (String name : dbs.keySet()) {

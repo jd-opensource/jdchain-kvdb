@@ -10,6 +10,11 @@ public class KVDBClusterInfo implements ClusterInfo {
     // Cluster URLs
     private String[] urls;
 
+    public KVDBClusterInfo(String name, String[] urls) {
+        this.name = name;
+        this.urls = urls;
+    }
+
     @Override
     public String getName() {
         return name;

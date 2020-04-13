@@ -16,11 +16,9 @@ public class ClusterConfig {
     private static final String PROPERTITY_SEPARATOR = ".";
     private static final String PROPERTITY_PARTITIONS = "partitions";
 
-    private String configFile;
     private Map<String, String[]> cluster = new TreeMap<>();
 
     public ClusterConfig(String configFile) throws IOException {
-        this.configFile = configFile;
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
         Set<String> clusterNames = new HashSet<>();

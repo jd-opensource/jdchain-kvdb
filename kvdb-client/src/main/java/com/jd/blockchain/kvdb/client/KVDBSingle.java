@@ -1,7 +1,9 @@
 package com.jd.blockchain.kvdb.client;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
-import com.jd.blockchain.kvdb.protocol.*;
+import com.jd.blockchain.kvdb.protocol.Constants;
+import com.jd.blockchain.kvdb.protocol.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.Message;
+import com.jd.blockchain.kvdb.protocol.Response;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
@@ -20,67 +22,8 @@ public class KVDBSingle implements KVDBOperator {
         this.client = client;
     }
 
-    public Response send(Message message) throws KVDBException {
+    private Response send(Message message) throws KVDBException {
         return client.send(message);
-    }
-
-    @Override
-    public void close() {
-        client.stop();
-    }
-
-    @Override
-    public boolean use(String db) throws KVDBException {
-        Response response = send(KVDBMessage.use(Bytes.fromString(db)));
-        if (null == response) {
-            throw new KVDBTimeoutException("time out");
-        } else if (response.getCode() == Constants.ERROR) {
-            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean createDatabase(String db) throws KVDBException {
-        Response response = send(KVDBMessage.createDB(Bytes.fromString(db)));
-        if (null == response) {
-            throw new KVDBTimeoutException("time out");
-        } else if (response.getCode() == Constants.ERROR) {
-            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
-        }
-
-        return true;
-    }
-
-    @Override
-    public Info info() throws KVDBException {
-        Response response = send(KVDBMessage.info());
-        if (null == response) {
-            throw new KVDBTimeoutException("time out");
-        } else if (response.getCode() == Constants.ERROR) {
-            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
-        }
-
-        return BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), Info.class);
-    }
-
-    @Override
-    public String[] showDatabases() throws KVDBException {
-        Response response = send(KVDBMessage.showDBs());
-        if (null == response) {
-            throw new KVDBTimeoutException("time out");
-        } else if (response.getCode() == Constants.ERROR) {
-            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
-        }
-
-        Bytes[] dbs = response.getResult();
-        String[] names = new String[dbs.length];
-        for (int i = 0; i < dbs.length; i++) {
-            names[i] = BytesUtils.toString(dbs[i].toBytes());
-        }
-
-        return names;
     }
 
     @Override

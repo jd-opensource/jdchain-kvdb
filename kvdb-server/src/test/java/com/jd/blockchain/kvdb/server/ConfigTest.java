@@ -17,7 +17,6 @@ public class ConfigTest {
         Assert.assertEquals(7078, config.getPort());
         Assert.assertEquals("../dbs", config.getDbsRootdir());
         Assert.assertEquals(4, config.getDbsPartitions());
-        Assert.assertFalse(config.isClusterMode());
     }
 
     @Test
@@ -34,7 +33,7 @@ public class ConfigTest {
     public void testClusterConfig() throws IOException {
         ClusterConfig config = new ClusterConfig(this.getClass().getResource("/config/cluster.conf").getFile());
         Assert.assertEquals(2, config.getCluster().size());
-        Assert.assertEquals(2, config.getCluster().get("test").length);
+        Assert.assertEquals(2, config.getCluster().get("test1").length);
     }
 
 }

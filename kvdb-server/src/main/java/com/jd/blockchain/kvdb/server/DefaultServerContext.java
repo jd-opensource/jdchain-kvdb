@@ -1,12 +1,11 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.Command;
-import com.jd.blockchain.kvdb.protocol.Message;
+import com.jd.blockchain.kvdb.protocol.*;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
-import com.jd.blockchain.kvdb.server.executor.UnknowExecutor;
+import com.jd.blockchain.utils.StringUtils;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +28,21 @@ public class DefaultServerContext implements ServerContext {
 
     // Hold all the databases
     private final Map<String, KVDBInstance> rocksdbs;
+    private Map<String, ClusterInfo> clusterInfoMapping;
+    private Map<String, String> dbClusterMapping;
 
 
     public DefaultServerContext(ServerConfig config) throws RocksDBException, IOException {
         this.config = config;
         rocksdbs = KVDB.initDBs(config.getDbList());
+        clusterInfoMapping = config.getClusterMapping();
+        dbClusterMapping = new HashMap<>();
+        for (Map.Entry<String, ClusterInfo> entry : clusterInfoMapping.entrySet()) {
+            for (String url : entry.getValue().getURLs()) {
+                KVDBURI uri = new KVDBURI(url);
+                dbClusterMapping.put(uri.getDatabase(), entry.getKey());
+            }
+        }
     }
 
     public ServerConfig getConfig() {
@@ -45,20 +54,22 @@ public class DefaultServerContext implements ServerContext {
     }
 
     public Executor getExecutor(String command) {
-        return executors.get(command);
+        Executor executor = executors.get(command.toLowerCase());
+
+        return null != executor ? executor : executors.get(Command.CommandType.UNKNOWN.getCommand().toLowerCase());
     }
 
     @Override
-    public Map<String, KVDBInstance> getDBs() {
+    public Map<String, KVDBInstance> getDatabases() {
         return rocksdbs;
     }
 
     @Override
-    public KVDBInstance getDB(String name) {
+    public KVDBInstance getDatabase(String name) {
         return rocksdbs.get(name);
     }
 
-    public synchronized KVDBInstance createDB(String dbName) throws KVDBException, RocksDBException, IOException {
+    public synchronized KVDBInstance createDatabase(String dbName) throws KVDBException, RocksDBException, IOException {
         if (rocksdbs.containsKey(dbName)) {
             throw new KVDBException("database exists");
         }
@@ -68,6 +79,24 @@ public class DefaultServerContext implements ServerContext {
         rocksdbs.put(dbName, kvdbInstance);
 
         return kvdbInstance;
+    }
+
+    @Override
+    public DBInfo getDatabaseInfo(String database) {
+        KVDBInfo info = new KVDBInfo();
+        String cluster = dbClusterMapping.get(database);
+        if (StringUtils.isEmpty(cluster)) {
+            info.setClusterMode(false);
+        } else {
+            info.setClusterMode(true);
+            info.setCluster(clusterInfoMapping.get(cluster));
+        }
+        return info;
+    }
+
+    @Override
+    public ClusterInfo[] getClusterInfo() {
+        return clusterInfoMapping.values().toArray(new ClusterInfo[clusterInfoMapping.size()]);
     }
 
     public void stop() {
@@ -99,11 +128,7 @@ public class DefaultServerContext implements ServerContext {
 
     public void processCommand(String sourceKey, Message message) {
         Command command = (Command) message.getContent();
-        Executor executor = executors.get(command.getName());
-        if (null == executor) {
-            executor = new UnknowExecutor();
-        }
         Session session = getSession(sourceKey);
-        session.publish(executor.execute(new DefaultRequest(this, session, message)));
+        session.publish(executors.get(command.getName()).execute(new DefaultRequest(this, session, message)));
     }
 }

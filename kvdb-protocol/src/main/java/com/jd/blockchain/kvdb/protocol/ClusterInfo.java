@@ -4,7 +4,7 @@ import com.jd.blockchain.binaryproto.DataContract;
 import com.jd.blockchain.binaryproto.DataField;
 import com.jd.blockchain.binaryproto.PrimitiveType;
 
-@DataContract(code = Constants.INFO)
+@DataContract(code = Constants.CLUSTER_INFO)
 public interface ClusterInfo{
 
     @DataField(order = 0, primitiveType = PrimitiveType.TEXT)

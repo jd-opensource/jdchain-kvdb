@@ -31,24 +31,25 @@ public class ContextTest {
     public void test() {
         context.addExecutor(USE.getCommand(), new UseExecutor());
         context.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
-        context.addExecutor(INFO.getCommand(), new InfoExecutor());
+        context.addExecutor(CLUSTER_INFO.getCommand(), new ClusterInfoExecutor());
         context.addExecutor(EXISTS.getCommand(), new ExistsExecutor());
         context.addExecutor(GET.getCommand(), new GetExecutor());
         context.addExecutor(PUT.getCommand(), new PutExecutor());
         context.addExecutor(BATCH_BEGIN.getCommand(), new BatchBeginExecutor());
         context.addExecutor(BATCH_ABORT.getCommand(), new BatchAbortExecutor());
         context.addExecutor(BATCH_COMMIT.getCommand(), new BatchCommitExecutor());
+        context.addExecutor(UNKNOWN.getCommand(), new UnknowExecutor());
 
-        Assert.assertEquals(0, context.getClients());
         Assert.assertTrue(context.getExecutor(USE.getCommand()) instanceof UseExecutor);
         Assert.assertTrue(context.getExecutor(CREATE_DATABASE.getCommand()) instanceof CreateDatabaseExecutor);
-        Assert.assertTrue(context.getExecutor(INFO.getCommand()) instanceof InfoExecutor);
+        Assert.assertTrue(context.getExecutor(CLUSTER_INFO.getCommand()) instanceof ClusterInfoExecutor);
         Assert.assertTrue(context.getExecutor(EXISTS.getCommand()) instanceof ExistsExecutor);
         Assert.assertTrue(context.getExecutor(GET.getCommand()) instanceof GetExecutor);
         Assert.assertTrue(context.getExecutor(PUT.getCommand()) instanceof PutExecutor);
         Assert.assertTrue(context.getExecutor(BATCH_BEGIN.getCommand()) instanceof BatchBeginExecutor);
         Assert.assertTrue(context.getExecutor(BATCH_ABORT.getCommand()) instanceof BatchAbortExecutor);
         Assert.assertTrue(context.getExecutor(BATCH_COMMIT.getCommand()) instanceof BatchCommitExecutor);
+        Assert.assertTrue(context.getExecutor("test unknown") instanceof UnknowExecutor);
 
     }
 }

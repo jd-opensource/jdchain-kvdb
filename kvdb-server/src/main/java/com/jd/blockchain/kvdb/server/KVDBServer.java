@@ -38,6 +38,12 @@ public class KVDBServer implements KVDBHandler {
     private EventLoopGroup workerGroup;
     private ChannelFuture future;
 
+    /**
+     * Whether this server is ready to service.
+     * After cluster confirmed ready will be set to true.
+     */
+    private boolean ready = false;
+
     public KVDBServer(DefaultServerContext serverContext) {
         this.serverContext = serverContext;
         bindExecutors();
@@ -83,6 +89,8 @@ public class KVDBServer implements KVDBHandler {
         if (serverContext.getConfig().isClusterMode()) {
             clusterConfirm();
         }
+
+        ready = true;
     }
 
     private void clusterConfirm() {
@@ -210,6 +218,14 @@ public class KVDBServer implements KVDBHandler {
 
         LOGGER.debug("message received: {}", sourceKey);
 
-        serverContext.processCommand(sourceKey, message);
+        /**
+         * Only info command can be execute when the server has started but not ready.
+         * For the info command may be send in cluster confirming.
+         */
+        if (!ready && !((Command) message.getContent()).getName().equals(INFO.getCommand())) {
+            ctx.writeAndFlush(KVDBMessage.error(message.getId(), "server not ready"));
+        } else {
+            serverContext.processCommand(sourceKey, message);
+        }
     }
 }

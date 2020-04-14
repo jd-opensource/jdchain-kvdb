@@ -80,6 +80,9 @@ public class NettyClient implements KVDBHandler {
                 future.channel().close().syncUninterruptibly();
                 future = null;
             }
+            if (null != executorService) {
+                executorService.shutdown();
+            }
         } finally {
             if (workerGroup != null) {
                 workerGroup.shutdownGracefully().syncUninterruptibly();

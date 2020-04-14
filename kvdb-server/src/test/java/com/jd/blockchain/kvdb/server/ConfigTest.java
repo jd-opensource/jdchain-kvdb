@@ -23,15 +23,17 @@ public class ConfigTest {
     public void testDBListConfig() throws IOException {
         KVDBConfig kvdbConfig = new KVDBConfig(this.getClass().getResource("/config/kvdb.conf").getFile());
         DBList config = new DBList(this.getClass().getResource("/system/dblist").getFile(), kvdbConfig);
-        Assert.assertEquals(2, config.getDBInfos().length);
-        Assert.assertTrue(config.getDBInfos()[0].isEnable());
-        Assert.assertEquals("../dbs", config.getDBInfos()[0].getDbRootdir());
-        Assert.assertEquals(4, config.getDBInfos()[0].getPartitions());
+        Assert.assertEquals(2, config.getDatabaseArray().length);
+        Assert.assertTrue(config.getDatabaseArray()[0].isEnable());
+        Assert.assertEquals("../dbs", config.getDatabaseArray()[0].getDbRootdir());
+        Assert.assertEquals(4, config.getDatabaseArray()[0].getPartitions());
     }
 
     @Test
     public void testClusterConfig() throws IOException {
-        ClusterConfig config = new ClusterConfig(this.getClass().getResource("/config/cluster.conf").getFile());
+        KVDBConfig kvdbConfig = new KVDBConfig(this.getClass().getResource("/config/kvdb.conf").getFile());
+        DBList dbList = new DBList(this.getClass().getResource("/system/dblist").getFile(), kvdbConfig);
+        ClusterConfig config = new ClusterConfig(this.getClass().getResource("/config/cluster.conf").getFile(), dbList);
         Assert.assertEquals(2, config.getCluster().size());
         Assert.assertEquals(2, config.getCluster().get("test1").length);
     }

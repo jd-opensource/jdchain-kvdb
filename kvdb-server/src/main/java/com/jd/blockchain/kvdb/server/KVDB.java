@@ -34,7 +34,7 @@ public class KVDB {
     public static Map<String, KVDBInstance> initDBs(DBList dbList) throws RocksDBException {
         Map<String, KVDBInstance> dbs = new HashMap<>();
 
-        for (DBInfo config : dbList.getDBInfos()) {
+        for (DBInfo config : dbList.getDatabaseArray()) {
             if (config.isEnable()) {
                 String dbPath = config.getDbRootdir() + File.separator + config.getName();
                 FileUtils.makeDirectory(dbPath);

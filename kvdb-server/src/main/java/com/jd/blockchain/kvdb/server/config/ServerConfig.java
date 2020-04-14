@@ -34,8 +34,8 @@ public class ServerConfig {
             dblistFile = file.getAbsolutePath() + File.separator + SYSTEM_DIR + File.separator + DBLIST;
         }
         kvdbConfig = new KVDBConfig(kvdbConfigFile);
-        clusterConfig = new ClusterConfig(clusterConfigFile);
         dbList = new DBList(dblistFile, kvdbConfig);
+        clusterConfig = new ClusterConfig(clusterConfigFile, dbList);
     }
 
     /**

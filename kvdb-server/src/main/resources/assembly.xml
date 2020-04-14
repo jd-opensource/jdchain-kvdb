@@ -15,11 +15,6 @@
             <lineEnding>unix</lineEnding>
         </fileSet>
         <fileSet>
-            <directory>src/main/resources/</directory>
-            <outputDirectory>bin</outputDirectory>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-        <fileSet>
             <directory>src/main/resources/config</directory>
             <outputDirectory>config</outputDirectory>
             <lineEnding>unix</lineEnding>

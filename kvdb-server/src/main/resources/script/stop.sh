@@ -4,7 +4,7 @@
 HOME=$(cd `dirname $0`;cd ../; pwd)
 
 #进程启动后PID.log所在路径
-PID_LOG=$HOME/libs/pid
+PID_LOG=$HOME/system/pid
 
 #从启动文件中读取PID
 if [ -f "$PID_LOG" ]; then

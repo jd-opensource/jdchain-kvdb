@@ -4,7 +4,7 @@ HOME=$(cd `dirname $0`;cd ../; pwd)
 KVDB=$(ls $HOME/libs | grep kvdb-server)
 JVM_SET="-Xmx2g -Xms2g"
 PROC_INFO=$HOME/libs/$KVDB" -home "$HOME
-LOG_SET="-Dlogging.path="$HOME/logs
+LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=error"
 #echo $PROC_INFO
 #get PID
 PID=`ps -ef | grep "$PROC_INFO" | grep -v grep | awk '{print $2}'`

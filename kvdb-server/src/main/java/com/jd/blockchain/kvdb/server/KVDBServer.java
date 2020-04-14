@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import static com.jd.blockchain.kvdb.protocol.Command.CommandType.*;
 
@@ -112,7 +113,9 @@ public class KVDBServer implements KVDBHandler {
                         NettyClient client = null;
                         try {
                             LOGGER.info("cluster confirm {}", url);
-                            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()));
+                            CountDownLatch cdl = new CountDownLatch(1);
+                            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()), () -> cdl.countDown());
+                            cdl.await();
                             Response response = client.send(KVDBMessage.clusterInfo());
                             if (null == response || response.getCode() == Constants.ERROR) {
                                 ok = false;
@@ -143,10 +146,12 @@ public class KVDBServer implements KVDBHandler {
                     break;
                 }
             }
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                LOGGER.error("sleep interrupted", e);
+            if (!confirmed) {
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    LOGGER.error("sleep interrupted", e);
+                }
             }
         }
         LOGGER.info("cluster confirmed");

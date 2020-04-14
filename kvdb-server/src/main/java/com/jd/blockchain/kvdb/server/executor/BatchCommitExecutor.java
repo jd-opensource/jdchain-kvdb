@@ -21,7 +21,7 @@ public class BatchCommitExecutor implements Executor {
             try {
                 session.batchCommit();
                 return KVDBMessage.success(request.getId());
-            } catch (RocksDBException e) {
+            } catch (Exception e) {
                 LOGGER.debug("execute batch commit error", e);
                 return KVDBMessage.error(request.getId(), e.toString());
             }

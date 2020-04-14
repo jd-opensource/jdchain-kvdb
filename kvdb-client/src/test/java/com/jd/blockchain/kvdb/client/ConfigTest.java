@@ -15,7 +15,7 @@ public class ConfigTest {
         Assert.assertEquals(1024 * 1024, config.getBufferSize());
         Assert.assertEquals(5, config.getRetryTimes());
         Assert.assertTrue(config.getKeepAlive());
-        Assert.assertEquals("test", config.getDb());
+        Assert.assertEquals("test", config.getDatabase());
 
         config = new ClientConfig(new String[]{
                 "-h", "localhost",
@@ -31,6 +31,6 @@ public class ConfigTest {
         Assert.assertEquals(1024, config.getBufferSize());
         Assert.assertEquals(1, config.getRetryTimes());
         Assert.assertFalse(config.getKeepAlive());
-        Assert.assertEquals("10", config.getDb());
+        Assert.assertEquals("10", config.getDatabase());
     }
 }

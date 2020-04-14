@@ -18,6 +18,11 @@ public class PutExecutor implements Executor {
     @Override
     public Message execute(Request request) {
 
+        KVDBInstance db = request.getSession().getDBInstance();
+        if(null == db) {
+            return KVDBMessage.error(request.getId(), "no database selected");
+        }
+
         boolean batch = request.getSession().batchMode();
         Bytes[] kvs = request.getCommand().getParameters();
         if (kvs.length % 2 != 0) {
@@ -36,12 +41,11 @@ public class PutExecutor implements Executor {
                     });
                     i = i + 2;
                 }
-            } catch (RocksDBException e) {
+            } catch (Exception e) {
                 LOGGER.debug("execute put error", e);
                 return KVDBMessage.error(request.getId(), e.toString());
             }
         } else {
-            KVDBInstance db = request.getSession().getDBInstance();
             if (kvs.length == 2) {
                 try {
                     LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(kvs[0].toBytes()), kvs[1].toBytes());
@@ -51,7 +55,7 @@ public class PutExecutor implements Executor {
                     return KVDBMessage.error(request.getId(), e.toString());
                 }
             } else {
-                KVWriteBatch wb = request.getSession().getDBInstance().beginBatch();
+                KVWriteBatch wb = db.beginBatch();
                 try {
                     for (int i = 0; i < kvs.length; ) {
                         LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(kvs[i].toBytes()), kvs[i + 1].toBytes());

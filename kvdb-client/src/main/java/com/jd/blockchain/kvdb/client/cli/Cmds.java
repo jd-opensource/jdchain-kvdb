@@ -101,7 +101,7 @@ public class Cmds implements Quit.Command {
 
     @ShellMethod(group = "KVDB Commands",
             value = "Switch to the database with the specified name")
-    public String use(String name) throws KVDBException {
+    public String use(String name) throws KVDBException, InterruptedException {
         DBInfo info = client.use(name);
         StringBuilder builder = new StringBuilder();
         builder.append("mode: ");

@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.server.executor;
 
+import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
@@ -17,6 +18,10 @@ public class GetExecutor implements Executor {
     public Message execute(Request request) {
 
         try {
+            KVDBInstance db = request.getSession().getDBInstance();
+            if(null == db) {
+                return KVDBMessage.error(request.getId(), "no database selected");
+            }
             boolean batch = request.getSession().batchMode();
             Bytes[] keys = request.getCommand().getParameters();
             Bytes[] values = new Bytes[keys.length];
@@ -24,11 +29,11 @@ public class GetExecutor implements Executor {
                 final Bytes key = keys[i];
                 byte[] value;
                 if (!batch) {
-                    value = request.getSession().getDBInstance().get(key.toBytes());
+                    value = db.get(key.toBytes());
                 } else {
                     value = request.getSession().doInBatch((wb) -> wb.get(key));
                     if (null == value) {
-                        value = request.getSession().getDBInstance().get(key.toBytes());
+                        value = db.get(key.toBytes());
                     }
                 }
                 LOGGER.debug("execute get, key:{}, value:{}", BytesUtils.toString(key.toBytes()), value);
@@ -39,7 +44,7 @@ public class GetExecutor implements Executor {
                 }
             }
             return KVDBMessage.success(request.getId(), values);
-        } catch (RocksDBException e) {
+        } catch (Exception e) {
             LOGGER.error("execute get error", e);
             return KVDBMessage.error(request.getId(), e.toString());
         }

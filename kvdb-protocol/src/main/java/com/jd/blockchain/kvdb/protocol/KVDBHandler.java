@@ -6,7 +6,7 @@ import io.netty.channel.socket.SocketChannel;
 public interface KVDBHandler {
     void channel(SocketChannel channel);
 
-    void connected(ChannelHandlerContext ctx);
+    void connected(ChannelHandlerContext ctx) throws InterruptedException;
 
     void disconnected(ChannelHandlerContext ctx);
 

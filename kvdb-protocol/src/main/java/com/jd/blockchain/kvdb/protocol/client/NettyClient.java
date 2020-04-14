@@ -1,6 +1,7 @@
 package com.jd.blockchain.kvdb.protocol.client;
 
 import com.jd.blockchain.kvdb.protocol.*;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.Bytes;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -18,7 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class NettyClient implements KVDBHandler {
@@ -31,17 +33,23 @@ public class NettyClient implements KVDBHandler {
     private ChannelHandlerContext context;
 
     private final ClientConfig config;
-    private CountDownLatch contextReadyCdl;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ConnectedCallback connectedCallback;
 
     private ConcurrentHashMap<String, ChannelPromise> promises = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Response> responses = new ConcurrentHashMap<>();
 
     public NettyClient(ClientConfig config) {
+        this(config, null);
+    }
+
+    public NettyClient(ClientConfig config, ConnectedCallback connectedCallback) {
         this.config = config;
+        this.connectedCallback = connectedCallback;
         start();
     }
 
-    private void start() {
+    protected void start() {
         InternalLoggerFactory.setDefaultFactory(Log4J2LoggerFactory.INSTANCE);
         workerGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors());
         bootstrap = new Bootstrap().group(workerGroup)
@@ -54,19 +62,16 @@ public class NettyClient implements KVDBHandler {
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .handler(new KVDBInitializerHandler(this));
 
-        future = connect();
-
-        contextReadyCdl = new CountDownLatch(1);
-        try {
-            contextReadyCdl.await();
-        } catch (InterruptedException e) {
-            LOGGER.error("context countDownLatch");
-        }
+        future = connect().addListener((ChannelFutureListener) future -> {
+            if (!future.isSuccess()) {
+                future.channel().eventLoop().schedule(NettyClient.this::start, 1L, TimeUnit.SECONDS);
+            }
+        });
     }
 
     private ChannelFuture connect() {
         LOGGER.info("trying to connect");
-        return bootstrap.connect(config.getHost(), config.getPort()).syncUninterruptibly();
+        return bootstrap.connect(config.getHost(), config.getPort());
     }
 
     public void stop() {
@@ -85,8 +90,8 @@ public class NettyClient implements KVDBHandler {
 
     @Override
     public void channel(SocketChannel channel) {
-        LOGGER.info("connected to server: {}:{}", config.getHost(), config.getPort());
-        channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024 * 1024, 0, 4, 0, 4))
+        LOGGER.info("init channel: {}:{}", config.getHost(), config.getPort());
+        channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(config.getBufferSize(), 0, 4, 0, 4))
                 .addLast("kvdbDecoder", new KVDBDecoder())
                 .addLast(new LengthFieldPrepender(4, 0, false))
                 .addLast("kvdbEncoder", new KVDBEncoder())
@@ -97,8 +102,8 @@ public class NettyClient implements KVDBHandler {
     public void connected(ChannelHandlerContext ctx) {
         LOGGER.info("channel active");
         this.context = ctx;
-        if (contextReadyCdl.getCount() > 0) {
-            contextReadyCdl.countDown();
+        if (null != connectedCallback) {
+            executorService.submit(() -> connectedCallback.onConnected());
         }
     }
 
@@ -128,6 +133,9 @@ public class NettyClient implements KVDBHandler {
     }
 
     public Response send(Message message) {
+        if (context == null) {
+            throw new KVDBException("channel context not ready");
+        }
         ChannelPromise promise = this.context.newPromise();
         promises.put(message.getId(), promise);
         writeAndFlush(message);
@@ -156,7 +164,9 @@ public class NettyClient implements KVDBHandler {
     }
 
     private void writeAndFlush(Object message) {
-        context.writeAndFlush(message);
+        if (context != null) {
+            context.writeAndFlush(message);
+        }
     }
 
 }

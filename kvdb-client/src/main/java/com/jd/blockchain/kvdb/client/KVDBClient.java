@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class KVDBClient implements KVDBOperator {
 
@@ -29,50 +30,93 @@ public class KVDBClient implements KVDBOperator {
 
     public KVDBClient(ClientConfig config) throws KVDBException {
         this.config = config;
-        clients.put(config.getHost() + config.getPort(), new NettyClient(config));
-        use(config.getDb());
+        start();
+    }
+
+    private void start() {
+        clients.put(config.getHost() + config.getPort(), newNettyClient(config));
+        if (!StringUtils.isEmpty(config.getDatabase())) {
+            use(config.getDatabase());
+        }
+    }
+
+    private void restart() {
+        close();
+        start();
+    }
+
+    private NettyClient newNettyClient(ClientConfig config) {
+        CountDownLatch cdl = new CountDownLatch(1);
+        NettyClient client = new NettyClient(config, () -> {
+            if (cdl.getCount() > 0) {
+                cdl.countDown();
+            } else {
+                restart();
+            }
+        });
+        try {
+            cdl.await();
+        } catch (InterruptedException e) {
+            LOGGER.error(e.toString());
+        }
+        return client;
     }
 
     public void close() {
         for (Map.Entry<String, NettyClient> entry : clients.entrySet()) {
             entry.getValue().stop();
         }
+        clients.clear();
     }
 
     public synchronized DBInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
-            return null;
+            throw new KVDBException("database is empty");
         }
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.use(db));
-        DBInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DBInfo.class);
-        if (info.isClusterMode()) {
-            NettyClient[] selectedClients = new NettyClient[info.getCluster().getURLs().length];
-            for (int i = 0; i < info.getCluster().getURLs().length; i++) {
-                KVDBURI uri = new KVDBURI(info.getCluster().getURLs()[i]);
-                if ((uri.getHost().equals(config.getHost()) || (KVDBURI.isLocalhost(uri.getHost()) && KVDBURI.isLocalhost(config.getHost())))
-                        && uri.getPort() == config.getPort()) {
-                    selectedClients[i] = clients.get(uri.getHost() + uri.getPort());
-                    continue;
-                }
-                NettyClient client;
-                if (!clients.containsKey(uri.getHost() + uri.getPort())) {
-                    client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()));
-                    clients.put(uri.getHost() + uri.getPort(), client);
-                } else {
-                    client = clients.get(uri.getHost() + uri.getPort());
-                }
-                client.send(KVDBMessage.use(uri.getDatabase()));
-                selectedClients[i] = client;
-            }
-            operator = new KVDBCluster(selectedClients);
-        } else {
-            operator = new KVDBSingle(clients.get(config.getHost() + config.getPort()));
+        if (null == response) {
+            throw new KVDBTimeoutException("time out");
+        } else if (response.getCode() == Constants.ERROR) {
+            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
         }
+        try {
+            DBInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DBInfo.class);
+            config.setDatabase(db);
+            if (info.isClusterMode()) {
+                NettyClient[] selectedClients = new NettyClient[info.getCluster().getURLs().length];
+                for (int i = 0; i < info.getCluster().getURLs().length; i++) {
+                    KVDBURI uri = new KVDBURI(info.getCluster().getURLs()[i]);
+                    if ((uri.getHost().equals(config.getHost()) || (KVDBURI.isLocalhost(uri.getHost()) && KVDBURI.isLocalhost(config.getHost())))
+                            && uri.getPort() == config.getPort()) {
+                        selectedClients[i] = clients.get(uri.getHost() + uri.getPort());
+                        continue;
+                    }
+                    NettyClient nettyClient;
+                    if (!clients.containsKey(uri.getHost() + uri.getPort())) {
+                        nettyClient = newNettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()));
+                        clients.put(uri.getHost() + uri.getPort(), nettyClient);
+                    } else {
+                        nettyClient = clients.get(uri.getHost() + uri.getPort());
+                    }
+                    nettyClient.send(KVDBMessage.use(uri.getDatabase()));
+                    selectedClients[i] = nettyClient;
+                }
+                operator = new KVDBCluster(selectedClients);
+            } else {
+                operator = new KVDBSingle(clients.get(config.getHost() + config.getPort()));
+            }
 
-        return info;
+            return info;
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            throw new KVDBException(!StringUtils.isEmpty(msg) ? msg : e.toString());
+        }
     }
 
     public boolean createDatabase(String db) throws KVDBException {
+        if (StringUtils.isEmpty(db)) {
+            throw new KVDBException("database is empty");
+        }
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.createDatabase(Bytes.fromString(db)));
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -85,6 +129,11 @@ public class KVDBClient implements KVDBOperator {
 
     public ClusterInfo[] clusterInfo() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.clusterInfo());
+        if (null == response) {
+            throw new KVDBTimeoutException("time out");
+        } else if (response.getCode() == Constants.ERROR) {
+            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
+        }
         Bytes[] clusterInfos = response.getResult();
         ClusterInfo[] infos = new ClusterInfo[clusterInfos.length];
         for (int i = 0; i < clusterInfos.length; i++) {
@@ -112,41 +161,65 @@ public class KVDBClient implements KVDBOperator {
 
     @Override
     public boolean exists(Bytes key) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.exists(key);
     }
 
     @Override
     public boolean[] exists(Bytes... keys) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.exists(keys);
     }
 
     @Override
     public Bytes get(Bytes key) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.get(key);
     }
 
     @Override
     public Bytes[] get(Bytes... keys) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.get(keys);
     }
 
     @Override
     public boolean put(Bytes... kvs) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.put(kvs);
     }
 
     @Override
     public boolean batchBegin() throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.batchBegin();
     }
 
     @Override
     public boolean batchAbort() throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.batchAbort();
     }
 
     @Override
     public boolean batchCommit() throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no databases selected");
+        }
         return operator.batchCommit();
     }
 }

@@ -10,7 +10,7 @@ import org.junit.Test;
 public class CommandTest {
 
     @Test
-    public void test() throws KVDBException, InterruptedException {
+    public void test() throws KVDBException {
         KVDBClient client = new KVDBClient(new ClientConfig("localhost", 7078, "test"));
         ClusterInfo[] info = client.clusterInfo();
         System.out.println(info);

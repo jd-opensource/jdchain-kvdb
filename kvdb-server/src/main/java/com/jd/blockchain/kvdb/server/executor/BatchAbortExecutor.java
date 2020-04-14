@@ -19,7 +19,7 @@ public class BatchAbortExecutor implements Executor {
         try {
             request.getSession().batchAbort();
             return KVDBMessage.success(request.getId());
-        } catch (RocksDBException e) {
+        } catch (Exception e) {
             LOGGER.debug("execute batch abort error", e);
             return KVDBMessage.error(request.getId(), e.toString());
         }

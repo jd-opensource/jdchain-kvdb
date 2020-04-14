@@ -19,7 +19,7 @@ public class BatchBeginExecutor implements Executor {
         try {
             request.getSession().batchBegin();
             return KVDBMessage.success(request.getId());
-        } catch (RocksDBException e) {
+        } catch (Exception e) {
             LOGGER.debug("execute batch begin error", e);
             return KVDBMessage.error(request.getId(), e.toString());
         }

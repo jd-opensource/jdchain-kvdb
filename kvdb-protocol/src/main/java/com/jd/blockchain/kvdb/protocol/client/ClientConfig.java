@@ -132,11 +132,11 @@ public class ClientConfig {
         this.keepAlive = keepAlive;
     }
 
-    public String getDb() {
+    public String getDatabase() {
         return db;
     }
 
-    public void setDb(String db) {
+    public void setDatabase(String db) {
         this.db = db;
     }
 }

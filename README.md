@@ -73,7 +73,7 @@ cluster.<name>.2=kvdb://homt:port/<dbname>
 #cluster.<name1>.partitions=3
 ...
 ```
-> 一个数据库实例只能加入唯一的集群；一旦加入集群，则不能再被客户端以单库连接方式访问，对该库实例的连接自动转为集群连接。
+> 一个数据库实例只能加入唯一的集群；一旦加入集群，则不能再被客户端以单库连接方式访问，对该库实例的连接自动转为集群连接。集群中配置的数据库必须在`dblist`中已存在且设置为`true`
 
 #### `dblist`
 ```bash
@@ -88,6 +88,26 @@ cluster.<name>.2=kvdb://homt:port/<dbname>
 # db.test.partitions=
 ```
 > `dblist`中配置的数据库会在`kvdb-server`启动时自动创建。在`kvdb-server`启动完成后由客户端执行`create database <name>`创建数据库，创建成功的数据库会追加到`dblist`中。
+
+#### 日志
+
+1. `kvdb-server`
+
+修改`bin`目录下，`start.sh`文件：
+```bash
+LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=error"
+```
+默认日志路径：程序解压缩后主目录下`logs`目录
+默认日志登记：`error`
+
+2. `kvdb-cli`
+
+修改`bin`目录下，`kvdb-cli.sh`文件：
+```bash
+LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level.root=error"
+```
+默认日志路径：程序解压缩后主目录下`logs`目录
+默认日志登记：`error`
 
 #### 启动
 
@@ -200,4 +220,3 @@ KVDB Commands
         show databases: Show databases
         use: Switch to the database with the specified name
 ```
-> `0.6.0`版本`kvdb-cli`仅支持单键值对操作。

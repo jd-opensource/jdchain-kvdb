@@ -28,7 +28,7 @@ public class DefaultServerContext implements ServerContext {
 
     // Hold all the databases
     private final Map<String, KVDBInstance> rocksdbs;
-    private Map<String, ClusterInfo> clusterInfoMapping;
+    private Map<String, ClusterItem> clusterInfoMapping;
     private Map<String, String> dbClusterMapping;
 
 
@@ -37,7 +37,7 @@ public class DefaultServerContext implements ServerContext {
         rocksdbs = KVDB.initDBs(config.getDbList());
         clusterInfoMapping = config.getClusterMapping();
         dbClusterMapping = new HashMap<>();
-        for (Map.Entry<String, ClusterInfo> entry : clusterInfoMapping.entrySet()) {
+        for (Map.Entry<String, ClusterItem> entry : clusterInfoMapping.entrySet()) {
             for (String url : entry.getValue().getURLs()) {
                 KVDBURI uri = new KVDBURI(url);
                 dbClusterMapping.put(uri.getDatabase(), entry.getKey());
@@ -82,21 +82,21 @@ public class DefaultServerContext implements ServerContext {
     }
 
     @Override
-    public DBInfo getDatabaseInfo(String database) {
-        KVDBInfo info = new KVDBInfo();
+    public DatabaseInfo getDatabaseInfo(String database) {
+        KVDBDatabaseInfo info = new KVDBDatabaseInfo();
         String cluster = dbClusterMapping.get(database);
         if (StringUtils.isEmpty(cluster)) {
             info.setClusterMode(false);
         } else {
             info.setClusterMode(true);
-            info.setCluster(clusterInfoMapping.get(cluster));
+            info.setClusterItem(clusterInfoMapping.get(cluster));
         }
         return info;
     }
 
     @Override
-    public ClusterInfo[] getClusterInfo() {
-        return clusterInfoMapping.values().toArray(new ClusterInfo[clusterInfoMapping.size()]);
+    public ClusterInfo getClusterInfo() {
+        return new KVDBClusterInfo(clusterInfoMapping.values().toArray(new ClusterItem[clusterInfoMapping.size()]));
     }
 
     public void stop() {

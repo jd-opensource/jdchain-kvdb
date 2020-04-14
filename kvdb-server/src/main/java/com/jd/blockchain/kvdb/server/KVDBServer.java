@@ -6,7 +6,6 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.server.config.ClusterConfig;
 import com.jd.blockchain.kvdb.server.executor.*;
-import com.jd.blockchain.utils.Bytes;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -97,13 +96,13 @@ public class KVDBServer implements KVDBHandler {
     private void clusterConfirm() {
         boolean confirmed = false;
         LOGGER.info("cluster confirming ... ");
-        ClusterInfo[] localClusterInfo = serverContext.getConfig().getClusterInfoList();
-        if (localClusterInfo.length == 0) {
+        ClusterItem[] localClusterItems = serverContext.getClusterInfo().getClusterItems();
+        if (localClusterItems.length == 0) {
             return;
         }
         while (!confirmed) {
             Set<String> confirmedHosts = new HashSet<>();
-            for (ClusterInfo entry : localClusterInfo) {
+            for (ClusterItem entry : localClusterItems) {
                 boolean ok = true;
                 for (String url : entry.getURLs()) {
                     KVDBURI uri = new KVDBURI(url);
@@ -121,12 +120,7 @@ public class KVDBServer implements KVDBHandler {
                                 ok = false;
                                 break;
                             }
-                            Bytes[] clusterInfos = response.getResult();
-                            ClusterInfo[] infos = new ClusterInfo[clusterInfos.length];
-                            for (int i = 0; i < clusterInfos.length; i++) {
-                                infos[i] = BinaryProtocol.decodeAs(clusterInfos[i].toBytes(), ClusterInfo.class);
-                            }
-                            if (!ClusterConfig.equals(localClusterInfo, infos)) {
+                            if (!ClusterConfig.equals(localClusterItems, BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class).getClusterItems())) {
                                 ok = false;
                                 break;
                             }

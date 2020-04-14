@@ -1,7 +1,9 @@
 package com.jd.blockchain.kvdb.server.config;
 
 import com.jd.blockchain.kvdb.protocol.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.KVDBClusterInfo;
+import com.jd.blockchain.kvdb.protocol.KVDBClusterItem;
 import com.jd.blockchain.utils.StringUtils;
 
 import java.io.File;
@@ -50,25 +52,25 @@ public class ServerConfig {
      *
      * @return
      */
-    public Map<String, ClusterInfo> getClusterMapping() {
-        Map<String, ClusterInfo> clusterMapping = new HashMap<>();
+    public Map<String, ClusterItem> getClusterMapping() {
+        Map<String, ClusterItem> clusterMapping = new HashMap<>();
         for (Map.Entry<String, String[]> cluster : clusterConfig.getCluster().entrySet()) {
-            clusterMapping.put(cluster.getKey(), new KVDBClusterInfo(cluster.getKey(), cluster.getValue()));
+            clusterMapping.put(cluster.getKey(), new KVDBClusterItem(cluster.getKey(), cluster.getValue()));
         }
 
         return clusterMapping;
     }
 
-    public ClusterInfo[] getClusterInfoList() {
+    public ClusterInfo getClusterInfoList() {
         Map<String, String[]> clusterMapping = clusterConfig.getCluster();
-        ClusterInfo[] clusterInfos = new ClusterInfo[clusterMapping.size()];
+        ClusterItem[] clusterItems = new ClusterItem[clusterMapping.size()];
         int i = 0;
         for (Map.Entry<String, String[]> cluster : clusterMapping.entrySet()) {
-            clusterInfos[i] = new KVDBClusterInfo(cluster.getKey(), cluster.getValue());
+            clusterItems[i] = new KVDBClusterItem(cluster.getKey(), cluster.getValue());
             i++;
         }
 
-        return clusterInfos;
+        return new KVDBClusterInfo(clusterItems);
     }
 
     public KVDBConfig getKvdbConfig() {

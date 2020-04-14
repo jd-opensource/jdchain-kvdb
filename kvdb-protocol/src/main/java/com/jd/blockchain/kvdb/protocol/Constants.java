@@ -17,4 +17,5 @@ public class Constants {
     public static final int RESPONSE = 3;
     public static final int INFO = 4;
     public static final int CLUSTER_INFO = 5;
+    public static final int CLUSTER_ITEM = 6;
 }

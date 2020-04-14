@@ -1,35 +1,24 @@
 package com.jd.blockchain.kvdb.protocol;
 
-/**
- * Cluster information
- */
 public class KVDBClusterInfo implements ClusterInfo {
 
-    // cluster name
-    private String name;
-    // Cluster URLs
-    private String[] urls;
+    private ClusterItem[] clusterItems;
 
-    public KVDBClusterInfo(String name, String[] urls) {
-        this.name = name;
-        this.urls = urls;
+    public KVDBClusterInfo(ClusterItem[] clusterItems) {
+        this.clusterItems = clusterItems;
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public int size() {
+        return clusterItems.length;
     }
 
     @Override
-    public String[] getURLs() {
-        return urls;
+    public ClusterItem[] getClusterItems() {
+        return clusterItems;
     }
 
-    public void setURLs(String[] urls) {
-        this.urls = urls;
+    public void setClusterItems(ClusterItem[] clusterItems) {
+        this.clusterItems = clusterItems;
     }
 }

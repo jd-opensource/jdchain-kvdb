@@ -69,7 +69,7 @@ public class KVDBClient implements KVDBOperator {
         clients.clear();
     }
 
-    public synchronized DBInfo use(String db) throws KVDBException {
+    public synchronized DatabaseInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
         }
@@ -80,12 +80,12 @@ public class KVDBClient implements KVDBOperator {
             throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
         }
         try {
-            DBInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DBInfo.class);
+            DatabaseInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseInfo.class);
             config.setDatabase(db);
             if (info.isClusterMode()) {
-                NettyClient[] selectedClients = new NettyClient[info.getCluster().getURLs().length];
-                for (int i = 0; i < info.getCluster().getURLs().length; i++) {
-                    KVDBURI uri = new KVDBURI(info.getCluster().getURLs()[i]);
+                NettyClient[] selectedClients = new NettyClient[info.getClusterItem().getURLs().length];
+                for (int i = 0; i < info.getClusterItem().getURLs().length; i++) {
+                    KVDBURI uri = new KVDBURI(info.getClusterItem().getURLs()[i]);
                     if ((uri.getHost().equals(config.getHost()) || (KVDBURI.isLocalhost(uri.getHost()) && KVDBURI.isLocalhost(config.getHost())))
                             && uri.getPort() == config.getPort()) {
                         selectedClients[i] = clients.get(uri.getHost() + uri.getPort());
@@ -127,19 +127,15 @@ public class KVDBClient implements KVDBOperator {
         return true;
     }
 
-    public ClusterInfo[] clusterInfo() throws KVDBException {
+    public ClusterItem[] clusterInfo() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.clusterInfo());
         if (null == response) {
             throw new KVDBTimeoutException("time out");
         } else if (response.getCode() == Constants.ERROR) {
             throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
         }
-        Bytes[] clusterInfos = response.getResult();
-        ClusterInfo[] infos = new ClusterInfo[clusterInfos.length];
-        for (int i = 0; i < clusterInfos.length; i++) {
-            infos[i] = BinaryProtocol.decodeAs(clusterInfos[i].toBytes(), ClusterInfo.class);
-        }
-        return infos;
+        ClusterInfo clusterInfo = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class);
+        return clusterInfo.getClusterItems();
     }
 
     public String[] showDatabases() throws KVDBException {

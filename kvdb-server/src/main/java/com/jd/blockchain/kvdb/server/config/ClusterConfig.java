@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.server.config;
 
-import com.jd.blockchain.kvdb.protocol.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.ClusterItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ public class ClusterConfig {
      * @param remoteCluster
      * @return
      */
-    public static boolean equals(ClusterInfo[] localCluster, ClusterInfo[] remoteCluster) {
+    public static boolean equals(ClusterItem[] localCluster, ClusterItem[] remoteCluster) {
         if (null == localCluster
                 || null == remoteCluster
                 || localCluster.length == 0

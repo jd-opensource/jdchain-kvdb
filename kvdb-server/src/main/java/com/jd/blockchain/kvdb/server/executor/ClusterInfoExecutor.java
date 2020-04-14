@@ -17,12 +17,8 @@ public class ClusterInfoExecutor implements Executor {
     public Message execute(Request request) {
         try {
             LOGGER.debug("execute cluster sync");
-            ClusterInfo[] infos = request.getServerContext().getClusterInfo();
-            Bytes[] clusters = new Bytes[infos.length];
-            for (int i = 0; i < infos.length; i++) {
-                clusters[i] = new Bytes(BinaryProtocol.encode(infos[i], ClusterInfo.class));
-            }
-            return KVDBMessage.success(request.getId(), clusters);
+            ClusterInfo info = request.getServerContext().getClusterInfo();
+            return KVDBMessage.success(request.getId(), new Bytes(BinaryProtocol.encode(info, ClusterInfo.class)));
         } catch (Exception e) {
             LOGGER.error("execute cluster sync", e);
             return KVDBMessage.error(request.getId(), e.toString());

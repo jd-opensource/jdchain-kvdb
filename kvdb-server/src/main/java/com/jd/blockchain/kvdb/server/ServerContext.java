@@ -2,7 +2,7 @@ package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.ClusterInfo;
-import com.jd.blockchain.kvdb.protocol.DBInfo;
+import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
@@ -25,7 +25,7 @@ public interface ServerContext {
 
     KVDBInstance createDatabase(String name) throws KVDBException, RocksDBException, IOException;
 
-    DBInfo getDatabaseInfo(String database);
+    DatabaseInfo getDatabaseInfo(String database);
 
-    ClusterInfo[] getClusterInfo();
+    ClusterInfo getClusterInfo();
 }

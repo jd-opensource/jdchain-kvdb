@@ -2,7 +2,7 @@ package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.DBInfo;
+import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.server.Request;
@@ -28,7 +28,7 @@ public class UseExecutor implements Executor {
                 if (null != kvdbInstance) {
                     request.getSession().setDB(db, kvdbInstance);
                     return KVDBMessage.success(request.getId(),
-                            new Bytes(BinaryProtocol.encode(request.getServerContext().getDatabaseInfo(db), DBInfo.class)));
+                            new Bytes(BinaryProtocol.encode(request.getServerContext().getDatabaseInfo(db), DatabaseInfo.class)));
                 } else {
                     return KVDBMessage.error(request.getId(), "db not exists");
                 }

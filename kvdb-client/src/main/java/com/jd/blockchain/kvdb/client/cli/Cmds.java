@@ -1,8 +1,8 @@
 package com.jd.blockchain.kvdb.client.cli;
 
 import com.jd.blockchain.kvdb.client.KVDBClient;
-import com.jd.blockchain.kvdb.protocol.ClusterInfo;
-import com.jd.blockchain.kvdb.protocol.DBInfo;
+import com.jd.blockchain.kvdb.protocol.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -32,7 +32,7 @@ public class Cmds implements Quit.Command {
             value = "Server cluster information.",
             key = "cluster info")
     public String clusterInfo() throws KVDBException {
-        ClusterInfo[] infos = client.clusterInfo();
+        ClusterItem[] infos = client.clusterInfo();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < infos.length; i++) {
             builder.append(infos[i].getName());
@@ -102,13 +102,13 @@ public class Cmds implements Quit.Command {
     @ShellMethod(group = "KVDB Commands",
             value = "Switch to the database with the specified name")
     public String use(String name) throws KVDBException, InterruptedException {
-        DBInfo info = client.use(name);
+        DatabaseInfo info = client.use(name);
         StringBuilder builder = new StringBuilder();
         builder.append("mode: ");
         builder.append(info.isClusterMode() ? "cluster" : "single");
         if (info.isClusterMode()) {
             builder.append("\n");
-            ClusterInfo cluster = info.getCluster();
+            ClusterItem cluster = info.getClusterItem();
             builder.append(cluster.getName());
             builder.append(": \n");
             String[] urls = cluster.getURLs();

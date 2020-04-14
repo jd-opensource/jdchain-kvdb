@@ -237,9 +237,9 @@ public class ExecutorsTest {
 
         Response response = execute(session, new ClusterInfoExecutor(), KVDBMessage.clusterInfo());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
-        Assert.assertEquals(2, response.getResult().length);
         ClusterInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class);
         Assert.assertNotNull(info);
+        Assert.assertEquals(2, info.size());
     }
 
 }

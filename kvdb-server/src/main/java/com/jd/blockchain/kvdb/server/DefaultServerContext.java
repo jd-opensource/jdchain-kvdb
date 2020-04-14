@@ -96,7 +96,7 @@ public class DefaultServerContext implements ServerContext {
 
     @Override
     public ClusterInfo getClusterInfo() {
-        return new KVDBClusterInfo(clusterInfoMapping.values().toArray(new ClusterItem[clusterInfoMapping.size()]));
+        return config.getClusterInfo();
     }
 
     public void stop() {

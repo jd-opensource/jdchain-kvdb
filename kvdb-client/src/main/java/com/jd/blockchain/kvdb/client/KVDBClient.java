@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class KVDBClient implements KVDBOperator {
 
@@ -55,7 +56,7 @@ public class KVDBClient implements KVDBOperator {
             }
         });
         try {
-            cdl.await();
+            cdl.await(config.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             LOGGER.error(e.toString());
         }
@@ -86,8 +87,7 @@ public class KVDBClient implements KVDBOperator {
                 NettyClient[] selectedClients = new NettyClient[info.getClusterItem().getURLs().length];
                 for (int i = 0; i < info.getClusterItem().getURLs().length; i++) {
                     KVDBURI uri = new KVDBURI(info.getClusterItem().getURLs()[i]);
-                    if ((uri.getHost().equals(config.getHost()) || (KVDBURI.isLocalhost(uri.getHost()) && KVDBURI.isLocalhost(config.getHost())))
-                            && uri.getPort() == config.getPort()) {
+                    if (uri.isLocalhost() && uri.getPort() == config.getPort()) {
                         selectedClients[i] = clients.get(uri.getHost() + uri.getPort());
                         continue;
                     }

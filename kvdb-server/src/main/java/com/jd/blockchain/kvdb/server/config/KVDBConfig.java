@@ -1,16 +1,11 @@
 package com.jd.blockchain.kvdb.server.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
 public class KVDBConfig {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(KVDBConfig.class);
 
     private static final String DEFAULT_DB_PATH = "dbs";
     private static final String DEFAULT_HOST = "0.0.0.0";

@@ -4,7 +4,6 @@ import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.*;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
-import com.jd.blockchain.kvdb.server.config.ClusterConfig;
 import com.jd.blockchain.kvdb.server.executor.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -26,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.jd.blockchain.kvdb.protocol.Command.CommandType.*;
 
@@ -33,6 +33,7 @@ public class KVDBServer implements KVDBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBServer.class);
 
+    private static final int CLUSTER_CONFIRM_TIME_OUT = 3000;
     private final DefaultServerContext serverContext;
 
     private EventLoopGroup bossGroup;
@@ -91,64 +92,6 @@ public class KVDBServer implements KVDBHandler {
         clusterConfirm();
 
         ready = true;
-    }
-
-    private void clusterConfirm() {
-        boolean confirmed = false;
-        LOGGER.info("cluster confirming ... ");
-        ClusterItem[] localClusterItems = serverContext.getClusterInfo().getClusterItems();
-        if (localClusterItems.length == 0) {
-            return;
-        }
-        while (!confirmed) {
-            Set<String> confirmedHosts = new HashSet<>();
-            for (ClusterItem entry : localClusterItems) {
-                boolean ok = true;
-                for (String url : entry.getURLs()) {
-                    KVDBURI uri = new KVDBURI(url);
-                    // Skip self and confirmed
-                    if (!(KVDBURI.isLocalhost(uri.getHost()) && uri.getPort() == serverContext.getConfig().getKvdbConfig().getPort())
-                            && !confirmedHosts.contains(uri.getHost() + uri.getPort())) {
-                        NettyClient client = null;
-                        try {
-                            LOGGER.info("cluster confirm {}", url);
-                            CountDownLatch cdl = new CountDownLatch(1);
-                            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()), () -> cdl.countDown());
-                            cdl.await();
-                            Response response = client.send(KVDBMessage.clusterInfo());
-                            if (null == response || response.getCode() == Constants.ERROR) {
-                                ok = false;
-                                break;
-                            }
-                            if (!ClusterConfig.equals(localClusterItems, BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class).getClusterItems())) {
-                                ok = false;
-                                break;
-                            }
-                            confirmedHosts.add(uri.getHost() + uri.getPort());
-                        } catch (Exception e) {
-                            ok = false;
-                            LOGGER.error("cluster confirm {} error", url, e);
-                        } finally {
-                            if (null != client) {
-                                client.stop();
-                            }
-                        }
-                    }
-                }
-                confirmed = ok;
-                if (!ok) {
-                    break;
-                }
-            }
-            if (!confirmed) {
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    LOGGER.error("sleep interrupted", e);
-                }
-            }
-        }
-        LOGGER.info("cluster confirmed");
     }
 
     public void stop() {
@@ -226,6 +169,68 @@ public class KVDBServer implements KVDBHandler {
             ctx.writeAndFlush(KVDBMessage.error(message.getId(), "server not ready"));
         } else {
             serverContext.processCommand(sourceKey, message);
+        }
+    }
+
+    private void clusterConfirm() {
+        boolean confirmed = false;
+        LOGGER.info("cluster confirming ... ");
+        ClusterInfo localClusterInfo = serverContext.getClusterInfo();
+        if (localClusterInfo.size() == 0) {
+            return;
+        }
+        while (!confirmed) {
+            Set<String> confirmedHosts = new HashSet<>();
+            for (ClusterItem entry : localClusterInfo.getClusterItems()) {
+                boolean ok = true;
+                for (String url : entry.getURLs()) {
+                    KVDBURI uri = new KVDBURI(url);
+                    if (!(uri.isLocalhost() && uri.getPort() == serverContext.getConfig().getKvdbConfig().getPort())
+                            && !confirmedHosts.contains(uri.getHost() + uri.getPort())) {
+                        ok = confirmServer(localClusterInfo, uri);
+                        if (ok) {
+                            confirmedHosts.add(uri.getHost() + uri.getPort());
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                confirmed = ok;
+                if (!ok) {
+                    break;
+                }
+            }
+            if (!confirmed) {
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    LOGGER.error("sleep interrupted", e);
+                }
+            }
+        }
+        LOGGER.info("cluster confirmed");
+    }
+
+    private boolean confirmServer(ClusterInfo localClusterInfo, KVDBURI uri) {
+        NettyClient client = null;
+        try {
+            LOGGER.info("cluster confirm {}", uri.getOrigin());
+            CountDownLatch cdl = new CountDownLatch(1);
+            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()), () -> cdl.countDown());
+            cdl.await(CLUSTER_CONFIRM_TIME_OUT, TimeUnit.MILLISECONDS);
+            Response response = client.send(KVDBMessage.clusterInfo());
+            if (null == response || response.getCode() == Constants.ERROR) {
+                return false;
+            }
+
+            return localClusterInfo.match(serverContext.getConfig().getKvdbConfig().getPort(), uri, BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class));
+        } catch (Exception e) {
+            LOGGER.error("cluster confirm {} error", uri.getOrigin(), e);
+            return false;
+        } finally {
+            if (null != client) {
+                client.stop();
+            }
         }
     }
 }

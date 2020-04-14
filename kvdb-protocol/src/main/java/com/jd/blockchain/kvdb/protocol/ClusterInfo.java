@@ -12,4 +12,14 @@ public interface ClusterInfo {
 
     @DataField(order = 2, list = true, refContract = true)
     ClusterItem[] getClusterItems();
+
+    /**
+     * 匹配集群配置
+     *
+     * @param localPort
+     * @param remoteURI
+     * @param remoteClusterInfo
+     * @return
+     */
+    boolean match(int localPort, KVDBURI remoteURI, ClusterInfo remoteClusterInfo);
 }

@@ -39,15 +39,6 @@ public class ServerConfig {
     }
 
     /**
-     * Return db information config in dblist
-     *
-     * @return
-     */
-    public DBInfo[] getDBInfos() {
-        return dbList.getDBInfos();
-    }
-
-    /**
      * Return cluster information config in cluster.conf
      *
      * @return
@@ -61,7 +52,7 @@ public class ServerConfig {
         return clusterMapping;
     }
 
-    public ClusterInfo getClusterInfoList() {
+    public ClusterInfo getClusterInfo() {
         Map<String, String[]> clusterMapping = clusterConfig.getCluster();
         ClusterItem[] clusterItems = new ClusterItem[clusterMapping.size()];
         int i = 0;

@@ -8,8 +8,9 @@ public class URITest {
 
     @Test
     public void test() {
-        Assert.assertTrue(KVDBURI.isLocalhost("localhost"));
-        Assert.assertTrue(KVDBURI.isLocalhost("127.0.0.1"));
-//        Assert.assertTrue(KVDBURI.isLocalhost("192.168.1.5"));
+        KVDBURI uri1 = new KVDBURI("kvdb://localhost/7078/test");
+        KVDBURI uri2 = new KVDBURI("kvdb://127.0.0.1/7078/test");
+        Assert.assertTrue(uri1.isLocalhost());
+        Assert.assertTrue(uri2.isLocalhost());
     }
 }

@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.server.config;
 
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,16 +23,18 @@ public class DBList {
     private static final String PROPERTITY_ROOTDIR = "rootdir";
     private static final String PROPERTITY_PARTITIONS = "partitions";
 
-    private String configFile;
     private DBInfo[] dbs;
 
     public DBList(String configFile, KVDBConfig kvdbConfig) throws IOException {
-        this.configFile = configFile;
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
         Set<String> dbNames = new HashSet<>();
         for (Object key : properties.keySet()) {
-            dbNames.add(((String) key).split("\\.")[1]);
+            String dbName = ((String) key).split("\\.")[1];
+            if (dbNames.contains(dbName)) {
+                throw new KVDBException("duplicate database name : " + dbName);
+            }
+            dbNames.add(dbName);
         }
         dbs = new DBInfo[dbNames.size()];
         int i = 0;

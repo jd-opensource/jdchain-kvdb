@@ -1,6 +1,8 @@
 package com.jd.blockchain.kvdb.protocol;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.URI;
 
 public class KVDBURI {
 
@@ -34,27 +36,20 @@ public class KVDBURI {
     }
 
     /**
-     * Localhost ip check
+     * 是否是本地地址
+     * TODO 待验证
      *
-     * @param host
      * @return
      */
-    public static boolean isLocalhost(String host) {
+    public boolean isLocalhost() {
         try {
-            return isLocalhost(InetAddress.getByName(host));
-        } catch (UnknownHostException e) {
-            return false;
-        }
-    }
-
-    private static boolean isLocalhost(InetAddress addr) {
-        if (addr.isAnyLocalAddress() || addr.isLoopbackAddress())
-            return true;
-
-        try {
+            InetAddress addr = InetAddress.getByName(getHost());
+            if (addr.isAnyLocalAddress() || addr.isLoopbackAddress())
+                return true;
             return NetworkInterface.getByInetAddress(addr) != null;
-        } catch (SocketException e) {
+        } catch (Exception e) {
             return false;
         }
+
     }
 }

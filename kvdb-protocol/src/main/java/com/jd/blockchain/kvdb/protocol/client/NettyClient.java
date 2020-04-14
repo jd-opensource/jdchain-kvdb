@@ -46,10 +46,6 @@ public class NettyClient implements KVDBHandler {
     public NettyClient(ClientConfig config, ConnectedCallback connectedCallback) {
         this.config = config;
         this.connectedCallback = connectedCallback;
-        start();
-    }
-
-    protected void start() {
         InternalLoggerFactory.setDefaultFactory(Log4J2LoggerFactory.INSTANCE);
         workerGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors());
         bootstrap = new Bootstrap().group(workerGroup)
@@ -61,7 +57,13 @@ public class NettyClient implements KVDBHandler {
                 .option(ChannelOption.SO_SNDBUF, config.getBufferSize())
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .handler(new KVDBInitializerHandler(this));
+        start();
+    }
 
+    protected void start() {
+        if (null != future) {
+            future.channel().closeFuture();
+        }
         future = connect().addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
                 future.channel().eventLoop().schedule(NettyClient.this::start, 1L, TimeUnit.SECONDS);

@@ -23,5 +23,5 @@ else
     echo "Start to kill PID = $PID ..."
     kill -9 $PID
     echo "kvdb has been stopped ..."
-    rm -rf $PID_LOG
+    echo "" > $PID_LOG
 fi

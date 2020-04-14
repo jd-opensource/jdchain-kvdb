@@ -1,0 +1,8 @@
+dP     dP dP     dP 888888ba   888888ba
+88   .d8' 88     88 88    `8b  88    `8b
+88aaa8P'  88    .8P 88     88 a88aaaa8P'
+88   `8b. 88    d8' 88     88  88   `8b.
+88     88 88  .d8P  88    .8P  88    .88
+dP     dP 888888'   8888888P   88888888P
+${application.version}
+ooooooooooooooooooooooooooooooooooooooooo

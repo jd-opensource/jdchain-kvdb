@@ -9,8 +9,6 @@ import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,8 +16,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class KVDBClient implements KVDBOperator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(KVDBClient.class);
 
     private ClientConfig config;
     private Map<String, NettyClient> clients = new HashMap<>();
@@ -58,7 +54,7 @@ public class KVDBClient implements KVDBOperator {
         try {
             cdl.await(config.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            LOGGER.error(e.toString());
+            throw new KVDBTimeoutException("new netty client timeout");
         }
         return client;
     }

@@ -2,6 +2,8 @@ package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.*;
+import com.jd.blockchain.kvdb.protocol.parameter.CreateDatabaseParam;
+import com.jd.blockchain.kvdb.protocol.parameter.KVDBCreateDatabaseParam;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.*;
 import com.jd.blockchain.utils.Bytes;
@@ -209,22 +211,16 @@ public class ExecutorsTest {
     public void testUse() {
         Session session = newSession();
 
-        Response response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));
-        Assert.assertEquals(Constants.ERROR, response.getCode());
-
-        response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDatabase(Bytes.fromString("db0")));
+        Response response = execute(session, new UseExecutor(), KVDBMessage.use("test1"));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
-
-        response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));
-        Assert.assertEquals(Constants.SUCCESS, response.getCode());
-
     }
 
     @Test
     public void testCreateDB() {
         Session session = newSession();
 
-        Response response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDatabase(Bytes.fromString("db0")));
+        CreateDatabaseParam param = new KVDBCreateDatabaseParam("db0", "", 0);
+        Response response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(param, CreateDatabaseParam.class))));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
 
         response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));

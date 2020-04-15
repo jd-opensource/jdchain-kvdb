@@ -39,6 +39,7 @@ public class KVDBServer implements KVDBHandler {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private ChannelFuture future;
+    private ChannelFuture managerFuture;
 
     /**
      * Whether this server is ready to service.
@@ -83,8 +84,10 @@ public class KVDBServer implements KVDBHandler {
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 
         future = bootstrap.bind(serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
-        // Bind and start to accept incoming connections.
         future.syncUninterruptibly();
+
+        managerFuture = bootstrap.bind("127.0.0.1", serverContext.getConfig().getKvdbConfig().getManagerPort());
+        managerFuture.syncUninterruptibly();
 
         LOGGER.info("server started: {}:{}", serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
 
@@ -100,6 +103,10 @@ public class KVDBServer implements KVDBHandler {
                 closeFuture(future.channel().close());
             }
             future = null;
+            if (managerFuture != null) {
+                closeFuture(managerFuture.channel().close());
+            }
+            managerFuture = null;
         } finally {
             workerGroup = closeWorker(workerGroup);
             bossGroup = closeWorker(bossGroup);
@@ -161,14 +168,21 @@ public class KVDBServer implements KVDBHandler {
 
         LOGGER.debug("message received: {}", sourceKey);
 
-        /**
-         * Only info command can be execute when the server has started but not ready.
-         * For the info command may be send in cluster confirming.
-         */
-        if (!ready && !((Command) message.getContent()).getName().equals(CLUSTER_INFO.getCommand())) {
+        Command command = (Command) message.getContent();
+
+        // 仅当服务器就绪后才能对外提供服务，集群配置查询命令除外，用于同步确认集群环境
+        if (!ready && !command.getName().equals(CLUSTER_INFO.getCommand())) {
             ctx.writeAndFlush(KVDBMessage.error(message.getId(), "server not ready"));
         } else {
-            serverContext.processCommand(sourceKey, message);
+            // 解析客户端IP地址，针对非开放操作仅对本机地址通过管理服务端口开放
+            String remoteHost = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
+            int serverPort = ((InetSocketAddress) ctx.channel().localAddress()).getPort();
+            if (Command.CommandType.getCommand(command.getName()).isOpen()
+                    || (URIUtils.isLocalhost(remoteHost) && serverPort == serverContext.getConfig().getKvdbConfig().getManagerPort())) {
+                serverContext.processCommand(sourceKey, message);
+            } else {
+                ctx.writeAndFlush(KVDBMessage.error(message.getId(), "un support command"));
+            }
         }
     }
 

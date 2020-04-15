@@ -141,7 +141,7 @@ public class KVDBClient implements KVDBOperator {
     }
 
     /**
-     * 创建数据库
+     * 创建数据库，仅支持本地连接管理工具端口进行操作
      *
      * @param parameter
      * @return

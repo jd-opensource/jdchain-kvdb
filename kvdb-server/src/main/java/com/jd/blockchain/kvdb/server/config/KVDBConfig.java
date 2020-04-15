@@ -15,6 +15,8 @@ public class KVDBConfig {
     private static final String DEFAULT_HOST = "0.0.0.0";
     // 默认端口
     private static final int DEFAULT_PORT = 7078;
+    // 管理工具服务默认端口
+    private static final int DEFAULT_MANAGER_PORT = 7060;
     // 默认分片数
     private static final int DEFAULT_DB_PARTITIONS = 4;
 
@@ -22,6 +24,8 @@ public class KVDBConfig {
     private String host;
     // 服务器端口
     private int port;
+    // 管理工具服务端口
+    private int managerPort;
     // 全局数据库保存目录
     private String dbsRootdir;
     // 全局数据实例分片数
@@ -32,6 +36,7 @@ public class KVDBConfig {
         properties.load(new FileInputStream(configFile));
         this.host = properties.getProperty("server.host", DEFAULT_HOST);
         this.port = Integer.parseInt(properties.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
+        this.managerPort = Integer.parseInt(properties.getProperty("manager.port", String.valueOf(DEFAULT_MANAGER_PORT)));
         this.dbsRootdir = properties.getProperty("dbs.rootdir", DEFAULT_DB_PATH);
         this.dbsPartitions = Integer.parseInt(properties.getProperty("dbs.partitions", String.valueOf(DEFAULT_DB_PARTITIONS)));
     }
@@ -50,6 +55,14 @@ public class KVDBConfig {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public int getManagerPort() {
+        return managerPort;
+    }
+
+    public void setManagerPort(int managerPort) {
+        this.managerPort = managerPort;
     }
 
     public String getDbsRootdir() {

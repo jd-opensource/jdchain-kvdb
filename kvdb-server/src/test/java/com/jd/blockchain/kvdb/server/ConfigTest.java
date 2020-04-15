@@ -15,6 +15,7 @@ public class ConfigTest {
         KVDBConfig config = new KVDBConfig(this.getClass().getResource("/config/kvdb.conf").getFile());
         Assert.assertEquals("0.0.0.0", config.getHost());
         Assert.assertEquals(7078, config.getPort());
+        Assert.assertEquals(7060, config.getManagerPort());
         Assert.assertEquals("../dbs", config.getDbsRootdir());
         Assert.assertEquals(4, config.getDbsPartitions());
     }
@@ -23,7 +24,7 @@ public class ConfigTest {
     public void testDBListConfig() throws IOException {
         KVDBConfig kvdbConfig = new KVDBConfig(this.getClass().getResource("/config/kvdb.conf").getFile());
         DBList config = new DBList(this.getClass().getResource("/system/dblist").getFile(), kvdbConfig);
-        Assert.assertEquals(2, config.getDatabaseArray().length);
+        Assert.assertEquals(3, config.getDatabaseArray().length);
         Assert.assertTrue(config.getDatabaseArray()[0].isEnable());
         Assert.assertEquals("../dbs", config.getDatabaseArray()[0].getDbRootdir());
         Assert.assertEquals(4, config.getDatabaseArray()[0].getPartitions());

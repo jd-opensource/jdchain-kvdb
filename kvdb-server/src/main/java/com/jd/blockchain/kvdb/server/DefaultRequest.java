@@ -3,10 +3,15 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.kvdb.protocol.Command;
 import com.jd.blockchain.kvdb.protocol.Message;
 
+/**
+ * 请求封装
+ */
 public class DefaultRequest implements Request {
-
+    // 当前服务器上下文
     private final ServerContext server;
+    // 当前连接会话
     private final Session session;
+    // 消息
     private final Message message;
 
     public DefaultRequest(ServerContext server, Session session, Message message) {

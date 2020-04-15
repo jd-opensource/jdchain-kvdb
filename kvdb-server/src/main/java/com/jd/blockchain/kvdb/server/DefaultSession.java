@@ -11,13 +11,21 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 连接会话
+ */
 public class DefaultSession implements Session {
-
+    // 会话ID
     private final String id;
+    // 服务器上下文
     private final ChannelHandlerContext ctx;
+    // 当前数据库实例名称
     private String dbName;
+    // 当前数据库实例
     private KVDBInstance instance;
+    // 批处理模式
     private boolean batchMode;
+    // 待提交批处理数据集
     private ConcurrentHashMap<Bytes, byte[]> batch;
 
     public DefaultSession(String id, ChannelHandlerContext ctx) {
@@ -65,6 +73,11 @@ public class DefaultSession implements Session {
         return batchMode;
     }
 
+    /**
+     * 开启批处理操作，幂等
+     *
+     * @throws RocksDBException
+     */
     @Override
     public synchronized void batchBegin() throws RocksDBException {
         if (batchMode) {
@@ -78,6 +91,11 @@ public class DefaultSession implements Session {
         }
     }
 
+    /**
+     * 取消批处理，幂等
+     *
+     * @throws RocksDBException
+     */
     @Override
     public synchronized void batchAbort() throws RocksDBException {
         batchMode = false;
@@ -86,6 +104,11 @@ public class DefaultSession implements Session {
         }
     }
 
+    /**
+     * 提交批处理，执行rocksdb批处理操作
+     *
+     * @throws RocksDBException
+     */
     @Override
     public synchronized void batchCommit() throws RocksDBException {
         batchMode = false;
@@ -101,6 +124,13 @@ public class DefaultSession implements Session {
         }
     }
 
+    /**
+     * 批处理钩子，具体操作逻辑由各自executor定义
+     *
+     * @param hook
+     * @return
+     * @throws RocksDBException
+     */
     @Override
     public byte[] doInBatch(BatchHook hook) throws RocksDBException {
         return hook.exec(batch);

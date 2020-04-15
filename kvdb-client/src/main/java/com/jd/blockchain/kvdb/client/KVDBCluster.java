@@ -12,12 +12,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * 集群数据库操作
+ */
 public class KVDBCluster implements KVDBOperator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBCluster.class);
+    // 线程池，用于异步多数据库连接的数据操作
     private ExecutorService executor;
+    // 服务器分片器
     private Partitioner partition;
-
+    // 集群节点数据库实例实际操作对象
     private KVDBSingle[] operators;
 
     public KVDBCluster(NettyClient[] clients) throws KVDBException {

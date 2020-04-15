@@ -7,6 +7,9 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 开启批处理
+ */
 public class BatchBeginExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchBeginExecutor.class);

@@ -1,15 +1,17 @@
 package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 存在性查询
+ */
 public class ExistsExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExistsExecutor.class);
@@ -19,7 +21,7 @@ public class ExistsExecutor implements Executor {
 
         try {
             KVDBInstance db = request.getSession().getDBInstance();
-            if(null == db) {
+            if (null == db) {
                 return KVDBMessage.error(request.getId(), "no database selected");
             }
             boolean batch = request.getSession().batchMode();
@@ -29,6 +31,7 @@ public class ExistsExecutor implements Executor {
                 final Bytes key = keys[i];
                 byte[] value;
                 if (!batch) {
+                    // 因mayExists不一定准确，此处使用rocksdb的get方法判断
                     value = db.get(key.toBytes());
                 } else {
                     value = request.getSession().doInBatch((wb) -> wb.get(key));

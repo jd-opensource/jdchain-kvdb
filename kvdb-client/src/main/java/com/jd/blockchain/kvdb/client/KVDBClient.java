@@ -15,10 +15,19 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * KVDB-SDK
+ */
 public class KVDBClient implements KVDBOperator {
 
     private ClientConfig config;
+    /**
+     * 保存当前所有连接，服务器地址加端口作为键值
+     */
     private Map<String, NettyClient> clients = new HashMap<>();
+    /**
+     * 当前数据库实际操作者，当前选择数据库为单实例时使用{@link KVDBSingle}，否则{@link KVDBCluster}
+     */
     private KVDBOperator operator;
 
     public KVDBClient(KVDBURI uri) throws KVDBException {
@@ -30,6 +39,9 @@ public class KVDBClient implements KVDBOperator {
         start();
     }
 
+    /**
+     * 创建客户端等待就绪状态，当配置数据库不为空时执行切换数据库操作
+     */
     private void start() {
         clients.put(config.getHost() + config.getPort(), newNettyClient(config));
         if (!StringUtils.isEmpty(config.getDatabase())) {
@@ -37,11 +49,24 @@ public class KVDBClient implements KVDBOperator {
         }
     }
 
+    /**
+     * 客户端重启：
+     * 1.关闭当前所有连接
+     * 2.执行启动操作
+     */
     private void restart() {
         close();
         start();
     }
 
+    /**
+     * 创建服务端连接，提供连接就绪回调接口。
+     * 针对连接初始创建回调接口执行唤醒等待操作；
+     * 针对服务掉线重连回调接口执行客户端重启操作。
+     *
+     * @param config
+     * @return
+     */
     private NettyClient newNettyClient(ClientConfig config) {
         CountDownLatch cdl = new CountDownLatch(1);
         NettyClient client = new NettyClient(config, () -> {
@@ -59,6 +84,9 @@ public class KVDBClient implements KVDBOperator {
         return client;
     }
 
+    /**
+     * 关闭客户端
+     */
     public void close() {
         for (Map.Entry<String, NettyClient> entry : clients.entrySet()) {
             entry.getValue().stop();
@@ -66,10 +94,18 @@ public class KVDBClient implements KVDBOperator {
         clients.clear();
     }
 
+    /**
+     * 切换数据库，获取数据库配置信息，自动切换数据库单实例和集群操作模式
+     *
+     * @param db
+     * @return
+     * @throws KVDBException
+     */
     public synchronized DatabaseInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
         }
+        // 执行`use`命令，获取数据库配置信息
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.use(db));
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -80,6 +116,7 @@ public class KVDBClient implements KVDBOperator {
             DatabaseInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseInfo.class);
             config.setDatabase(db);
             if (info.isClusterMode()) {
+                // 集群模式下，创建当前数据库所有服务节点连接，并执行切换数据库操作
                 NettyClient[] selectedClients = new NettyClient[info.getClusterItem().getURLs().length];
                 for (int i = 0; i < info.getClusterItem().getURLs().length; i++) {
                     KVDBURI uri = new KVDBURI(info.getClusterItem().getURLs()[i]);
@@ -99,6 +136,7 @@ public class KVDBClient implements KVDBOperator {
                 }
                 operator = new KVDBCluster(selectedClients);
             } else {
+                // 单实例模式下，无需再执行数据库切换操作，仅切换操作对象
                 operator = new KVDBSingle(clients.get(config.getHost() + config.getPort()));
             }
 
@@ -109,6 +147,13 @@ public class KVDBClient implements KVDBOperator {
         }
     }
 
+    /**
+     * 创建数据库
+     *
+     * @param db
+     * @return
+     * @throws KVDBException
+     */
     public boolean createDatabase(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
@@ -123,6 +168,12 @@ public class KVDBClient implements KVDBOperator {
         return true;
     }
 
+    /**
+     * 服务器集群配置
+     *
+     * @return
+     * @throws KVDBException
+     */
     public ClusterItem[] clusterInfo() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.clusterInfo());
         if (null == response) {
@@ -134,6 +185,12 @@ public class KVDBClient implements KVDBOperator {
         return clusterInfo.getClusterItems();
     }
 
+    /**
+     * 当前服务器所有可提供服务数据库名称列表
+     *
+     * @return
+     * @throws KVDBException
+     */
     public String[] showDatabases() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.showDatabases());
         if (null == response) {

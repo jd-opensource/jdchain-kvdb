@@ -39,9 +39,15 @@ public interface Command extends MessageContent {
         }
     }
 
+    /**
+     * @return 命令名称
+     */
     @DataField(order = 0, primitiveType = PrimitiveType.TEXT)
     String getName();
 
+    /**
+     * @return 参数列表
+     */
     @DataField(order = 1, list = true, primitiveType = PrimitiveType.BYTES)
     Bytes[] getParameters();
 

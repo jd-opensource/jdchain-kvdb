@@ -12,10 +12,14 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 单实例数据库数据操作
+ */
 public class KVDBSingle implements KVDBOperator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBSingle.class);
 
+    // 当前数据库连接
     private final NettyClient client;
 
     public KVDBSingle(NettyClient client) {

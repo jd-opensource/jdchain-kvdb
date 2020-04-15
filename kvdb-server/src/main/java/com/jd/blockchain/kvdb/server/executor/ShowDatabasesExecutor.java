@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+/**
+ * 数据库实例列表
+ */
 public class ShowDatabasesExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowDatabasesExecutor.class);

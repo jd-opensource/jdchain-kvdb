@@ -7,14 +7,29 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * 集群配置
+ */
 public class ClusterConfig {
 
     private static final String PROPERTITY_PREFIX = "cluster";
     private static final String PROPERTITY_SEPARATOR = ".";
     private static final String PROPERTITY_PARTITIONS = "partitions";
-
+    // 集群名称为主键，集群节点配置列表为键值
     private Map<String, String[]> cluster = new HashMap<>();
 
+    /**
+     * 解析并保存cluster.conf中配置项
+     * <p>
+     * 校验:
+     * 1. 不能配置dblist中不存在的数据库
+     * 2. 集群名字不能重复
+     * 3. 同一个数据库不能存在多个集群配置中
+     *
+     * @param configFile
+     * @param dbList     已开启服务的数据库实例配置信息
+     * @throws IOException
+     */
     public ClusterConfig(String configFile, DBList dbList) throws IOException {
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
@@ -45,6 +60,11 @@ public class ClusterConfig {
         }
     }
 
+    /**
+     * 返回集群配置信息
+     *
+     * @return
+     */
     public Map<String, String[]> getCluster() {
         return cluster;
     }

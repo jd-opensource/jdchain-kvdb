@@ -4,6 +4,9 @@ import com.jd.blockchain.binaryproto.DataContract;
 import com.jd.blockchain.binaryproto.DataField;
 import com.jd.blockchain.binaryproto.PrimitiveType;
 
+/**
+ * 集群配置
+ */
 @DataContract(code = Constants.CLUSTER_INFO)
 public interface ClusterInfo {
 

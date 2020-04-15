@@ -1,13 +1,15 @@
 package com.jd.blockchain.kvdb.server.executor;
 
-import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.kvdb.server.Session;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 提交批处理
+ */
 public class BatchCommitExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchCommitExecutor.class);

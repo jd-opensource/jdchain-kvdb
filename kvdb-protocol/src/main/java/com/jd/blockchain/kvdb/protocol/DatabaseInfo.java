@@ -4,6 +4,9 @@ import com.jd.blockchain.binaryproto.DataContract;
 import com.jd.blockchain.binaryproto.DataField;
 import com.jd.blockchain.binaryproto.PrimitiveType;
 
+/**
+ * 数据库实例信息
+ */
 @DataContract(code = Constants.INFO)
 public interface DatabaseInfo {
 

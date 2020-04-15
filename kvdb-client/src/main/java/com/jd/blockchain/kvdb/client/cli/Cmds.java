@@ -35,6 +35,12 @@ public class Cmds implements Quit.Command {
         throw new ExitRequest();
     }
 
+    /**
+     * 当前状态，目前仅显示客户端连接数据库名称
+     *
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Current database information.",
             key = "status")
@@ -51,6 +57,12 @@ public class Cmds implements Quit.Command {
 
     }
 
+    /**
+     * 服务器集群配置信息，展示所有集群及其对应的服务节点列表
+     *
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Server cluster information.",
             key = "cluster info")
@@ -74,6 +86,12 @@ public class Cmds implements Quit.Command {
 
     }
 
+    /**
+     * 显示当前服务器所有可提供服务的数据库名称
+     *
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Show databases",
             key = "show databases")
@@ -92,6 +110,14 @@ public class Cmds implements Quit.Command {
 
     }
 
+    /**
+     * 设置key-value
+     *
+     * @param key
+     * @param value
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Set a key-value",
             key = {"set", "put"})
@@ -100,6 +126,13 @@ public class Cmds implements Quit.Command {
         return client.put(Bytes.fromString(key), Bytes.fromString(value));
     }
 
+    /**
+     * 查询键值
+     *
+     * @param key
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Get value")
     public String get(String key) throws KVDBException {
@@ -108,6 +141,13 @@ public class Cmds implements Quit.Command {
         return null != value ? BytesUtils.toString(value.toBytes()) : "not exists";
     }
 
+    /**
+     * 存在性查询
+     *
+     * @param key
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Check for existence")
     public boolean exists(String key) throws KVDBException {
@@ -115,6 +155,13 @@ public class Cmds implements Quit.Command {
         return client.exists(Bytes.fromString(key));
     }
 
+    /**
+     * 在当前连接{@link Cmds#config}服务器创建数据库
+     *
+     * @param name
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Create a database use the giving name",
             key = "create database")
@@ -123,6 +170,14 @@ public class Cmds implements Quit.Command {
         return client.createDatabase(name);
     }
 
+    /**
+     * 切换数据库，并打印已切换数据库信息
+     *
+     * @param name
+     * @return
+     * @throws KVDBException
+     * @throws InterruptedException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Switch to the database with the specified name")
     public String use(String name) throws KVDBException, InterruptedException {
@@ -146,6 +201,12 @@ public class Cmds implements Quit.Command {
         return builder.toString();
     }
 
+    /**
+     * 开启批处理
+     *
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Start a batch",
             key = "batch begin")
@@ -154,6 +215,12 @@ public class Cmds implements Quit.Command {
         return client.batchBegin();
     }
 
+    /**
+     * 取消批处理
+     *
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Abort the existing batch",
             key = "batch abort")
@@ -162,6 +229,12 @@ public class Cmds implements Quit.Command {
         return client.batchAbort();
     }
 
+    /**
+     * 提交批处理
+     *
+     * @return
+     * @throws KVDBException
+     */
     @ShellMethod(group = "KVDB Commands",
             value = "Commit the existing batch",
             key = "batch commit")

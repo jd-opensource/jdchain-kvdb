@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.jline.PromptProvider;
 import org.springframework.stereotype.Component;
 
+/**
+ * 自定义spring-shell提示信息
+ */
 @Component
 public class KVDBPromptProvider implements PromptProvider {
 
@@ -15,6 +18,7 @@ public class KVDBPromptProvider implements PromptProvider {
 
     @Override
     public AttributedString getPrompt() {
+        // host:port>
         if (null != config) {
             return new AttributedString(config.getHost() + ":" + config.getPort() + ">",
                     AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW));

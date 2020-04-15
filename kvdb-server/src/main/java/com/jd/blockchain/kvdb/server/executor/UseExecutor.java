@@ -12,10 +12,19 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 切换数据库实例
+ */
 public class UseExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UseExecutor.class);
 
+    /**
+     * 返回实例单实例或集群信息
+     *
+     * @param request
+     * @return
+     */
     @Override
     public Message execute(Request request) {
         try {

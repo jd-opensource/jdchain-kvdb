@@ -16,26 +16,37 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/**
+ * 服务端上下文信息
+ */
 public class DefaultServerContext implements ServerContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultServerContext.class);
 
+    // 当前服务器所有客户端连接
     private final ConcurrentHashMap<String, Session> clients = new ConcurrentHashMap<>();
 
+    // 所有命令操作集合，命令名-操作对象
     private final Map<String, Executor> executors = new HashMap<>();
 
+    // 服务器配置信息
     private final ServerConfig config;
 
-    // Hold all the databases
+    // 数据库实例集，数据库名-实例
     private final Map<String, KVDBInstance> rocksdbs;
+    // 集群配置集，集群名称-配置
     private Map<String, ClusterItem> clusterInfoMapping;
+    // 数据库实例-集群配置对照关系，数据库名-集群名
     private Map<String, String> dbClusterMapping;
 
 
-    public DefaultServerContext(ServerConfig config) throws RocksDBException, IOException {
+    public DefaultServerContext(ServerConfig config) throws RocksDBException {
         this.config = config;
+        // 创建或加载 dblist 中配置的数据库实例
         rocksdbs = KVDB.initDBs(config.getDbList());
+        // 保存集群配置
         clusterInfoMapping = config.getClusterMapping();
+        // 保存数据库实例-集群对照关系
         dbClusterMapping = new HashMap<>();
         for (Map.Entry<String, ClusterItem> entry : clusterInfoMapping.entrySet()) {
             for (String url : entry.getValue().getURLs()) {
@@ -114,6 +125,11 @@ public class DefaultServerContext implements ServerContext {
         return clients.get(key);
     }
 
+    /**
+     * 移除会话
+     *
+     * @param sourceKey
+     */
     protected void removeSession(String sourceKey) {
         Session session = getSession(sourceKey);
         if (null != session) {
@@ -122,10 +138,22 @@ public class DefaultServerContext implements ServerContext {
         clients.remove(sourceKey);
     }
 
+    /**
+     * 添加命令处理对象
+     *
+     * @param name
+     * @param executor
+     */
     protected void addExecutor(String name, Executor executor) {
         executors.put(name.toLowerCase(), executor);
     }
 
+    /**
+     * 执行命令
+     *
+     * @param sourceKey
+     * @param message
+     */
     public void processCommand(String sourceKey, Message message) {
         Command command = (Command) message.getContent();
         Session session = getSession(sourceKey);

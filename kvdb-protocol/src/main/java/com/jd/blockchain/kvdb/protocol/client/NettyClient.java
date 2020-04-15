@@ -23,6 +23,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Netty client
+ */
 public class NettyClient implements KVDBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyClient.class);
@@ -31,11 +34,16 @@ public class NettyClient implements KVDBHandler {
     private EventLoopGroup workerGroup;
     private ChannelFuture future;
     private ChannelHandlerContext context;
-
+    // 客户端连接参数
     private final ClientConfig config;
+    // 连接池，用于异步执行连接成功后回调
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    // 连接成功回调
     private ConnectedCallback connectedCallback;
 
+    /**
+     * 同步操作promise及response
+     */
     private ConcurrentHashMap<String, ChannelPromise> promises = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Response> responses = new ConcurrentHashMap<>();
 
@@ -60,12 +68,17 @@ public class NettyClient implements KVDBHandler {
         start();
     }
 
+    /**
+     * 启动/重新连接
+     */
     protected void start() {
+        // 掉线重试时先关闭原来通道
         if (null != future) {
             future.channel().closeFuture();
         }
         future = connect().addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
+                // 连接不成功，一秒一次重试连接
                 future.channel().eventLoop().schedule(NettyClient.this::start, 1L, TimeUnit.SECONDS);
             }
         });
@@ -107,6 +120,7 @@ public class NettyClient implements KVDBHandler {
     public void connected(ChannelHandlerContext ctx) {
         LOGGER.info("channel active");
         this.context = ctx;
+        // 连接成功，创建上下文后执行回调
         if (null != connectedCallback) {
             executorService.submit(() -> connectedCallback.onConnected());
         }
@@ -118,6 +132,7 @@ public class NettyClient implements KVDBHandler {
         if (this.context != null) {
             this.context = null;
             if (future != null) {
+                // 掉线重连，一秒一次重试连接
                 future.channel().eventLoop().schedule(this::start, 1L, TimeUnit.SECONDS);
             }
         }
@@ -126,6 +141,7 @@ public class NettyClient implements KVDBHandler {
     @Override
     public void receive(ChannelHandlerContext ctx, Message message) {
         ChannelPromise promise = promises.get(message.getId());
+        // 执行同步消息保存处理
         if (null != promise) {
             synchronized (this) {
                 promise = promises.get(message.getId());
@@ -137,6 +153,12 @@ public class NettyClient implements KVDBHandler {
         }
     }
 
+    /**
+     * 发送消息，利用promise等待实现同步获取响应
+     *
+     * @param message
+     * @return
+     */
     public Response send(Message message) {
         if (context == null) {
             throw new KVDBException("channel context not ready");

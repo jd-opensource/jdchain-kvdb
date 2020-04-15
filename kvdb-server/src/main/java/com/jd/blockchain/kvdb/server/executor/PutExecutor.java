@@ -2,15 +2,17 @@ package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.KVWriteBatch;
-import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.Message;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 设置键值对
+ */
 public class PutExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PutExecutor.class);
@@ -19,7 +21,7 @@ public class PutExecutor implements Executor {
     public Message execute(Request request) {
 
         KVDBInstance db = request.getSession().getDBInstance();
-        if(null == db) {
+        if (null == db) {
             return KVDBMessage.error(request.getId(), "no database selected");
         }
 
@@ -30,6 +32,7 @@ public class PutExecutor implements Executor {
         }
 
         if (batch) {
+            // 批处理模式
             try {
                 for (int i = 0; i < kvs.length; ) {
                     LOGGER.debug("execute put in batch, key:{}, value:{}", BytesUtils.toString(kvs[i].toBytes()), kvs[i + 1].toBytes());
@@ -47,6 +50,7 @@ public class PutExecutor implements Executor {
             }
         } else {
             if (kvs.length == 2) {
+                // 单个键值对
                 try {
                     LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(kvs[0].toBytes()), kvs[1].toBytes());
                     db.set(kvs[0].toBytes(), kvs[1].toBytes());
@@ -55,6 +59,7 @@ public class PutExecutor implements Executor {
                     return KVDBMessage.error(request.getId(), e.toString());
                 }
             } else {
+                // 多个键值对
                 KVWriteBatch wb = db.beginBatch();
                 try {
                     for (int i = 0; i < kvs.length; ) {

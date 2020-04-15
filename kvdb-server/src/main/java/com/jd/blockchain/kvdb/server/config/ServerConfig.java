@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 服务器配置，聚合cluster.conf/dblist/kvdb.conf
+ */
 public class ServerConfig {
 
     private static final String CONFIG_DIR = "config";
@@ -39,9 +42,7 @@ public class ServerConfig {
     }
 
     /**
-     * Return cluster information config in cluster.conf
-     *
-     * @return
+     * @return 集群配置信息，集群名称-集群配置项信息
      */
     public Map<String, ClusterItem> getClusterMapping() {
         Map<String, ClusterItem> clusterMapping = new HashMap<>();
@@ -52,6 +53,9 @@ public class ServerConfig {
         return clusterMapping;
     }
 
+    /**
+     * @return 集群配置信息，所有集群配置列表
+     */
     public ClusterInfo getClusterInfo() {
         Map<String, String[]> clusterMapping = clusterConfig.getCluster();
         ClusterItem[] clusterItems = new ClusterItem[clusterMapping.size()];
@@ -64,14 +68,23 @@ public class ServerConfig {
         return new KVDBClusterInfo(clusterItems);
     }
 
+    /**
+     * @return 服务配置
+     */
     public KVDBConfig getKvdbConfig() {
         return kvdbConfig;
     }
 
+    /**
+     * @return 集群配置
+     */
     public ClusterConfig getClusterConfig() {
         return clusterConfig;
     }
 
+    /**
+     * @return 数据库实例配置
+     */
     public DBList getDbList() {
         return dbList;
     }

@@ -4,31 +4,78 @@ import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.Bytes;
 
 /**
- * KVDB SDK 所有支持操作
+ * KVDB SDK 数据操作
  */
 public interface KVDBOperator {
 
-    // 是否存在某个键值
+    /**
+     * 存在性查询
+     *
+     * @param key
+     * @return
+     * @throws KVDBException
+     */
     boolean exists(Bytes key) throws KVDBException;
 
-    // 查询多个键存在性
+    /**
+     * 存在性查询，支持多个键值
+     *
+     * @param keys
+     * @return
+     * @throws KVDBException
+     */
     boolean[] exists(Bytes... keys) throws KVDBException;
 
-    // 获取键值
+    /**
+     * 键值获取
+     *
+     * @param key
+     * @return
+     * @throws KVDBException
+     */
     Bytes get(Bytes key) throws KVDBException;
 
-    // 获取多个键值
+    /**
+     * 键值获取，支持多个键值
+     *
+     * @param keys
+     * @return
+     * @throws KVDBException
+     */
     Bytes[] get(Bytes... keys) throws KVDBException;
 
-    // 设置键值对，支持一次多个键值对操作以`key value key value ...`即`key`，`value`交替出现的方式提交
+    /**
+     * 设置键值对，支持多个键值对，以键值交替出现方式传递
+     *
+     * @param kvs
+     * @return
+     * @throws KVDBException
+     */
     boolean put(Bytes... kvs) throws KVDBException;
 
-    // 开启`batch`
+    /**
+     * 开启批处理
+     *
+     * @return
+     * @throws KVDBException
+     */
     boolean batchBegin() throws KVDBException;
 
-    // 取消`batch`
+    /**
+     * 取消批处理
+     *
+     * @return
+     * @throws KVDBException
+     */
     boolean batchAbort() throws KVDBException;
 
-    // 提交`batch`，未提交的`batch`对其他客户端连接不可见。
+    /**
+     * 提交批处理，服务器掉线重连后会丢失未提交批处理数据
+     * <p>
+     * 未提交的`batch`对其他客户端连接不可见。
+     *
+     * @return
+     * @throws KVDBException
+     */
     boolean batchCommit() throws KVDBException;
 }

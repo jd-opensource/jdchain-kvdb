@@ -18,11 +18,6 @@ public class CreateDatabaseExecutor implements Executor {
         try {
             Bytes[] params = request.getCommand().getParameters();
             String db = BytesUtils.toString(params[0].toBytes());
-            int partitions = request.getServerContext().getConfig().getKvdbConfig().getDbsPartitions();
-            if (params.length > 1) {
-                partitions = BytesUtils.toInt(params[1].toBytes());
-            }
-            // TODO 根目录
             LOGGER.debug("execute create databases, db:{}", db);
             if (StringUtils.isEmpty(db)) {
                 return KVDBMessage.error(request.getId(), "db name empty");

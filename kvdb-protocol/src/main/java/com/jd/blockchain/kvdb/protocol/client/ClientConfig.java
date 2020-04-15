@@ -2,8 +2,14 @@ package com.jd.blockchain.kvdb.protocol.client;
 
 import com.jd.blockchain.utils.ArgumentSet;
 
+/**
+ * 客户端参数
+ */
 public class ClientConfig {
 
+    /**
+     * 参数名
+     */
     private static final String HOST = "-h";
     private static final String PORT = "-p";
     private static final String TIMEOUT = "-t";
@@ -12,18 +18,28 @@ public class ClientConfig {
     private static final String KEEP_ALIVE = "-k";
     private static final String DB = "-db";
     private static final String DEFAULT_HOST = "localhost";
+    /**
+     * 参数默认值
+     */
     private static final int DEFAULT_PORT = 7078;
     private static final int DEFAULT_TIMEOUT = 60000;
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
     private static final int DEFAULT_RETRY_TIMES = 5;
     private static final boolean DEFAULT_KEEP_ALIVE = true;
 
+    // 请求地址
     private String host;
+    // 端口
     private int port;
+    // 超时时间
     private int timeout;
+    // 缓冲区大小
     private int bufferSize;
+    // 超时等待重试次数
     private int retryTimes;
+    // 是否保持连接
     private boolean keepAlive;
+    // 连接的数据库实例名称
     private String db;
 
     public ClientConfig(String[] args) {

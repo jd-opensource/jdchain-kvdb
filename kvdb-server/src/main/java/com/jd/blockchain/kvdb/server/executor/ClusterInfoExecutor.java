@@ -9,6 +9,9 @@ import com.jd.blockchain.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 集群配置信息
+ */
 public class ClusterInfoExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterInfoExecutor.class);

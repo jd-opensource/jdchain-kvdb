@@ -5,17 +5,29 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
+/**
+ * kvdb-server配置
+ */
 public class KVDBConfig {
 
-    private static final String DEFAULT_DB_PATH = "dbs";
+    // 默认数据库保存路径
+    private static final String DEFAULT_DB_PATH = "../dbs";
+    // 默认地址
     private static final String DEFAULT_HOST = "0.0.0.0";
+    // 默认端口
     private static final int DEFAULT_PORT = 7078;
+    // 默认分片数
     private static final int DEFAULT_DB_PARTITIONS = 4;
 
+    // 配置文件完整路径
     private String configFile;
+    // 服务器地址
     private String host;
+    // 服务器端口
     private int port;
+    // 全局数据库保存目录
     private String dbsRootdir;
+    // 全局数据实例分片数
     private int dbsPartitions;
 
     public KVDBConfig(String configFile) throws IOException {
@@ -60,6 +72,12 @@ public class KVDBConfig {
         this.dbsPartitions = dbsPartitions;
     }
 
+    /**
+     * 创建数据库，创建数据库所对应目录
+     *
+     * @param database
+     * @throws IOException
+     */
     public void createDatabase(String database) throws IOException {
         FileWriter fw = null;
         try {

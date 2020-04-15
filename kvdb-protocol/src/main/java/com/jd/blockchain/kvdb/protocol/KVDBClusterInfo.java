@@ -26,6 +26,14 @@ public class KVDBClusterInfo implements ClusterInfo {
         this.clusterItems = clusterItems;
     }
 
+    /**
+     * 匹配远端集群配置
+     *
+     * @param localPort   本地端口
+     * @param uri         远端URI
+     * @param clusterInfo 远端集群配置
+     * @return
+     */
     @Override
     public boolean match(int localPort, KVDBURI uri, ClusterInfo clusterInfo) {
         // 远端集群配置项不能为空

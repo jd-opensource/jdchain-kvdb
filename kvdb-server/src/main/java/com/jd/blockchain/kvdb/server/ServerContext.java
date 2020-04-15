@@ -7,6 +7,7 @@ import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.rocksdb.RocksDBException;
 
 import java.io.IOException;
@@ -66,4 +67,25 @@ public interface ServerContext {
      * @return 集群信息
      */
     ClusterInfo getClusterInfo();
+
+    /**
+     * 开放数据库实例
+     *
+     * @param database
+     */
+    void enableDatabase(String database) throws KVDBException, ConfigurationException;
+
+    /**
+     * 关闭数据库实例
+     *
+     * @param database
+     */
+    void disableDatabase(String database) throws KVDBException, ConfigurationException;
+
+    /**
+     * 删除数据库实例
+     *
+     * @param database
+     */
+    void dropDatabase(String database) throws KVDBException;
 }

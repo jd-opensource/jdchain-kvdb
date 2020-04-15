@@ -56,6 +56,18 @@ public class KVDBMessage implements Message {
         return new KVDBMessage(new KVDBCommand(CREATE_DATABASE.getCommand(), parameter));
     }
 
+    public static Message enableDatabase(String database) {
+        return new KVDBMessage(new KVDBCommand(ENABLE_DATABASE.getCommand(), Bytes.fromString(database)));
+    }
+
+    public static Message disableDatabase(String database) {
+        return new KVDBMessage(new KVDBCommand(DISABLE_DATABASE.getCommand(), Bytes.fromString(database)));
+    }
+
+    public static Message dropDatabase(String database) {
+        return new KVDBMessage(new KVDBCommand(DROP_DATABASE.getCommand(), Bytes.fromString(database)));
+    }
+
     public static Message showDatabases() {
         return new KVDBMessage(new KVDBCommand(SHOW_DATABASES.getCommand()));
     }

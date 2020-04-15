@@ -61,13 +61,13 @@ dbs.partitions=4
 cluster.<name>.partitions=3
 
 # 数据库集群 ‘<name>’ 的第 1 个分片的数据库实例地址(URL格式)；
-cluster.<name>.0=kvdb://host:port/<dbname>
+cluster.<name>.0=kvdb://<host>:<port>/<dbname>
 
 # 数据库集群 ‘<name>’ 的第 2 个分片的数据库实例地址(URL格式)；
-cluster.<name>.1=kvdb://host:port/<dbname>
+cluster.<name>.1=kvdb://<host>:<port>/<dbname>
 
 # 数据库集群 ‘<name>’ 的第 3 个分片的数据库实例地址(URL格式)；
-cluster.<name>.2=kvdb://homt:port/<dbname>
+cluster.<name>.2=kvdb://<host>:<port>/<dbname>
 
 # 指定多个不同的集群
 #cluster.<name1>.partitions=3
@@ -87,7 +87,7 @@ cluster.<name>.2=kvdb://homt:port/<dbname>
 # 数据库 <name> 的本地分区数；如果未配置，则采用`conf/kvdb.conf`中指定的默认配置${dbs.partitions}
 # db.test.partitions=
 ```
-> `dblist`中配置的数据库会在`kvdb-server`启动时自动创建。在`kvdb-server`启动完成后由客户端执行`create database <name>`创建数据库，创建成功的数据库会追加到`dblist`中。
+> `dblist`中配置的数据库会在`kvdb-server`启动时自动创建。在`kvdb-server`启动完成后由管理工具执行`create database <name>`创建数据库，创建成功的数据库会追加到`dblist`中。使用`kvdb-cli`命令行工具执行数据库实例更新操作。
 
 #### 日志
 
@@ -107,7 +107,7 @@ LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=error"
 LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level.root=error"
 ```
 默认日志路径：程序解压缩后主目录下`logs`目录
-默认日志登记：`error`
+默认日志等级：`error`
 
 #### 启动
 
@@ -139,44 +139,81 @@ KVDBClient client = new KVDBClient("kvdb://<host>:<port>/<database>");
 3. 操作
 
 ```java
-// 关闭客户端连接
-void close();
-
-// 切换数据库，返回所选数据库信息
-Info use(String db) throws KVDBException;
-
-// 创建数据库，使用服务器`kvdb.conf`配置的默认分片数
-boolean createDatabase(String db) throws KVDBException;
-
-// 获取集群配置信息
-ClusterInfo[] clusterInfo() throws KVDBException;
-
-// 显示所有数据库
-String[] showDatabases() throws KVDBException;
-
-// 是否存在某个键值
+/**
+ * 存在性查询
+ *
+ * @param key
+ * @return
+ * @throws KVDBException
+ */
 boolean exists(Bytes key) throws KVDBException;
 
-// 查询多个键存在性
+/**
+ * 存在性查询，支持多个键值
+ *
+ * @param keys
+ * @return
+ * @throws KVDBException
+ */
 boolean[] exists(Bytes... keys) throws KVDBException;
 
-// 获取键值
+/**
+ * 键值获取
+ *
+ * @param key
+ * @return
+ * @throws KVDBException
+ */
 Bytes get(Bytes key) throws KVDBException;
 
-// 获取多个键值
+/**
+ * 键值获取，支持多个键值
+ *
+ * @param keys
+ * @return
+ * @throws KVDBException
+ */
 Bytes[] get(Bytes... keys) throws KVDBException;
 
-// 设置键值对，支持一次多个键值对操作以`key value key value ...`即`key`，`value`交替出现的方式提交
+/**
+ * 设置键值对，支持多个键值对，以键值交替出现方式传递
+ *
+ * @param kvs
+ * @return
+ * @throws KVDBException
+ */
 boolean put(Bytes... kvs) throws KVDBException;
 
-// 开启`batch`
+/**
+ * 开启批处理
+ *
+ * @return
+ * @throws KVDBException
+ */
 boolean batchBegin() throws KVDBException;
 
-// 取消`batch`
+/**
+ * 取消批处理
+ *
+ * @return
+ * @throws KVDBException
+ */
 boolean batchAbort() throws KVDBException;
 
-// 提交`batch`，未提交的`batch`对其他客户端连接不可见。
+/**
+ * 提交批处理，服务器掉线重连后会丢失未提交批处理数据
+ * <p>
+ * 未提交的`batch`对其他客户端连接不可见。
+ *
+ * @return
+ * @throws KVDBException
+ */
 boolean batchCommit() throws KVDBException;
+
+/**
+* 关闭客户端
+*/
+public void close();
 ```
 
 ### 管理工具
@@ -189,16 +226,18 @@ boolean batchCommit() throws KVDBException;
 参数说明：
 
 - `-h` 服务器地址。选填，默认`localhost`
-- `-p` 端口。选填，默认`7078`
+- `-p` 端口。选填，默认`6070`
 - `-db` 数据库/集群名称。选填
 - `-t` 超时时间，毫秒。选填，默认`60000 ms`
 - `-rt` 超市重试等待次数。选填，默认`5`
 - `-bs` 发送/接收缓冲区大小。选填，默认`1024*1024`
 - `-k` 保持连接。选填，默认`true`
 
+> 部分指令仅在
+
 所有支持指令操作：
 ```bash
-localhost:7078>help
+localhost:7060>help
 AVAILABLE COMMANDS
 
 Built-In Commands
@@ -209,15 +248,18 @@ Built-In Commands
         stacktrace: Display the full stacktrace of the last error.
 
 KVDB Commands
-        batch abort: Abort the existing batch
-        batch begin: Start a batch
-        batch commit: Commit the existing batch
-        cluster info: Server cluster information.
-        create database: Create a database use the giving name
-        exists: Check for existence
-        get: Get value
-        put, set: Set a key-value
-        show databases: Show databases
-        status: Current database information.
-        use: Switch to the database with the specified name
+        batch abort: 取消批处理
+        batch begin: 开启批处理
+        batch commit: 提交批处理
+        cluster info: 服务器集群配置信息
+        create database: 创建数据库实例
+        disable database: 关闭数据库实例，加入集群的实例不可修改
+        drop database: 删除数据库实例，加入集群的实例不可修改
+        enable database: 开放数据库实例，加入集群的实例不可修改
+        exists: 检查存在性
+        get: 获取键值
+        put, set: 设置键值
+        show databases: 展示数据库实例列表
+        status: 当前数据库信息
+        use: 切换数据库
 ```

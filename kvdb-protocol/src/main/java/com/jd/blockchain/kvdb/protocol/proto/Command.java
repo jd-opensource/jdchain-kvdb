@@ -14,9 +14,12 @@ public interface Command extends MessageContent {
 
     enum CommandType {
         CREATE_DATABASE("create database", false),
+        DISABLE_DATABASE("disable database", false),
+        ENABLE_DATABASE("enable database", false),
+        DROP_DATABASE("drop database", false),
+        CLUSTER_INFO("cluster", false),
+        SHOW_DATABASES("show databases", false),
         USE("use", true),
-        CLUSTER_INFO("cluster", true),
-        SHOW_DATABASES("show databases", true),
         PUT("put", true),
         GET("get", true),
         EXISTS("exists", true),

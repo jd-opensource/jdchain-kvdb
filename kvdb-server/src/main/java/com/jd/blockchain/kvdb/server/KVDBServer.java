@@ -5,7 +5,6 @@ import com.jd.blockchain.kvdb.protocol.*;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.proto.*;
-import com.jd.blockchain.kvdb.protocol.KVDBConnectionHandler;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.executor.*;
 import io.netty.bootstrap.ServerBootstrap;
@@ -59,6 +58,9 @@ public class KVDBServer implements KVDBHandler {
         serverContext.addExecutor(USE.getCommand(), new UseExecutor());
         serverContext.addExecutor(SHOW_DATABASES.getCommand(), new ShowDatabasesExecutor());
         serverContext.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
+        serverContext.addExecutor(ENABLE_DATABASE.getCommand(), new EnableDatabaseExecutor());
+        serverContext.addExecutor(DISABLE_DATABASE.getCommand(), new DisableDatabaseExecutor());
+        serverContext.addExecutor(DROP_DATABASE.getCommand(), new DropDatabaseExecutor());
         serverContext.addExecutor(CLUSTER_INFO.getCommand(), new ClusterInfoExecutor());
         serverContext.addExecutor(EXISTS.getCommand(), new ExistsExecutor());
         serverContext.addExecutor(GET.getCommand(), new GetExecutor());

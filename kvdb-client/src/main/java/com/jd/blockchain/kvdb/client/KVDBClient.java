@@ -1,7 +1,8 @@
 package com.jd.blockchain.kvdb.client;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
-import com.jd.blockchain.kvdb.protocol.*;
+import com.jd.blockchain.kvdb.protocol.Constants;
+import com.jd.blockchain.kvdb.protocol.KVDBURI;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
@@ -95,7 +96,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    public synchronized DatabaseClusterInfo use(String db) throws KVDBException {
+    protected synchronized DatabaseClusterInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
         }
@@ -142,13 +143,13 @@ public class KVDBClient implements KVDBOperator {
     }
 
     /**
-     * 创建数据库，仅支持本地连接管理工具端口进行操作
+     * 创建数据库，仅支持本地连接管理服务端口进行操作
      *
      * @param parameter
      * @return
      * @throws KVDBException
      */
-    public boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
+    protected boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(parameter, DatabaseBaseInfo.class))));
         if (null == response) {
@@ -161,12 +162,69 @@ public class KVDBClient implements KVDBOperator {
     }
 
     /**
-     * 服务器集群配置
+     * 开启数据库实例，仅支持本地连接管理服务端口进行操作
+     *
+     * @param database
+     * @return
+     * @throws KVDBException
+     */
+    protected boolean enableDatabase(String database) throws KVDBException {
+        Response response = clients.get(config.getHost() + config.getPort())
+                .send(KVDBMessage.enableDatabase(database));
+        if (null == response) {
+            throw new KVDBTimeoutException("time out");
+        } else if (response.getCode() == Constants.ERROR) {
+            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
+        }
+
+        return true;
+    }
+
+    /**
+     * 关闭数据库实例，仅支持本地连接管理服务端口进行操作
+     *
+     * @param database
+     * @return
+     * @throws KVDBException
+     */
+    protected boolean disableDatabase(String database) throws KVDBException {
+        Response response = clients.get(config.getHost() + config.getPort())
+                .send(KVDBMessage.disableDatabase(database));
+        if (null == response) {
+            throw new KVDBTimeoutException("time out");
+        } else if (response.getCode() == Constants.ERROR) {
+            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
+        }
+
+        return true;
+    }
+
+    /**
+     * 删除数据库实例，仅支持本地连接管理服务端口进行操作
+     *
+     * @param database
+     * @return
+     * @throws KVDBException
+     */
+    protected boolean dropDatabase(String database) throws KVDBException {
+        Response response = clients.get(config.getHost() + config.getPort())
+                .send(KVDBMessage.dropDatabase(database));
+        if (null == response) {
+            throw new KVDBTimeoutException("time out");
+        } else if (response.getCode() == Constants.ERROR) {
+            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
+        }
+
+        return true;
+    }
+
+    /**
+     * 服务器集群配置，仅支持本地连接管理服务端口进行操作
      *
      * @return
      * @throws KVDBException
      */
-    public ClusterItem[] clusterInfo() throws KVDBException {
+    protected ClusterItem[] clusterInfo() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.clusterInfo());
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -178,12 +236,12 @@ public class KVDBClient implements KVDBOperator {
     }
 
     /**
-     * 当前服务器所有可提供服务数据库名称列表
+     * 当前服务器所有数据实例信息，仅支持本地连接管理服务端口进行操作
      *
      * @return
      * @throws KVDBException
      */
-    public String[] showDatabases() throws KVDBException {
+    protected DatabaseBaseInfo[] showDatabases() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.showDatabases());
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -191,13 +249,7 @@ public class KVDBClient implements KVDBOperator {
             throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
         }
 
-        Bytes[] dbs = response.getResult();
-        String[] names = new String[dbs.length];
-        for (int i = 0; i < dbs.length; i++) {
-            names[i] = BytesUtils.toString(dbs[i].toBytes());
-        }
-
-        return names;
+        return BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseBaseInfos.class).getBaseInfos();
     }
 
     @Override

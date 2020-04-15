@@ -8,7 +8,7 @@ import com.jd.blockchain.kvdb.protocol.Constants;
 /**
  * 数据库实例基础信息
  */
-@DataContract(code = Constants.PARAMETER_CREATE_DATABASE)
+@DataContract(code = Constants.DATABASE_BASE_INFO)
 public interface DatabaseBaseInfo {
 
     /**

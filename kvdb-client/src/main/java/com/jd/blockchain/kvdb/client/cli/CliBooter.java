@@ -1,9 +1,6 @@
 package com.jd.blockchain.kvdb.client.cli;
 
-import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
-import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class CliBooter {
 
+    private static final int DEFAULT_PORT = 7060;
     /**
      * 保存 kvdb-cli 启动参数，参数列表参照{@link ClientConfig}
      */
@@ -23,13 +21,18 @@ public class CliBooter {
 
     @Bean
     public ClientConfig clientConfig() {
-        return new ClientConfig(clientArgs);
-    }
-
-    @Bean
-    @Autowired
-    public KVDBClient client(ClientConfig clientConfig) throws KVDBException {
-        return new KVDBClient(clientConfig);
+        ClientConfig config = new ClientConfig(clientArgs);
+        boolean containPort = false;
+        for (String arg : clientArgs) {
+            if (arg.equals("-p")) {
+                containPort = true;
+                break;
+            }
+        }
+        if (!containPort) {
+            config.setPort(DEFAULT_PORT);
+        }
+        return config;
     }
 
 }

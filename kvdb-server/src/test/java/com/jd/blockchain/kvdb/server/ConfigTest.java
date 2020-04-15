@@ -24,10 +24,10 @@ public class ConfigTest {
     public void testDBListConfig() throws IOException {
         KVDBConfig kvdbConfig = new KVDBConfig(this.getClass().getResource("/config/kvdb.conf").getFile());
         DBList config = new DBList(this.getClass().getResource("/system/dblist").getFile(), kvdbConfig);
-        Assert.assertEquals(3, config.getDatabaseArray().length);
-        Assert.assertTrue(config.getDatabaseArray()[0].isEnable());
-        Assert.assertEquals("../dbs", config.getDatabaseArray()[0].getDbRootdir());
-        Assert.assertEquals(4, config.getDatabaseArray()[0].getPartitions());
+        Assert.assertEquals(3, config.getEnabledDatabases().size());
+        Assert.assertTrue(config.getEnabledDatabases().get(0).isEnable());
+        Assert.assertEquals("../dbs", config.getEnabledDatabases().get(0).getDbRootdir());
+        Assert.assertEquals(4, config.getEnabledDatabases().get(0).getPartitions());
     }
 
     @Test

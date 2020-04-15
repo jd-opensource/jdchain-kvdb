@@ -1,7 +1,7 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.*;
+import com.jd.blockchain.kvdb.protocol.KVDBURI;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.*;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseClusterInfo;
@@ -110,6 +110,68 @@ public class KVDBServerContext implements ServerContext {
     @Override
     public ClusterInfo getClusterInfo() {
         return config.getClusterInfo();
+    }
+
+    @Override
+    public synchronized void enableDatabase(String database) throws KVDBException {
+        try {
+            // 数据库处于可用状态
+            if (rocksdbs.containsKey(database)) {
+                return;
+            }
+            DBInfo dbInfo = config.getDbList().getDatabase(database);
+            // 数据库不存在
+            if (null == dbInfo) {
+                throw new KVDBException("database not exists");
+            }
+            config.getDbList().enableDatabase(database);
+            rocksdbs.put(database, KVDB.initDB(dbInfo));
+        } catch (Exception e) {
+            throw new KVDBException(e.toString());
+        }
+    }
+
+    @Override
+    public synchronized void disableDatabase(String database) throws KVDBException {
+        try {
+            // 数据库不处于可用状态
+            KVDBInstance instance = rocksdbs.get(database);
+            if (null == instance) {
+                throw new KVDBException("database not exists or disabled");
+            }
+            // 参与到集群中的数据库实例不可修改
+            if (dbClusterMapping.containsKey(database)) {
+                throw new KVDBException("database in cluster can not modified");
+            }
+            rocksdbs.remove(database);
+            // 关闭数据库
+            instance.close();
+            // 更新数据库状态
+            config.getDbList().disableDatabase(database);
+        } catch (Exception e) {
+            throw new KVDBException(e.toString());
+        }
+    }
+
+    @Override
+    public synchronized void dropDatabase(String database) throws KVDBException {
+        try {
+            // 数据库实例不存在
+            DBInfo dbInfo = config.getDbList().getDatabase(database);
+            if (null == dbInfo) {
+                throw new KVDBException("database not exists");
+            }
+            KVDBInstance instance = rocksdbs.get(database);
+            // 关闭数据库实例
+            if (null != instance) {
+                instance.close();
+            }
+            rocksdbs.remove(database);
+            // 更新配置并删除数据库目录
+            config.getDbList().dropDatabase(dbInfo);
+        } catch (Exception e) {
+            throw new KVDBException(e.toString());
+        }
     }
 
     public void stop() {

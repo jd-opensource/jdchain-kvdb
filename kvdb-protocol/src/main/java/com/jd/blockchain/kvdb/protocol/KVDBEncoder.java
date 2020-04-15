@@ -18,6 +18,7 @@ public class KVDBEncoder extends MessageToByteEncoder<Message> {
         DataContractRegistry.register(ClusterItem.class);
         DataContractRegistry.register(ClusterInfo.class);
         DataContractRegistry.register(DatabaseBaseInfo.class);
+        DataContractRegistry.register(DatabaseBaseInfos.class);
     }
 
     @Override

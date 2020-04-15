@@ -18,5 +18,6 @@ public class Constants {
     public static final int DATABASE_INFO = 4;
     public static final int CLUSTER_INFO = 5;
     public static final int CLUSTER_ITEM = 6;
-    public static final int PARAMETER_CREATE_DATABASE = 20;
+    public static final int DATABASE_BASE_INFO = 7;
+    public static final int DATABASE_BASE_INFO_LIST = 8;
 }

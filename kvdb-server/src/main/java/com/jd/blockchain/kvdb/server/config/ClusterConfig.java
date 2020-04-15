@@ -37,7 +37,7 @@ public class ClusterConfig {
         for (Object key : properties.keySet()) {
             clusterNames.add(((String) key).split("\\.")[1]);
         }
-        Set<String> databasesInDblist = dbList.getDatabaseNameSet();
+        Set<String> databasesInDblist = dbList.getEnabledDatabaseNameSet();
         Map<String, String> databaseClusterMapping = new HashMap<>();
         for (String clusterName : clusterNames) {
             int partitions = Integer.parseInt(properties.getProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + clusterName + PROPERTITY_SEPARATOR + PROPERTITY_PARTITIONS));

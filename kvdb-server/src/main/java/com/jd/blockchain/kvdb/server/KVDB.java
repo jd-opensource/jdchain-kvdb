@@ -34,7 +34,7 @@ public class KVDB {
     public static Map<String, KVDBInstance> initDBs(DBList dbList) throws RocksDBException {
         Map<String, KVDBInstance> dbs = new HashMap<>();
 
-        for (DBInfo config : dbList.getDatabaseArray()) {
+        for (DBInfo config : dbList.getEnabledDatabases()) {
             if (config.isEnable()) {
                 String dbPath = config.getDbRootdir() + File.separator + config.getName();
                 FileUtils.makeDirectory(dbPath);
@@ -47,6 +47,25 @@ public class KVDB {
         }
 
         return dbs;
+    }
+
+    /**
+     * Load default databases from dbInfo.
+     *
+     * @param config
+     * @return
+     * @throws RocksDBException
+     */
+    public static KVDBInstance initDB(DBInfo config) throws RocksDBException {
+        Map<String, KVDBInstance> dbs = new HashMap<>();
+        String dbPath = config.getDbRootdir() + File.separator + config.getName();
+        FileUtils.makeDirectory(dbPath);
+        if (config.getPartitions() > 1) {
+            return RocksDBCluster.open(dbPath, config.getPartitions());
+        } else {
+            return dbs.put(config.getName(), RocksDBProxy.open(dbPath));
+        }
+
     }
 
     /**

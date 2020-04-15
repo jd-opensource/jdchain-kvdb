@@ -154,7 +154,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public boolean exists(Bytes key) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.exists(key);
     }
@@ -162,7 +162,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public boolean[] exists(Bytes... keys) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.exists(keys);
     }
@@ -170,7 +170,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public Bytes get(Bytes key) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.get(key);
     }
@@ -178,7 +178,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public Bytes[] get(Bytes... keys) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.get(keys);
     }
@@ -186,7 +186,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public boolean put(Bytes... kvs) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.put(kvs);
     }
@@ -194,7 +194,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public boolean batchBegin() throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.batchBegin();
     }
@@ -202,7 +202,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public boolean batchAbort() throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.batchAbort();
     }
@@ -210,7 +210,7 @@ public class KVDBClient implements KVDBOperator {
     @Override
     public boolean batchCommit() throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
-            throw new KVDBException("no databases selected");
+            throw new KVDBException("no database selected");
         }
         return operator.batchCommit();
     }

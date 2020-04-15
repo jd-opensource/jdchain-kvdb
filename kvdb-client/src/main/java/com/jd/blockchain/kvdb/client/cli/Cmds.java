@@ -3,8 +3,10 @@ package com.jd.blockchain.kvdb.client.cli;
 import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
+import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.Bytes;
+import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.ExitRequest;
@@ -12,8 +14,13 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.commands.Quit;
 
+import java.util.Arrays;
+
 @ShellComponent
 public class Cmds implements Quit.Command {
+
+    @Autowired
+    ClientConfig config;
 
     @Autowired
     KVDBClient client;
@@ -26,6 +33,22 @@ public class Cmds implements Quit.Command {
     public void quit() {
         client.close();
         throw new ExitRequest();
+    }
+
+    @ShellMethod(group = "KVDB Commands",
+            value = "Current database information.",
+            key = "status")
+    public String status() throws KVDBException {
+        StringBuilder builder = new StringBuilder();
+        if (!StringUtils.isEmpty(config.getDatabase())) {
+            builder.append("database: ");
+            builder.append(config.getDatabase());
+        } else {
+            builder.append("no database selected");
+        }
+
+        return builder.toString();
+
     }
 
     @ShellMethod(group = "KVDB Commands",
@@ -56,6 +79,7 @@ public class Cmds implements Quit.Command {
             key = "show databases")
     public String showDatabases() throws KVDBException {
         String[] names = client.showDatabases();
+        Arrays.sort(names);
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < names.length; i++) {
             builder.append(names[i]);

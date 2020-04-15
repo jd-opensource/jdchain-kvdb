@@ -218,5 +218,6 @@ KVDB Commands
         get: Get value
         put, set: Set a key-value
         show databases: Show databases
+        status: Current database information.
         use: Switch to the database with the specified name
 ```

@@ -30,7 +30,7 @@ public class UseExecutor implements Executor {
                     return KVDBMessage.success(request.getId(),
                             new Bytes(BinaryProtocol.encode(request.getServerContext().getDatabaseInfo(db), DatabaseInfo.class)));
                 } else {
-                    return KVDBMessage.error(request.getId(), "db not exists");
+                    return KVDBMessage.error(request.getId(), "database not exists");
                 }
             }
         } catch (Exception e) {

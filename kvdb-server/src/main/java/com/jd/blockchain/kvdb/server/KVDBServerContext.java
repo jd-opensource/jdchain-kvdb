@@ -3,6 +3,8 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.*;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
@@ -93,8 +95,8 @@ public class KVDBServerContext implements ServerContext {
     }
 
     @Override
-    public DatabaseInfo getDatabaseInfo(String database) {
-        KVDBDatabaseInfo info = new KVDBDatabaseInfo();
+    public DatabaseClusterInfo getDatabaseInfo(String database) {
+        KVDBDatabaseClusterInfo info = new KVDBDatabaseClusterInfo();
         String cluster = dbClusterMapping.get(database);
         if (StringUtils.isEmpty(cluster)) {
             info.setClusterMode(false);

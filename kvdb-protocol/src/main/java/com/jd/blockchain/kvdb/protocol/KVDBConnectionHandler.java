@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.protocol;
 
+import com.jd.blockchain.kvdb.protocol.proto.Message;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

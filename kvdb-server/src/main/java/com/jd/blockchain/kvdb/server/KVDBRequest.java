@@ -1,7 +1,7 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.protocol.Command;
-import com.jd.blockchain.kvdb.protocol.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Command;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
 
 /**
  * 请求封装

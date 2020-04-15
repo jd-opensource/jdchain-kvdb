@@ -1,10 +1,13 @@
-package com.jd.blockchain.kvdb.protocol;
+package com.jd.blockchain.kvdb.protocol.proto.impl;
 
+import com.jd.blockchain.kvdb.protocol.Constants;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.MessageContent;
 import com.jd.blockchain.utils.Bytes;
 
 import java.util.UUID;
 
-import static com.jd.blockchain.kvdb.protocol.Command.CommandType.*;
+import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
 
 public class KVDBMessage implements Message {
 

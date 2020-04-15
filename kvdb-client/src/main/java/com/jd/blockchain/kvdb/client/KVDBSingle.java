@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.client;
 
 import com.jd.blockchain.kvdb.protocol.Constants;
-import com.jd.blockchain.kvdb.protocol.KVDBMessage;
-import com.jd.blockchain.kvdb.protocol.Message;
-import com.jd.blockchain.kvdb.protocol.Response;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;

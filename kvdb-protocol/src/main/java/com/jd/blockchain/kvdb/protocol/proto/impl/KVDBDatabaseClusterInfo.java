@@ -1,9 +1,12 @@
-package com.jd.blockchain.kvdb.protocol;
+package com.jd.blockchain.kvdb.protocol.proto.impl;
+
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 
 /**
- * Server information
+ * 数据库实例集群信息
  */
-public class KVDBDatabaseInfo implements DatabaseInfo {
+public class KVDBDatabaseClusterInfo implements DatabaseClusterInfo {
 
     // Whether is cluster mode
     private boolean clusterMode;

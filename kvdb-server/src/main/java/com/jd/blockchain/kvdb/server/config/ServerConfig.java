@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.server.config;
 
-import com.jd.blockchain.kvdb.protocol.ClusterInfo;
-import com.jd.blockchain.kvdb.protocol.ClusterItem;
-import com.jd.blockchain.kvdb.protocol.KVDBClusterInfo;
-import com.jd.blockchain.kvdb.protocol.KVDBClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterItem;
 import com.jd.blockchain.utils.StringUtils;
 
 import java.io.File;

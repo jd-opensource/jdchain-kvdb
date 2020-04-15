@@ -1,7 +1,7 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
 import org.rocksdb.RocksDBException;
 
 /**

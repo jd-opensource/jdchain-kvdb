@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
-import com.jd.blockchain.kvdb.protocol.KVDBMessage;
-import com.jd.blockchain.kvdb.protocol.Message;
-import com.jd.blockchain.kvdb.protocol.parameter.CreateDatabaseParam;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfo;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.utils.StringUtils;
@@ -18,7 +18,7 @@ public class CreateDatabaseExecutor implements Executor {
     public Message execute(Request request) {
         try {
             // name 必填，rootDir 和 partitions 可选
-            CreateDatabaseParam param = BinaryProtocol.decodeAs(request.getCommand().getParameters()[0].toBytes(), CreateDatabaseParam.class);
+            DatabaseBaseInfo param = BinaryProtocol.decodeAs(request.getCommand().getParameters()[0].toBytes(), DatabaseBaseInfo.class);
             DBInfo dbInfo = new DBInfo();
             dbInfo.setEnable(true);
             if (StringUtils.isEmpty(param.getName().trim())) {

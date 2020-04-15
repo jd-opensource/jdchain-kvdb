@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.protocol.parameter;
+package com.jd.blockchain.kvdb.protocol.proto;
 
 import com.jd.blockchain.binaryproto.DataContract;
 import com.jd.blockchain.binaryproto.DataField;
@@ -6,10 +6,10 @@ import com.jd.blockchain.binaryproto.PrimitiveType;
 import com.jd.blockchain.kvdb.protocol.Constants;
 
 /**
- * 创建数据库参数
+ * 数据库实例基础信息
  */
 @DataContract(code = Constants.PARAMETER_CREATE_DATABASE)
-public interface CreateDatabaseParam {
+public interface DatabaseBaseInfo {
 
     /**
      * @return 数据库名称
@@ -17,15 +17,11 @@ public interface CreateDatabaseParam {
     @DataField(order = 0, primitiveType = PrimitiveType.TEXT)
     String getName();
 
-    void setName(String name);
-
     /**
      * @return 数据库根目录
      */
     @DataField(order = 1, primitiveType = PrimitiveType.TEXT)
     String getRootDir();
-
-    void setRootDir(String rootDir);
 
     /**
      * @return 数据库分片数量
@@ -33,5 +29,10 @@ public interface CreateDatabaseParam {
     @DataField(order = 2, primitiveType = PrimitiveType.INT32)
     Integer getPartitions();
 
-    void setPartitions(int partitions);
+    /**
+     * @return 数据库分片数量
+     */
+    @DataField(order = 3, primitiveType = PrimitiveType.BOOLEAN)
+    boolean isEnable();
+
 }

@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.client;
 
-import com.jd.blockchain.kvdb.protocol.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import org.junit.Ignore;

@@ -1,8 +1,8 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.ClusterInfo;
-import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
@@ -60,7 +60,7 @@ public interface ServerContext {
      * @param database 数据库名
      * @return 数据库信息
      */
-    DatabaseInfo getDatabaseInfo(String database);
+    DatabaseClusterInfo getDatabaseInfo(String database);
 
     /**
      * @return 集群信息

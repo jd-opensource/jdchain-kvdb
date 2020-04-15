@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import static com.jd.blockchain.kvdb.protocol.Command.CommandType.*;
+import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
 
 public class ContextTest {
 

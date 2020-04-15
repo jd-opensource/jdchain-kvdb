@@ -1,4 +1,6 @@
-package com.jd.blockchain.kvdb.protocol;
+package com.jd.blockchain.kvdb.protocol.proto.impl;
+
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 
 /**
  * Cluster information

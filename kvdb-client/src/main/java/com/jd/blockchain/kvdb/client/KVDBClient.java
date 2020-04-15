@@ -6,7 +6,8 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
-import com.jd.blockchain.kvdb.protocol.parameter.CreateDatabaseParam;
+import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -94,7 +95,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    public synchronized DatabaseInfo use(String db) throws KVDBException {
+    public synchronized DatabaseClusterInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
         }
@@ -106,7 +107,7 @@ public class KVDBClient implements KVDBOperator {
             throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
         }
         try {
-            DatabaseInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseInfo.class);
+            DatabaseClusterInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseClusterInfo.class);
             config.setDatabase(db);
             if (info.isClusterMode()) {
                 // 集群模式下，创建当前数据库所有服务节点连接，并执行切换数据库操作
@@ -147,9 +148,9 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    public boolean createDatabase(CreateDatabaseParam parameter) throws KVDBException {
+    public boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
-                .send(KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(parameter, CreateDatabaseParam.class))));
+                .send(KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(parameter, DatabaseBaseInfo.class))));
         if (null == response) {
             throw new KVDBTimeoutException("time out");
         } else if (response.getCode() == Constants.ERROR) {

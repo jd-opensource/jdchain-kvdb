@@ -1,11 +1,11 @@
 package com.jd.blockchain.kvdb.client.cli;
 
 import com.jd.blockchain.kvdb.client.KVDBClient;
-import com.jd.blockchain.kvdb.protocol.ClusterItem;
-import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
-import com.jd.blockchain.kvdb.protocol.parameter.KVDBCreateDatabaseParam;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseBaseInfo;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -181,7 +181,7 @@ public class Cmds implements Quit.Command {
         } else if (partitions < 0) {
             throw new KVDBException("partitions can not be negative");
         }
-        return client.createDatabase(new KVDBCreateDatabaseParam(name, rootDir, partitions));
+        return client.createDatabase(new KVDBDatabaseBaseInfo(name, rootDir, partitions));
     }
 
     /**
@@ -195,7 +195,7 @@ public class Cmds implements Quit.Command {
     @ShellMethod(group = "KVDB Commands",
             value = "Switch to the database with the specified name")
     public String use(String name) throws KVDBException, InterruptedException {
-        DatabaseInfo info = client.use(name);
+        DatabaseClusterInfo info = client.use(name);
         StringBuilder builder = new StringBuilder();
         builder.append("mode: ");
         builder.append(info.isClusterMode() ? "cluster" : "single");

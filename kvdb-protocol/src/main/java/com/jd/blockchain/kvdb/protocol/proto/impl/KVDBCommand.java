@@ -1,5 +1,6 @@
-package com.jd.blockchain.kvdb.protocol;
+package com.jd.blockchain.kvdb.protocol.proto.impl;
 
+import com.jd.blockchain.kvdb.protocol.proto.Command;
 import com.jd.blockchain.utils.Bytes;
 
 public class KVDBCommand implements Command {

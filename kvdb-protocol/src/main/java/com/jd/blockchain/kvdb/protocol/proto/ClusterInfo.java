@@ -1,8 +1,10 @@
-package com.jd.blockchain.kvdb.protocol;
+package com.jd.blockchain.kvdb.protocol.proto;
 
 import com.jd.blockchain.binaryproto.DataContract;
 import com.jd.blockchain.binaryproto.DataField;
 import com.jd.blockchain.binaryproto.PrimitiveType;
+import com.jd.blockchain.kvdb.protocol.Constants;
+import com.jd.blockchain.kvdb.protocol.KVDBURI;
 
 /**
  * 集群配置

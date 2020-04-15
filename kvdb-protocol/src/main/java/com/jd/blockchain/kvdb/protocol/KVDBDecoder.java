@@ -2,7 +2,7 @@ package com.jd.blockchain.kvdb.protocol;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.binaryproto.DataContractRegistry;
-import com.jd.blockchain.kvdb.protocol.parameter.CreateDatabaseParam;
+import com.jd.blockchain.kvdb.protocol.proto.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -20,10 +20,10 @@ public class KVDBDecoder extends MessageToMessageDecoder<ByteBuf> {
         DataContractRegistry.register(Command.class);
         DataContractRegistry.register(MessageContent.class);
         DataContractRegistry.register(Response.class);
-        DataContractRegistry.register(DatabaseInfo.class);
+        DataContractRegistry.register(DatabaseClusterInfo.class);
         DataContractRegistry.register(ClusterItem.class);
         DataContractRegistry.register(ClusterInfo.class);
-        DataContractRegistry.register(CreateDatabaseParam.class);
+        DataContractRegistry.register(DatabaseBaseInfo.class);
     }
 
     @Override

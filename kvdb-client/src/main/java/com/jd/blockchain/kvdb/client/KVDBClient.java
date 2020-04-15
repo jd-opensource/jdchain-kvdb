@@ -50,16 +50,6 @@ public class KVDBClient implements KVDBOperator {
     }
 
     /**
-     * 客户端重启：
-     * 1.关闭当前所有连接
-     * 2.执行启动操作
-     */
-    private void restart() {
-        close();
-        start();
-    }
-
-    /**
      * 创建服务端连接，提供连接就绪回调接口。
      * 针对连接初始创建回调接口执行唤醒等待操作；
      * 针对服务掉线重连回调接口执行客户端重启操作。
@@ -73,7 +63,9 @@ public class KVDBClient implements KVDBOperator {
             if (cdl.getCount() > 0) {
                 cdl.countDown();
             } else {
-                restart();
+                if (!StringUtils.isEmpty(config.getDatabase())) {
+                    clients.get(config.getHost() + config.getPort()).send(KVDBMessage.use(config.getDatabase()));
+                }
             }
         });
         try {

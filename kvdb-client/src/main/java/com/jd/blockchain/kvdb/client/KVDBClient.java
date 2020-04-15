@@ -6,6 +6,7 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
+import com.jd.blockchain.kvdb.protocol.parameter.CreateDatabaseParam;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -142,15 +143,13 @@ public class KVDBClient implements KVDBOperator {
     /**
      * 创建数据库
      *
-     * @param db
+     * @param parameter
      * @return
      * @throws KVDBException
      */
-    public boolean createDatabase(String db) throws KVDBException {
-        if (StringUtils.isEmpty(db)) {
-            throw new KVDBException("database is empty");
-        }
-        Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.createDatabase(Bytes.fromString(db)));
+    public boolean createDatabase(CreateDatabaseParam parameter) throws KVDBException {
+        Response response = clients.get(config.getHost() + config.getPort())
+                .send(KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(parameter, CreateDatabaseParam.class))));
         if (null == response) {
             throw new KVDBTimeoutException("time out");
         } else if (response.getCode() == Constants.ERROR) {

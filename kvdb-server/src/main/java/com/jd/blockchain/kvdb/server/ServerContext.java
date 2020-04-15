@@ -4,6 +4,7 @@ import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
 import org.rocksdb.RocksDBException;
@@ -47,13 +48,13 @@ public interface ServerContext {
     /**
      * 创建数据库
      *
-     * @param name 数据库名称
+     * @param dbInfo 数据实例信息
      * @return 数据库实例
      * @throws KVDBException
      * @throws RocksDBException
      * @throws IOException
      */
-    KVDBInstance createDatabase(String name) throws KVDBException, RocksDBException, IOException;
+    KVDBInstance createDatabase(DBInfo dbInfo) throws KVDBException, RocksDBException, IOException;
 
     /**
      * @param database 数据库名

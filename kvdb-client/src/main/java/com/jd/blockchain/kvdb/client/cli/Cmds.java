@@ -5,6 +5,7 @@ import com.jd.blockchain.kvdb.protocol.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.DatabaseInfo;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.protocol.parameter.KVDBCreateDatabaseParam;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -12,9 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.ExitRequest;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
+import org.springframework.shell.standard.ShellOption;
 import org.springframework.shell.standard.commands.Quit;
 
 import java.util.Arrays;
+
+import static org.springframework.shell.standard.ShellOption.NULL;
 
 @ShellComponent
 public class Cmds implements Quit.Command {
@@ -165,9 +169,19 @@ public class Cmds implements Quit.Command {
     @ShellMethod(group = "KVDB Commands",
             value = "Create a database use the giving name",
             key = "create database")
-    public boolean createDB(String name) throws KVDBException {
-
-        return client.createDatabase(name);
+    public boolean createDatabase(String name, @ShellOption(defaultValue = NULL) String rootDir, @ShellOption(defaultValue = NULL) Integer partitions) throws KVDBException {
+        if (StringUtils.isEmpty(name)) {
+            throw new KVDBException("database name can not be empty");
+        }
+        if (null == rootDir) {
+            rootDir = "";
+        }
+        if (null == partitions) {
+            partitions = 0;
+        } else if (partitions < 0) {
+            throw new KVDBException("partitions can not be negative");
+        }
+        return client.createDatabase(new KVDBCreateDatabaseParam(name, rootDir, partitions));
     }
 
     /**

@@ -7,7 +7,7 @@ import com.jd.blockchain.binaryproto.PrimitiveType;
 /**
  * 数据库实例信息
  */
-@DataContract(code = Constants.INFO)
+@DataContract(code = Constants.DATABASE_INFO)
 public interface DatabaseInfo {
 
     @DataField(order = 0, primitiveType = PrimitiveType.BOOLEAN)

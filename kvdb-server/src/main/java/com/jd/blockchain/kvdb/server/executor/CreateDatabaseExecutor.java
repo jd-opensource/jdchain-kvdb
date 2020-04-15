@@ -1,11 +1,12 @@
 package com.jd.blockchain.kvdb.server.executor;
 
+import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.Message;
+import com.jd.blockchain.kvdb.protocol.parameter.CreateDatabaseParam;
 import com.jd.blockchain.kvdb.server.Request;
-import com.jd.blockchain.utils.Bytes;
+import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.utils.StringUtils;
-import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +17,28 @@ public class CreateDatabaseExecutor implements Executor {
     @Override
     public Message execute(Request request) {
         try {
-            Bytes[] params = request.getCommand().getParameters();
-            String db = BytesUtils.toString(params[0].toBytes());
-            LOGGER.debug("execute create databases, db:{}", db);
-            if (StringUtils.isEmpty(db)) {
-                return KVDBMessage.error(request.getId(), "db name empty");
-            } else {
-                request.getServerContext().createDatabase(db);
-                return KVDBMessage.success(request.getId());
+            // name 必填，rootDir 和 partitions 可选
+            CreateDatabaseParam param = BinaryProtocol.decodeAs(request.getCommand().getParameters()[0].toBytes(), CreateDatabaseParam.class);
+            DBInfo dbInfo = new DBInfo();
+            dbInfo.setEnable(true);
+            if (StringUtils.isEmpty(param.getName().trim())) {
+                return KVDBMessage.error(request.getId(), "database name empty");
             }
+            dbInfo.setName(param.getName().trim());
+            if (StringUtils.isEmpty(param.getRootDir().trim())) {
+                dbInfo.setDbRootdir(request.getServerContext().getConfig().getKvdbConfig().getDbsRootdir());
+            } else {
+                dbInfo.setDbRootdir(param.getRootDir().trim());
+            }
+            if (param.getPartitions() < 0) {
+                return KVDBMessage.error(request.getId(), "partitions can not be negative");
+            } else if (param.getPartitions() > 0) {
+                dbInfo.setPartitions(param.getPartitions());
+            } else {
+                dbInfo.setPartitions(request.getServerContext().getConfig().getKvdbConfig().getDbsPartitions());
+            }
+            request.getServerContext().createDatabase(dbInfo);
+            return KVDBMessage.success(request.getId());
         } catch (Exception e) {
             LOGGER.error("execute create databases", e);
             return KVDBMessage.error(request.getId(), e.toString());

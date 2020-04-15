@@ -49,8 +49,8 @@ public class KVDBMessage implements Message {
         return new KVDBMessage(new KVDBCommand(CLUSTER_INFO.getCommand()));
     }
 
-    public static Message createDatabase(Bytes key) {
-        return new KVDBMessage(new KVDBCommand(CREATE_DATABASE.getCommand(), key));
+    public static Message createDatabase(Bytes parameter) {
+        return new KVDBMessage(new KVDBCommand(CREATE_DATABASE.getCommand(), parameter));
     }
 
     public static Message showDatabases() {

@@ -3,6 +3,7 @@ package com.jd.blockchain.kvdb.server.config;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -16,6 +17,9 @@ public class DBList {
     private static final String PROPERTITY_ENABLE = "enable";
     private static final String PROPERTITY_ROOTDIR = "rootdir";
     private static final String PROPERTITY_PARTITIONS = "partitions";
+
+    private String configFile;
+
     // 数据库名做主键
     private Map<String, DBInfo> dbs = new HashMap<>();
 
@@ -30,15 +34,19 @@ public class DBList {
      * @throws IOException
      */
     public DBList(String configFile, KVDBConfig kvdbConfig) throws IOException {
+        this.configFile = configFile;
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
         Set<String> dbNames = new HashSet<>();
         for (Object key : properties.keySet()) {
-            String dbName = ((String) key).split("\\.")[1];
-            if (dbNames.contains(dbName)) {
-                throw new KVDBException("duplicate database name : " + dbName);
+            String[] ps = ((String) key).split("\\.");
+            if (ps[2].equals(PROPERTITY_ENABLE)) {
+                String dbName = ps[1];
+                if (dbNames.contains(dbName)) {
+                    throw new KVDBException("duplicate database name : " + dbName);
+                }
+                dbNames.add(dbName);
             }
-            dbNames.add(dbName);
         }
         for (String dbName : dbNames) {
             DBInfo config = new DBInfo();
@@ -69,6 +77,31 @@ public class DBList {
      */
     public Set<String> getDatabaseNameSet() {
         return dbs.keySet();
+    }
+
+    /**
+     * 保存新创建数据库信息
+     *
+     * @param dbInfo
+     * @throws IOException
+     */
+    public void createDatabase(DBInfo dbInfo) throws IOException {
+        FileWriter fw = null;
+        try {
+            fw = new FileWriter(configFile, true);
+            fw.write("\n" + String.format(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE + "=true"));
+            fw.write("\n" + String.format(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_ROOTDIR + "=" + dbInfo.getDbRootdir()));
+            fw.write("\n" + String.format(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_PARTITIONS + "=" + dbInfo.getPartitions()));
+        } catch (IOException e) {
+            throw e;
+        } finally {
+            try {
+                if (null != fw) {
+                    fw.close();
+                }
+            } catch (IOException e) {
+            }
+        }
     }
 
 }

@@ -1,7 +1,6 @@
 package com.jd.blockchain.kvdb.server.config;
 
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -19,8 +18,6 @@ public class KVDBConfig {
     // 默认分片数
     private static final int DEFAULT_DB_PARTITIONS = 4;
 
-    // 配置文件完整路径
-    private String configFile;
     // 服务器地址
     private String host;
     // 服务器端口
@@ -31,7 +28,6 @@ public class KVDBConfig {
     private int dbsPartitions;
 
     public KVDBConfig(String configFile) throws IOException {
-        this.configFile = configFile;
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
         this.host = properties.getProperty("server.host", DEFAULT_HOST);
@@ -70,28 +66,5 @@ public class KVDBConfig {
 
     public void setDbsPartitions(int dbsPartitions) {
         this.dbsPartitions = dbsPartitions;
-    }
-
-    /**
-     * 创建数据库，创建数据库所对应目录
-     *
-     * @param database
-     * @throws IOException
-     */
-    public void createDatabase(String database) throws IOException {
-        FileWriter fw = null;
-        try {
-            fw = new FileWriter(configFile, true);
-            fw.write("\n" + String.format("db.%s.enable=true", database));
-        } catch (IOException e) {
-            throw e;
-        } finally {
-            try {
-                if (null != fw) {
-                    fw.close();
-                }
-            } catch (IOException e) {
-            }
-        }
     }
 }

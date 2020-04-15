@@ -3,6 +3,7 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.*;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
 import com.jd.blockchain.utils.StringUtils;
@@ -80,14 +81,13 @@ public class DefaultServerContext implements ServerContext {
         return rocksdbs.get(name);
     }
 
-    public synchronized KVDBInstance createDatabase(String dbName) throws KVDBException, RocksDBException, IOException {
-        if (rocksdbs.containsKey(dbName)) {
-            throw new KVDBException("database exists");
+    public synchronized KVDBInstance createDatabase(DBInfo dbInfo) throws KVDBException, RocksDBException, IOException {
+        if (rocksdbs.containsKey(dbInfo.getName())) {
+            throw new KVDBException("database already exists");
         }
-
-        KVDBInstance kvdbInstance = KVDB.createDB(config.getKvdbConfig(), dbName);
-        config.getKvdbConfig().createDatabase(dbName);
-        rocksdbs.put(dbName, kvdbInstance);
+        KVDBInstance kvdbInstance = KVDB.createDB(config.getKvdbConfig(), dbInfo);
+        config.getDbList().createDatabase(dbInfo);
+        rocksdbs.put(dbInfo.getName(), kvdbInstance);
 
         return kvdbInstance;
     }

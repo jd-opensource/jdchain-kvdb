@@ -53,15 +53,15 @@ public class KVDB {
      * Create database
      *
      * @param config
-     * @param dbName
+     * @param dbInfo
      * @return
      * @throws RocksDBException
      */
-    public static KVDBInstance createDB(KVDBConfig config, String dbName) throws RocksDBException {
+    public static KVDBInstance createDB(KVDBConfig config, DBInfo dbInfo) throws RocksDBException {
         KVDBInstance db;
-        String dbPath = config.getDbsRootdir() + File.separator + dbName;
+        String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
-        if (config.getDbsPartitions() > 1) {
+        if (dbInfo.getPartitions() > 1) {
             db = RocksDBCluster.open(dbPath, config.getDbsPartitions());
         } else {
             db = RocksDBProxy.open(dbPath);

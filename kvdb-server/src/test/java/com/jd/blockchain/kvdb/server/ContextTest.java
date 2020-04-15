@@ -14,11 +14,11 @@ import static com.jd.blockchain.kvdb.protocol.Command.CommandType.*;
 
 public class ContextTest {
 
-    private DefaultServerContext context;
+    private KVDBServerContext context;
 
     @Before
     public void setUp() throws Exception {
-        context = new DefaultServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
+        context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
     }
 
     @After

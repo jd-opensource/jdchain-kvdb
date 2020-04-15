@@ -6,7 +6,7 @@ import com.jd.blockchain.kvdb.protocol.Message;
 /**
  * 请求封装
  */
-public class DefaultRequest implements Request {
+public class KVDBRequest implements Request {
     // 当前服务器上下文
     private final ServerContext server;
     // 当前连接会话
@@ -14,7 +14,7 @@ public class DefaultRequest implements Request {
     // 消息
     private final Message message;
 
-    public DefaultRequest(ServerContext server, Session session, Message message) {
+    public KVDBRequest(ServerContext server, Session session, Message message) {
         this.server = server;
         this.session = session;
         this.message = message;

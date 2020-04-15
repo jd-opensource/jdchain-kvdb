@@ -20,7 +20,7 @@ public class ServerBooter {
                 home = homeArg.getValue();
             }
 
-            new KVDBServer(new DefaultServerContext(new ServerConfig(home))).start();
+            new KVDBServer(new KVDBServerContext(new ServerConfig(home))).start();
         } catch (Exception e) {
             LOGGER.error("server start failed!", e);
         }

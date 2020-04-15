@@ -20,9 +20,9 @@ import java.util.function.Function;
 /**
  * 服务端上下文信息
  */
-public class DefaultServerContext implements ServerContext {
+public class KVDBServerContext implements ServerContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultServerContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KVDBServerContext.class);
 
     // 当前服务器所有客户端连接
     private final ConcurrentHashMap<String, Session> clients = new ConcurrentHashMap<>();
@@ -41,7 +41,7 @@ public class DefaultServerContext implements ServerContext {
     private Map<String, String> dbClusterMapping;
 
 
-    public DefaultServerContext(ServerConfig config) throws RocksDBException {
+    public KVDBServerContext(ServerConfig config) throws RocksDBException {
         this.config = config;
         // 创建或加载 dblist 中配置的数据库实例
         rocksdbs = KVDB.initDBs(config.getDbList());
@@ -157,6 +157,6 @@ public class DefaultServerContext implements ServerContext {
     public void processCommand(String sourceKey, Message message) {
         Command command = (Command) message.getContent();
         Session session = getSession(sourceKey);
-        session.publish(executors.get(command.getName()).execute(new DefaultRequest(this, session, message)));
+        session.publish(executors.get(command.getName()).execute(new KVDBRequest(this, session, message)));
     }
 }

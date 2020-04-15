@@ -34,7 +34,7 @@ public class KVDBServer implements KVDBHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBServer.class);
 
     private static final int CLUSTER_CONFIRM_TIME_OUT = 3000;
-    private final DefaultServerContext serverContext;
+    private final KVDBServerContext serverContext;
 
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
@@ -47,7 +47,7 @@ public class KVDBServer implements KVDBHandler {
      */
     private boolean ready = false;
 
-    public KVDBServer(DefaultServerContext serverContext) {
+    public KVDBServer(KVDBServerContext serverContext) {
         this.serverContext = serverContext;
         bindExecutors();
     }
@@ -152,7 +152,7 @@ public class KVDBServer implements KVDBHandler {
     }
 
     private Session getSession(ChannelHandlerContext ctx, String sourceKey) {
-        return serverContext.getSession(sourceKey, key -> new DefaultSession(key, ctx));
+        return serverContext.getSession(sourceKey, key -> new KVDBSession(key, ctx));
     }
 
     public void disconnected(ChannelHandlerContext ctx) {

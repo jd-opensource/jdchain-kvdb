@@ -20,11 +20,11 @@ import java.util.UUID;
 
 public class ExecutorsTest {
 
-    private DefaultServerContext context;
+    private KVDBServerContext context;
 
     @Before
     public void setUp() throws Exception {
-        context = new DefaultServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
+        context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
     }
 
     @After
@@ -34,11 +34,11 @@ public class ExecutorsTest {
     }
 
     private Session newSession() {
-        return context.getSession(UUID.randomUUID().toString(), key -> new DefaultSession(key, null));
+        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
     }
 
     private Session newSessionWithTestDB() throws RocksDBException {
-        Session session = context.getSession(UUID.randomUUID().toString(), key -> new DefaultSession(key, null));
+        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
 
         session.setDB("test1", context.getDatabase("test1"));
 
@@ -46,7 +46,7 @@ public class ExecutorsTest {
     }
 
     private Response execute(Session session, Executor executor, Message message) {
-        return (Response) executor.execute(new DefaultRequest(context, session, message)).getContent();
+        return (Response) executor.execute(new KVDBRequest(context, session, message)).getContent();
     }
 
     @Test

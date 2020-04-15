@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 连接会话
  */
-public class DefaultSession implements Session {
+public class KVDBSession implements Session {
     // 会话ID
     private final String id;
     // 服务器上下文
@@ -28,7 +28,7 @@ public class DefaultSession implements Session {
     // 待提交批处理数据集
     private ConcurrentHashMap<Bytes, byte[]> batch;
 
-    public DefaultSession(String id, ChannelHandlerContext ctx) {
+    public KVDBSession(String id, ChannelHandlerContext ctx) {
         this.id = id;
         this.ctx = ctx;
     }

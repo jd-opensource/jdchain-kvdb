@@ -12,7 +12,7 @@ public class ServerTest {
 
     @Test
     public void test() throws Exception {
-        DefaultServerContext context = new DefaultServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
+        KVDBServerContext context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
         KVDBServer server = new KVDBServer(context);
         server.start();
         server.stop();

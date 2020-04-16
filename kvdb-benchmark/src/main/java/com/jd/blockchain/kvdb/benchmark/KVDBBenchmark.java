@@ -1,8 +1,7 @@
 package com.jd.blockchain.kvdb.benchmark;
 
-import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
+import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
-import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.utils.ArgumentSet;
 import com.jd.blockchain.utils.Bytes;
 
@@ -19,7 +18,7 @@ public class KVDBBenchmark {
     private static final String BATCH = "-b";
     private static final String KEEPALIVE = "-k";
     private static final String DEFAULT_HOST = "localhost";
-    private static final int DEFAULT_PORT = 6380;
+    private static final int DEFAULT_PORT = 7078;
     private static final int DEFAULT_CLIENT = 20;
     private static final int DEFAULT_REQUESTS = 100000;
     private static final boolean DEFAULT_BATCH = false;
@@ -141,9 +140,9 @@ public class KVDBBenchmark {
         for (int i = 0; i < bm.getClients(); i++) {
             final int index = i;
             new Thread(() -> {
-                NettyClient client = new NettyClient(config);
+                KVDBClient client = new KVDBClient(config);
                 if (bm.batch) {
-                    client.send(KVDBMessage.batchBegin());
+                    client.batchBegin();
                 }
                 try {
                     startCdl.await();
@@ -152,13 +151,13 @@ public class KVDBBenchmark {
                 }
                 int j = 0;
                 while (requests.getAndDecrement() > 0) {
-                    client.send(KVDBMessage.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1)));
+                    client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
                 }
                 if (bm.batch) {
-                    client.send(KVDBMessage.batchCommit());
+                    client.batchCommit();
                 }
                 endCdl.countDown();
-                client.stop();
+                client.close();
             }).start();
         }
 
@@ -170,8 +169,8 @@ public class KVDBBenchmark {
             e.printStackTrace();
         }
         long endTime = System.currentTimeMillis();
-        System.out.println(String.format("requests:%d, clients:%d, times:%dms, tps:%f",
-                bm.getRequests(), bm.getClients(), endTime - startTime, bm.getRequests() / ((endTime - startTime) / 1000d)));
+        System.out.println(String.format("requests:%d, clients:%d, batch:%s times:%dms, tps:%f",
+                bm.getRequests(), bm.getClients(), bm.batch, endTime - startTime, bm.getRequests() / ((endTime - startTime) / 1000d)));
 
     }
 

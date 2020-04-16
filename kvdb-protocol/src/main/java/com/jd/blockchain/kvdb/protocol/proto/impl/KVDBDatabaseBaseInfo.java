@@ -17,6 +17,10 @@ public class KVDBDatabaseBaseInfo implements DatabaseBaseInfo {
         this(name, rootDir, partitions, true);
     }
 
+    public KVDBDatabaseBaseInfo(String name) {
+        this(name, "", 0, true);
+    }
+
     public KVDBDatabaseBaseInfo(String name, String rootDir, Integer partitions, boolean enable) {
         this.name = name;
         this.rootDir = rootDir;

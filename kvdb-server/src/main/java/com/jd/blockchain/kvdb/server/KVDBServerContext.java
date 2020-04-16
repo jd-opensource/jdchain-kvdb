@@ -161,6 +161,10 @@ public class KVDBServerContext implements ServerContext {
             if (null == dbInfo) {
                 throw new KVDBException("database not exists");
             }
+            // 参与到集群中的数据库实例不可修改
+            if (dbClusterMapping.containsKey(database)) {
+                throw new KVDBException("database in cluster can not modified");
+            }
             KVDBInstance instance = rocksdbs.get(database);
             // 关闭数据库实例
             if (null != instance) {
@@ -181,7 +185,7 @@ public class KVDBServerContext implements ServerContext {
         }
     }
 
-    Session getSession(String sourceKey, Function<String, Session> factory) {
+    public Session getSession(String sourceKey, Function<String, Session> factory) {
         return clients.computeIfAbsent(sourceKey, key -> factory.apply(key));
     }
 

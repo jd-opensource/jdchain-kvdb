@@ -1,15 +1,20 @@
-package com.jd.blockchain.kvdb.server;
+package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
-import com.jd.blockchain.kvdb.protocol.proto.*;
 import com.jd.blockchain.kvdb.protocol.Constants;
+import com.jd.blockchain.kvdb.protocol.proto.*;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseBaseInfo;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
+import com.jd.blockchain.kvdb.server.KVDBRequest;
+import com.jd.blockchain.kvdb.server.KVDBServerContext;
+import com.jd.blockchain.kvdb.server.KVDBSession;
+import com.jd.blockchain.kvdb.server.Session;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
-import com.jd.blockchain.kvdb.server.executor.*;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.PropertiesConfigurationLayout;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,21 +22,35 @@ import org.junit.Test;
 import org.rocksdb.RocksDBException;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.UUID;
 
-public class ExecutorsTest {
+public class SingleTest {
 
     private KVDBServerContext context;
+    // 用于dblist恢复
+    private PropertiesConfiguration config;
+    private PropertiesConfigurationLayout layout;
 
     @Before
     public void setUp() throws Exception {
-        context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
+        context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/executor/single").getFile()));
+        config = new PropertiesConfiguration();
+        layout = new PropertiesConfigurationLayout();
+        config.setLayout(layout);
+        try (FileReader reader = new FileReader(context.getConfig().getDblistFile())) {
+            layout.load(config, reader);
+        }
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         context.stop();
         FileUtils.deletePath(new File(context.getConfig().getKvdbConfig().getDbsRootdir()), true);
+        try (FileWriter fileWriter = new FileWriter(context.getConfig().getDblistFile())) {
+            layout.save(config, fileWriter);
+        }
     }
 
     private Session newSession() {
@@ -212,20 +231,109 @@ public class ExecutorsTest {
     public void testUse() {
         Session session = newSession();
 
+        Assert.assertNull(session.getDBInstance());
+
         Response response = execute(session, new UseExecutor(), KVDBMessage.use("test1"));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        DatabaseClusterInfo clusterInfo = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseClusterInfo.class);
+        Assert.assertFalse(clusterInfo.isClusterMode());
+
+        Assert.assertNotNull(session.getDBInstance());
+    }
+
+    @Test
+    public void testShowDB() {
+        Session session = newSession();
+
+        Response response = execute(session, new ShowDatabasesExecutor(), KVDBMessage.showDatabases());
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        DatabaseBaseInfos baseInfos = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseBaseInfos.class);
+        Assert.assertEquals(2, baseInfos.getBaseInfos().length);
+        for (DatabaseBaseInfo info : baseInfos.getBaseInfos()) {
+            if (info.getName().equals("test1")) {
+                Assert.assertTrue(info.isEnable());
+            } else {
+                Assert.assertFalse(info.isEnable());
+            }
+        }
     }
 
     @Test
     public void testCreateDB() {
         Session session = newSession();
 
-        DatabaseBaseInfo param = new KVDBDatabaseBaseInfo("db0", "", 0);
+        DatabaseBaseInfo param = new KVDBDatabaseBaseInfo("db0");
         Response response = execute(session, new CreateDatabaseExecutor(), KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(param, DatabaseBaseInfo.class))));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
 
         response = execute(session, new UseExecutor(), KVDBMessage.use("db0"));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        response = execute(session, new ShowDatabasesExecutor(), KVDBMessage.showDatabases());
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        DatabaseBaseInfos baseInfos = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseBaseInfos.class);
+        Assert.assertEquals(3, baseInfos.getBaseInfos().length);
+        for (DatabaseBaseInfo info : baseInfos.getBaseInfos()) {
+            if (info.getName().equals("db0")) {
+                Assert.assertTrue(info.isEnable());
+                Assert.assertEquals("db0", info.getName());
+                Assert.assertEquals("../dbs", info.getRootDir());
+                Assert.assertEquals(4, info.getPartitions().intValue());
+            }
+        }
+    }
+
+    @Test
+    public void testEnableDB() {
+        Session session = newSession();
+
+        Response response = execute(session, new UseExecutor(), KVDBMessage.use("test2"));
+        Assert.assertEquals(Constants.ERROR, response.getCode());
+
+        response = execute(session, new EnableDatabaseExecutor(), KVDBMessage.enableDatabase("test2"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        response = execute(session, new UseExecutor(), KVDBMessage.use("test2"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        // 幂等
+        response = execute(session, new EnableDatabaseExecutor(), KVDBMessage.enableDatabase("test2"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+    }
+
+    @Test
+    public void testDisableDB() {
+        Session session = newSession();
+
+        Response response = execute(session, new UseExecutor(), KVDBMessage.use("test1"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        response = execute(session, new DisableDatabaseExecutor(), KVDBMessage.disableDatabase("test1"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        response = execute(session, new UseExecutor(), KVDBMessage.use("test1"));
+        Assert.assertEquals(Constants.ERROR, response.getCode());
+
+        // 非幂等
+        response = execute(session, new DisableDatabaseExecutor(), KVDBMessage.disableDatabase("test1"));
+        Assert.assertEquals(Constants.ERROR, response.getCode());
+    }
+
+    @Test
+    public void testDropDB() {
+        Session session = newSession();
+
+        Response response = execute(session, new UseExecutor(), KVDBMessage.use("test1"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        response = execute(session, new DropDatabaseExecutor(), KVDBMessage.dropDatabase("test1"));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        response = execute(session, new UseExecutor(), KVDBMessage.use("test1"));
+        Assert.assertEquals(Constants.ERROR, response.getCode());
+
+        Assert.assertEquals(1, context.getConfig().getDbList().getDatabases().size());
     }
 
     @Test
@@ -236,7 +344,7 @@ public class ExecutorsTest {
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
         ClusterInfo info = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class);
         Assert.assertNotNull(info);
-        Assert.assertEquals(2, info.size());
+        Assert.assertEquals(0, info.size());
     }
 
 }

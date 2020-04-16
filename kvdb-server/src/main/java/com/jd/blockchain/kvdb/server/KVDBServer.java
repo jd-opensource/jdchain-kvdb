@@ -7,6 +7,7 @@ import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.proto.*;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.executor.*;
+import com.jd.blockchain.utils.io.BytesUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -176,8 +177,8 @@ public class KVDBServer implements KVDBHandler {
         Command command = (Command) message.getContent();
 
         // 仅当服务器就绪后才能对外提供服务，集群配置查询命令除外，用于同步确认集群环境
-        if (!ready && !command.getName().equals(CLUSTER_INFO.getCommand())) {
-            ctx.writeAndFlush(KVDBMessage.error(message.getId(), "server not ready"));
+        if (!ready && command.getName().equals(CLUSTER_INFO.getCommand())) {
+            serverContext.processCommand(sourceKey, message);
         } else {
             // 解析客户端IP地址，针对非开放操作仅对本机地址通过管理服务端口开放
             String remoteHost = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
@@ -239,6 +240,8 @@ public class KVDBServer implements KVDBHandler {
             cdl.await(CLUSTER_CONFIRM_TIME_OUT, TimeUnit.MILLISECONDS);
             Response response = client.send(KVDBMessage.clusterInfo());
             if (null == response || response.getCode() == Constants.ERROR) {
+                String bi = BytesUtils.toString(response.getResult()[0].toBytes());
+                LOGGER.error("cluster confirm {} error", BytesUtils.toString(response.getResult()[0].toBytes()));
                 return false;
             }
 

@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.UUID;
 
 import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
 
@@ -18,7 +19,7 @@ public class ContextTest {
 
     @Before
     public void setUp() throws Exception {
-        context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/").getFile()));
+        context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/context").getFile()));
     }
 
     @After
@@ -28,7 +29,7 @@ public class ContextTest {
     }
 
     @Test
-    public void test() {
+    public void testExecutor() {
         context.addExecutor(USE.getCommand(), new UseExecutor());
         context.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
         context.addExecutor(CLUSTER_INFO.getCommand(), new ClusterInfoExecutor());
@@ -52,4 +53,26 @@ public class ContextTest {
         Assert.assertTrue(context.getExecutor("test unknown") instanceof UnknowExecutor);
 
     }
+
+    @Test
+    public void testSession() {
+        String sourceKey = UUID.randomUUID().toString();
+        Session session = context.getSession(sourceKey, key -> new KVDBSession(key, null));
+        Assert.assertEquals(session, context.getSession(sourceKey));
+        context.removeSession(sourceKey);
+        Assert.assertNull(context.getSession(sourceKey));
+    }
+
+    @Test
+    public void testConfig() {
+        Assert.assertEquals(2, context.getDatabases().size());
+        Assert.assertNotNull(context.getDatabase("test1"));
+        Assert.assertNotNull(context.getDatabase("test2"));
+        Assert.assertEquals(1, context.getClusterInfo().size());
+        Assert.assertTrue(context.getDatabaseInfo("test1").isClusterMode());
+        Assert.assertEquals(2, context.getDatabaseInfo("test1").getClusterItem().getURLs().length);
+        Assert.assertEquals("test1", context.getDatabaseInfo("test1").getClusterItem().getName());
+        Assert.assertFalse(context.getDatabaseInfo("test2").isClusterMode());
+    }
+
 }

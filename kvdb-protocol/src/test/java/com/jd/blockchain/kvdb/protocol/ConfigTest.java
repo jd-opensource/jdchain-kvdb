@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.client;
+package com.jd.blockchain.kvdb.protocol;
 
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import org.junit.Assert;

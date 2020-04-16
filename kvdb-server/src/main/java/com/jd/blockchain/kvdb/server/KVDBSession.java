@@ -65,7 +65,9 @@ public class KVDBSession implements Session {
         if (null != batch) {
             batch.clear();
         }
-        ctx.close();
+        if(null != ctx) {
+            ctx.close();
+        }
     }
 
     @Override

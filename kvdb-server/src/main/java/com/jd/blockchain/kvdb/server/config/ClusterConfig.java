@@ -35,12 +35,21 @@ public class ClusterConfig {
         properties.load(new FileInputStream(configFile));
         Set<String> clusterNames = new HashSet<>();
         for (Object key : properties.keySet()) {
-            clusterNames.add(((String) key).split("\\.")[1]);
+            String[] item = ((String) key).split("\\.");
+            if(item[2].equals(PROPERTITY_PARTITIONS)) {
+                if (cluster.containsKey(item[1])) {
+                    throw new KVDBException("duplicate cluster name : " + item[1]);
+                }
+                clusterNames.add(item[1]);
+            }
         }
         Set<String> databasesInDblist = dbList.getEnabledDatabaseNameSet();
         Map<String, String> databaseClusterMapping = new HashMap<>();
         for (String clusterName : clusterNames) {
             int partitions = Integer.parseInt(properties.getProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + clusterName + PROPERTITY_SEPARATOR + PROPERTITY_PARTITIONS));
+            if (partitions < 2) {
+                throw new KVDBException("cluster :  " + clusterName + " partitions must < 2");
+            }
             String[] urls = new String[partitions];
             for (int i = 0; i < partitions; i++) {
                 urls[i] = properties.getProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + clusterName + PROPERTITY_SEPARATOR + i);
@@ -52,9 +61,6 @@ public class ClusterConfig {
                     throw new KVDBException("multiple clusters include database : " + uri.getDatabase());
                 }
                 databaseClusterMapping.put(urls[i], clusterName);
-            }
-            if (cluster.containsKey(clusterName)) {
-                throw new KVDBException("duplicate cluster name : " + clusterName);
             }
             cluster.put(clusterName, urls);
         }

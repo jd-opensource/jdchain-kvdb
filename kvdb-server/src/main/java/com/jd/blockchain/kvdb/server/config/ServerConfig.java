@@ -4,7 +4,6 @@ import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterItem;
-import com.jd.blockchain.utils.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,20 +21,19 @@ public class ServerConfig {
     private static final String CLUSTER_CONFIG = "cluster.conf";
     private static final String DBLIST = "dblist";
 
+    private String kvdbConfigFile;
+    private String clusterConfigFile;
+    private String dblistFile;
+
     private KVDBConfig kvdbConfig;
     private ClusterConfig clusterConfig;
     private DBList dbList;
 
     public ServerConfig(String home) throws IOException {
-        String kvdbConfigFile = null;
-        String clusterConfigFile = null;
-        String dblistFile = null;
-        if (!StringUtils.isEmpty(home)) {
-            File file = new File(home);
-            kvdbConfigFile = file.getAbsolutePath() + File.separator + CONFIG_DIR + File.separator + KVDB_CONFIG;
-            clusterConfigFile = file.getAbsolutePath() + File.separator + CONFIG_DIR + File.separator + CLUSTER_CONFIG;
-            dblistFile = file.getAbsolutePath() + File.separator + SYSTEM_DIR + File.separator + DBLIST;
-        }
+        File file = new File(home);
+        kvdbConfigFile = file.getAbsolutePath() + File.separator + CONFIG_DIR + File.separator + KVDB_CONFIG;
+        clusterConfigFile = file.getAbsolutePath() + File.separator + CONFIG_DIR + File.separator + CLUSTER_CONFIG;
+        dblistFile = file.getAbsolutePath() + File.separator + SYSTEM_DIR + File.separator + DBLIST;
         kvdbConfig = new KVDBConfig(kvdbConfigFile);
         dbList = new DBList(dblistFile, kvdbConfig);
         clusterConfig = new ClusterConfig(clusterConfigFile, dbList);
@@ -89,4 +87,15 @@ public class ServerConfig {
         return dbList;
     }
 
+    public String getKvdbConfigFile() {
+        return kvdbConfigFile;
+    }
+
+    public String getClusterConfigFile() {
+        return clusterConfigFile;
+    }
+
+    public String getDblistFile() {
+        return dblistFile;
+    }
 }

@@ -4,8 +4,6 @@ import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
-import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
-import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfo;
 import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
@@ -13,13 +11,11 @@ import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
-@Ignore
 public class ServerTest {
 
     @Test

@@ -67,7 +67,7 @@ public class KVDBClusterInfo implements ClusterInfo {
         }
         // 远端包含localhost和远端地址的配置项
         Map<String, String[]> remoteMapping = new HashMap<>();
-        for (int i = 0; i < size(); i++) {
+        for (int i = 0; i < clusterInfo.size(); i++) {
             boolean containLocal = false;
             boolean containRemote = false;
             for (String url : clusterInfo.getClusterItems()[i].getURLs()) {

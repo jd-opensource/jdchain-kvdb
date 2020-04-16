@@ -12,7 +12,7 @@ public class KVDBBenchmark {
 
     private static final String HOST = "-h";
     private static final String PORT = "-p";
-    private static final String DB = "-d";
+    private static final String DB = "-db";
     private static final String CLIENTS = "-c";
     private static final String REQUESTS = "-n";
     private static final String BATCH = "-b";
@@ -114,15 +114,15 @@ public class KVDBBenchmark {
         } else {
             this.requests = DEFAULT_REQUESTS;
         }
-        ArgumentSet.ArgEntry keepArg = arguments.getArg(KEEPALIVE);
-        if (null != keepArg) {
-            this.keepAlive = Integer.valueOf(keepArg.getValue()) == 1 ? true : false;
+        ArgumentSet.ArgEntry kaArg = arguments.getArg(KEEPALIVE);
+        if (null != kaArg) {
+            this.keepAlive = Boolean.valueOf(kaArg.getValue());
         } else {
             this.keepAlive = DEFAULT_KEEP_ALIVE;
         }
         ArgumentSet.ArgEntry batchArg = arguments.getArg(BATCH);
         if (null != batchArg) {
-            this.batch = Integer.valueOf(batchArg.getValue()) == 1 ? true : false;
+            this.batch = Boolean.valueOf(batchArg.getValue());
         } else {
             this.batch = DEFAULT_BATCH;
         }
@@ -141,7 +141,7 @@ public class KVDBBenchmark {
             final int index = i;
             new Thread(() -> {
                 KVDBClient client = new KVDBClient(config);
-                if (bm.batch) {
+                if (bm.batch && bm.keepAlive) {
                     client.batchBegin();
                 }
                 try {
@@ -153,7 +153,7 @@ public class KVDBBenchmark {
                 while (requests.getAndDecrement() > 0) {
                     client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
                 }
-                if (bm.batch) {
+                if (bm.batch && bm.keepAlive) {
                     client.batchCommit();
                 }
                 endCdl.countDown();

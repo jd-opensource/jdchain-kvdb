@@ -227,9 +227,9 @@ public void close();
 
 - `-h` 服务器地址。选填，默认`localhost`
 - `-p` 端口。选填，默认`6070`
-- `-db` 数据库/集群名称。选填
+- `-db` 数据库。选填
 - `-t` 超时时间，毫秒。选填，默认`60000 ms`
-- `-rt` 超市重试等待次数。选填，默认`5`
+- `-rt` 超时重试等待次数。选填，默认`5`
 - `-bs` 发送/接收缓冲区大小。选填，默认`1024*1024`
 - `-k` 保持连接。选填，默认`true`
 
@@ -263,3 +263,20 @@ KVDB Commands
         status: 当前数据库信息
         use: 切换数据库
 ```
+
+### Benchmark
+
+`kvdb-sever`性能测试工具，简单的数据插入测试。
+
+```bash
+./kvdb-benchmark.sh -h <kvdb server host> -p <kvdb server port> -db <database> -c <time out in milliseconds>  -n <retry times for time out> -b <buffer size> -k <keep alive>
+```
+参数说明：
+
+- `-h` 服务器地址。选填，默认`localhost`
+- `-p` 端口。选填，默认`6078`
+- `-db` 数据库。必填
+- `-c` 客户端数量。选填，默认`20`
+- `-n` 请求数量。选填，默认`100000`
+- `-b` 是否使用批处理。选填，默认`false`
+- `-k` 保持连接。选填，默认`true`

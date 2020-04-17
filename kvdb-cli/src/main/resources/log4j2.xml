@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="ERROR">
     <Appenders>
-        <RollingFile name="RollingFile" fileName="${sys:logging.path}/client.log"
-                     filePattern="logs/$${date:yyyy-MM}/yadou-manage-%d{MM-dd-yyyy}-%i.log.gz">
+        <RollingFile name="RollingFile" fileName="${sys:logging.path}/cli.log"
+                     filePattern="logs/$${date:yyyy-MM}/cli-%d{MM-dd-yyyy}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d %-5level [%t]%l - %msg%n</Pattern>
             </PatternLayout>

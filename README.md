@@ -98,7 +98,7 @@ cluster.<name>.2=kvdb://<host>:<port>/<dbname>
 LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=error"
 ```
 默认日志路径：程序解压缩后主目录下`logs`目录
-默认日志登记：`error`
+默认日志等级：`error`
 
 2. `kvdb-cli`
 
@@ -232,8 +232,6 @@ public void close();
 - `-rt` 超时重试等待次数。选填，默认`5`
 - `-bs` 发送/接收缓冲区大小。选填，默认`1024*1024`
 - `-k` 保持连接。选填，默认`true`
-
-> 部分指令仅在
 
 所有支持指令操作：
 ```bash

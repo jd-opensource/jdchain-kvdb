@@ -17,6 +17,7 @@
 		<module>kvdb-protocol</module>
 		<module>kvdb-client</module>
 		<module>kvdb-benchmark</module>
+		<module>kvdb-cli</module>
 		<module>kvdb-server</module>
 	</modules>
 

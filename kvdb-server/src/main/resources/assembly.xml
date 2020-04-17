@@ -39,6 +39,7 @@
             <includes>
                 <include>com.jd.blockchain:kvdb-benchmark</include>
                 <include>com.jd.blockchain:kvdb-client</include>
+                <include>com.jd.blockchain:kvdb-cli</include>
             </includes>
             <binaries>
                 <outputDirectory>libs</outputDirectory>

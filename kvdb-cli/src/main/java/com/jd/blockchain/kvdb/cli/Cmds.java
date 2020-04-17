@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.client.cli;
+package com.jd.blockchain.kvdb.cli;
 
 import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;

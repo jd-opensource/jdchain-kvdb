@@ -17,7 +17,7 @@ public interface Command extends MessageContent {
         DISABLE_DATABASE("disable database", false),
         ENABLE_DATABASE("enable database", false),
         DROP_DATABASE("drop database", false),
-        CLUSTER_INFO("cluster", false),
+        CLUSTER_INFO("cluster", true),
         SHOW_DATABASES("show databases", false),
         USE("use", true),
         PUT("put", true),

@@ -1,12 +1,12 @@
 package com.jd.blockchain.kvdb.client;
 
 import com.jd.blockchain.kvdb.protocol.Constants;
-import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
-import com.jd.blockchain.kvdb.protocol.proto.Message;
-import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
@@ -84,11 +84,8 @@ public class KVDBSingle implements KVDBOperator {
     }
 
     @Override
-    public boolean put(Bytes... kvs) throws KVDBException {
-        if (kvs.length % 2 != 0) {
-            throw new KVDBException("keys and values must in pairs");
-        }
-        Response response = send(KVDBMessage.put(kvs));
+    public boolean put(Bytes key, Bytes value) throws KVDBException {
+        Response response = send(KVDBMessage.put(key, value));
         if (null == response) {
             throw new KVDBTimeoutException("time out");
         } else if (response.getCode() == Constants.ERROR) {

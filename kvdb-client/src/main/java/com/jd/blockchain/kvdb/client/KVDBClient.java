@@ -285,11 +285,11 @@ public class KVDBClient implements KVDBOperator {
     }
 
     @Override
-    public boolean put(Bytes... kvs) throws KVDBException {
+    public boolean put(Bytes key, Bytes value) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
-        return operator.put(kvs);
+        return operator.put(key, value);
     }
 
     @Override

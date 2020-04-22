@@ -87,24 +87,14 @@ public class KVDBCluster implements KVDBOperator {
     }
 
     /**
-     * TODO multiple keys optimization
-     *
-     * @param kvs
+     * @param key
+     * @param value
      * @return
      * @throws KVDBException
      */
     @Override
-    public boolean put(Bytes... kvs) throws KVDBException {
-        if (kvs.length % 2 != 0) {
-            throw new KVDBException("keys and values must in pairs");
-        }
-        for (int i = 0; i < kvs.length; ) {
-            if (!operators[partition.partition(kvs[i].toBytes())].put(kvs[i], kvs[i + 1])) {
-                return false;
-            }
-            i += 2;
-        }
-        return true;
+    public boolean put(Bytes key, Bytes value) throws KVDBException {
+        return operators[partition.partition(key.toBytes())].put(key, value);
     }
 
     @Override

@@ -45,13 +45,14 @@ public interface KVDBOperator {
     Bytes[] get(Bytes... keys) throws KVDBException;
 
     /**
-     * 设置键值对，支持多个键值对，以键值交替出现方式传递
+     * 设置键值对
      *
-     * @param kvs
+     * @param key
+     * @param value
      * @return
      * @throws KVDBException
      */
-    boolean put(Bytes... kvs) throws KVDBException;
+    boolean put(Bytes key, Bytes value) throws KVDBException;
 
     /**
      * 开启批处理

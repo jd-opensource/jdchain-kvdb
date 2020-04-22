@@ -30,7 +30,7 @@ public class GetExecutor implements Executor {
                 if (!batch) {
                     value = db.get(key.toBytes());
                 } else {
-                    value = request.getSession().doInBatch((wb) -> wb.get(key));
+                    value = request.getSession().readInBatch((wb) -> wb.get(key));
                     if (null == value) {
                         value = db.get(key.toBytes());
                     }

@@ -2,6 +2,7 @@ package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.KVWriteBatch;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.utils.Bytes;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KVDBSession implements Session {
     // 会话ID
     private final String id;
-    // 服务器上下文
+    // Channel上下文
     private final ChannelHandlerContext ctx;
     // 当前数据库实例名称
     private String dbName;
@@ -65,7 +66,7 @@ public class KVDBSession implements Session {
         if (null != batch) {
             batch.clear();
         }
-        if(null != ctx) {
+        if (null != ctx) {
             ctx.close();
         }
     }
@@ -127,14 +128,33 @@ public class KVDBSession implements Session {
     }
 
     /**
-     * 批处理钩子，具体操作逻辑由各自executor定义
+     * 批处理时读钩子，具体操作逻辑由各自executor定义
      *
      * @param hook
      * @return
      * @throws RocksDBException
      */
     @Override
-    public byte[] doInBatch(BatchHook hook) throws RocksDBException {
+    public byte[] readInBatch(BatchHook hook) throws RocksDBException {
         return hook.exec(batch);
+    }
+
+    /**
+     * 批处理时读钩子，具体操作逻辑由各自executor定义
+     *
+     * @param hook
+     * @param maxBatchSize 批处理最大数量
+     * @return
+     * @throws RocksDBException
+     */
+    @Override
+    public byte[] writeInBatch(BatchHook hook, int maxBatchSize) throws RocksDBException {
+        if (maxBatchSize <= 0 || batch.size() < maxBatchSize) {
+            return hook.exec(batch);
+        } else if (batch.size() >= maxBatchSize) { // TODO 最有一条是更新操作
+            throw new KVDBException("no more execution allowed in batch");
+        }
+
+        return null;
     }
 }

@@ -52,6 +52,9 @@ dbs.rootdir=/usr/kvdb/dbs
 
 # 数据库实例默认的本地分区数
 dbs.partitions=4
+
+# 批处理最大更新数量，<=0表示不限制，默认值1000
+dbs.maxbatchsize=1000
 ```
 
 #### `cluster.conf`

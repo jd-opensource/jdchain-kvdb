@@ -1,8 +1,8 @@
 package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -34,7 +34,7 @@ public class ExistsExecutor implements Executor {
                     // 因mayExists不一定准确，此处使用rocksdb的get方法判断
                     value = db.get(key.toBytes());
                 } else {
-                    value = request.getSession().doInBatch((wb) -> wb.get(key));
+                    value = request.getSession().readInBatch((wb) -> wb.get(key));
                     if (null == value) {
                         value = db.get(key.toBytes());
                     }

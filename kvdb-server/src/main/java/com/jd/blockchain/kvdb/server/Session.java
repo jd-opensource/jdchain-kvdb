@@ -74,11 +74,20 @@ public interface Session {
     void batchCommit() throws RocksDBException;
 
     /**
-     * 批处理钩子方法
+     * 批处理时读钩子方法
      *
      * @param hook
      * @return
      * @throws RocksDBException
      */
-    byte[] doInBatch(BatchHook hook) throws RocksDBException;
+    byte[] readInBatch(BatchHook hook) throws RocksDBException;
+
+    /**
+     * 批处理时写钩子方法
+     *
+     * @param hook
+     * @return
+     * @throws RocksDBException
+     */
+    byte[] writeInBatch(BatchHook hook, int maxBatchSize) throws RocksDBException;
 }

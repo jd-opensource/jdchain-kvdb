@@ -38,10 +38,7 @@ public class PutExecutor implements Executor {
                     LOGGER.debug("execute put in batch, key:{}, value:{}", BytesUtils.toString(kvs[i].toBytes()), kvs[i + 1].toBytes());
                     final Bytes key = kvs[i];
                     final Bytes value = kvs[i + 1];
-                    request.getSession().doInBatch((wb) -> {
-                        wb.put(key, value.toBytes());
-                        return null;
-                    });
+                    request.getSession().writeInBatch((wb) -> wb.put(key, value.toBytes()), request.getServerContext().getConfig().getKvdbConfig().getDbsMaxBatchSize());
                     i = i + 2;
                 }
             } catch (Exception e) {

@@ -218,13 +218,41 @@ public class SingleTest {
         response = execute(session1, new BatchCommitExecutor(), KVDBMessage.batchCommit());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
 
-        // k/k1/k2 invisible in session2 after session commit batch
+        // k/k1/k2 visible in session2 after session commit batch
         response = execute(session2, new ExistsExecutor(), KVDBMessage.exists(Bytes.fromString("k"), Bytes.fromString("k1"), Bytes.fromString("k2")));
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
         Assert.assertEquals(3, response.getResult().length);
         Assert.assertEquals(1, BytesUtils.toInt(response.getResult()[0].toBytes()));
         Assert.assertEquals(1, BytesUtils.toInt(response.getResult()[1].toBytes()));
         Assert.assertEquals(1, BytesUtils.toInt(response.getResult()[2].toBytes()));
+    }
+
+    @Test
+    public void testMaxBatchSize() throws RocksDBException {
+        Session session = newSessionWithTestDB();
+        // batch begin in session
+        Response response = execute(session, new BatchBeginExecutor(), KVDBMessage.batchBegin());
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        // kvs in session
+        for (int i = 0; i < context.getConfig().getKvdbConfig().getDbsMaxBatchSize(); i++) {
+            response = execute(session, new PutExecutor(), KVDBMessage.put(Bytes.fromString("k" + i), Bytes.fromString("v")));
+            Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        }
+
+        // read is ok
+        response = execute(session, new ExistsExecutor(), KVDBMessage.exists(Bytes.fromString("k0")));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
+        // no more execution
+        response = execute(session, new PutExecutor(), KVDBMessage.put(Bytes.fromString("k" + context.getConfig().getKvdbConfig().getDbsMaxBatchSize()), Bytes.fromString("v")));
+        Assert.assertEquals(Constants.ERROR, response.getCode());
+
+        // reset maxBatchSize
+        context.getConfig().getKvdbConfig().setDbsMaxBatchSize(-1);
+        response = execute(session, new PutExecutor(), KVDBMessage.put(Bytes.fromString("k" + context.getConfig().getKvdbConfig().getDbsMaxBatchSize()), Bytes.fromString("v")));
+        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+
     }
 
     @Test

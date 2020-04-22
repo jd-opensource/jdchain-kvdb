@@ -19,6 +19,8 @@ public class KVDBConfig {
     private static final int DEFAULT_MANAGER_PORT = 7060;
     // 默认分片数
     private static final int DEFAULT_DB_PARTITIONS = 4;
+    // 默认批处理最大操作数量
+    private static final int DEFAULT_MAX_BATCH_SIZE = 1000;
 
     // 服务器地址
     private String host;
@@ -30,6 +32,8 @@ public class KVDBConfig {
     private String dbsRootdir;
     // 全局数据实例分片数
     private int dbsPartitions;
+    // 批处理最大操作数
+    private int dbsMaxBatchSize;
 
     public KVDBConfig(String configFile) throws IOException {
         Properties properties = new Properties();
@@ -39,6 +43,7 @@ public class KVDBConfig {
         this.managerPort = Integer.parseInt(properties.getProperty("manager.port", String.valueOf(DEFAULT_MANAGER_PORT)));
         this.dbsRootdir = properties.getProperty("dbs.rootdir", DEFAULT_DB_PATH);
         this.dbsPartitions = Integer.parseInt(properties.getProperty("dbs.partitions", String.valueOf(DEFAULT_DB_PARTITIONS)));
+        this.dbsMaxBatchSize = Integer.parseInt(properties.getProperty("dbs.maxbatchsize", String.valueOf(DEFAULT_MAX_BATCH_SIZE)));
     }
 
     public String getHost() {
@@ -79,5 +84,13 @@ public class KVDBConfig {
 
     public void setDbsPartitions(int dbsPartitions) {
         this.dbsPartitions = dbsPartitions;
+    }
+
+    public int getDbsMaxBatchSize() {
+        return dbsMaxBatchSize;
+    }
+
+    public void setDbsMaxBatchSize(int dbsMaxBatchSize) {
+        this.dbsMaxBatchSize = dbsMaxBatchSize;
     }
 }

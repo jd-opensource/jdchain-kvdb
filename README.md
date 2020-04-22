@@ -265,6 +265,38 @@ KVDB Commands
         use: 切换数据库
 ```
 
+指令帮助（以`put`为例）：
+```bash
+localhost:7060>help put
+
+NAME
+	put - Set a key-value
+
+SYNOPSYS
+	put [--key] string  [--value] string
+
+OPTIONS
+	--key  string
+
+		[Mandatory]
+
+	--value  string
+
+		[Mandatory]
+
+ALSO KNOWN AS
+	set
+
+```
+
+用户可如下指令执行数据插入：
+```bash
+localhost:7060>put k v
+localhost:7060>set k v
+localhost:7060>put --key k --value v
+localhost:7060>set --key k --value v
+```
+
 ### Benchmark
 
 `kvdb-sever`性能测试工具，简单的数据插入测试。

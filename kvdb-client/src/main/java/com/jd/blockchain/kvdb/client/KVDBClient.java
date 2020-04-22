@@ -33,6 +33,10 @@ public class KVDBClient implements KVDBOperator {
      */
     private KVDBOperator operator;
 
+    public KVDBClient(String url) throws KVDBException {
+        this(new KVDBURI(url));
+    }
+
     public KVDBClient(KVDBURI uri) throws KVDBException {
         this(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()));
     }

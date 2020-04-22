@@ -5,7 +5,24 @@ import org.junit.Test;
 
 public class URITest {
 
-    String pattern = "(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]";
+    @Test
+    public void testScheme() {
+        boolean ok = true;
+        try {
+            new KVDBURI("kvdb://localhost:7078/test");
+        } catch (Exception e) {
+            ok = false;
+        }
+        Assert.assertTrue(ok);
+        ok = true;
+        try {
+            new KVDBURI("http://localhost:7078/test");
+        } catch (Exception e) {
+            ok = false;
+        }
+        Assert.assertFalse(ok);
+
+    }
 
     @Test
     public void testDatabase() {

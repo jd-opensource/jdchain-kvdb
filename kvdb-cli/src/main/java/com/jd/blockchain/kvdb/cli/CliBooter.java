@@ -4,6 +4,7 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.StringUtils;
 
 @SpringBootApplication
 public class CliBooter {
@@ -15,8 +16,10 @@ public class CliBooter {
     private static String[] clientArgs;
 
     public static void main(String[] args) {
+        String[] disabledCommands = {"--spring.shell.command.script.enabled=false"};
+        String[] fullArgs = StringUtils.concatenateStringArrays(args, disabledCommands);
         clientArgs = args;
-        SpringApplication.run(CliBooter.class);
+        SpringApplication.run(CliBooter.class, fullArgs);
     }
 
     @Bean

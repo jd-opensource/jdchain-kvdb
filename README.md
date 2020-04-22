@@ -176,13 +176,14 @@ Bytes get(Bytes key) throws KVDBException;
 Bytes[] get(Bytes... keys) throws KVDBException;
 
 /**
- * 设置键值对，支持多个键值对，以键值交替出现方式传递
+ * 设置键值对
  *
- * @param kvs
+ * @param key
+ * @param value
  * @return
  * @throws KVDBException
  */
-boolean put(Bytes... kvs) throws KVDBException;
+boolean put(Bytes key, Bytes value) throws KVDBException;
 
 /**
  * 开启批处理
@@ -242,7 +243,6 @@ Built-In Commands
         clear: Clear the shell screen.
         exit, quit: Exit the shell.
         help: Display help about available commands.
-        script: Read and execute commands from a file.
         stacktrace: Display the full stacktrace of the last error.
 
 KVDB Commands
@@ -278,3 +278,18 @@ KVDB Commands
 - `-n` 请求数量。选填，默认`100000`
 - `-b` 是否使用批处理。选填，默认`false`
 - `-k` 保持连接。选填，默认`true`
+
+示例：
+```bash
+./kvdb-benchmark.sh -db test1 -c 20 -n 1000000
+requests:1000000, clients:20, batch:false times:22113ms, tps:45222.267444
+```
+其中：
+
+- `requests` 请求数量
+- `clients` 并发数
+- `batch` 是否开启批量模式
+- `times` 总耗时
+- `tps` TPS
+
+可根据`tps`值，调整`kvdb.conf`中`dbs.partitions`数值，以寻找最优服务器配置。

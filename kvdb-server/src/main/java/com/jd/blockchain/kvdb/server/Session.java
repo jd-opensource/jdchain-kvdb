@@ -89,5 +89,5 @@ public interface Session {
      * @return
      * @throws RocksDBException
      */
-    byte[] writeInBatch(BatchHook hook, int maxBatchSize) throws RocksDBException;
+    byte[] writeInBatch(BatchHook hook) throws RocksDBException;
 }

@@ -8,9 +8,9 @@ import com.jd.blockchain.utils.Bytes;
 import io.netty.channel.ChannelHandlerContext;
 import org.rocksdb.RocksDBException;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 连接会话
@@ -27,7 +27,9 @@ public class KVDBSession implements Session {
     // 批处理模式
     private boolean batchMode;
     // 待提交批处理数据集
-    private ConcurrentHashMap<Bytes, byte[]> batch;
+    private HashMap<Bytes, byte[]> batch;
+    // 最大batch数量
+    private static final int MAX_BATCH_SIZE = 10000000;
 
     public KVDBSession(String id, ChannelHandlerContext ctx) {
         this.id = id;
@@ -90,7 +92,7 @@ public class KVDBSession implements Session {
         if (null != batch) {
             batch.clear();
         } else {
-            batch = new ConcurrentHashMap<>();
+            batch = new HashMap<>();
         }
     }
 
@@ -143,18 +145,18 @@ public class KVDBSession implements Session {
      * 批处理时读钩子，具体操作逻辑由各自executor定义
      *
      * @param hook
-     * @param maxBatchSize 批处理最大数量
      * @return
      * @throws RocksDBException
      */
     @Override
-    public byte[] writeInBatch(BatchHook hook, int maxBatchSize) throws RocksDBException {
-        if (maxBatchSize <= 0 || batch.size() < maxBatchSize) {
-            return hook.exec(batch);
-        } else if (batch.size() >= maxBatchSize) { // TODO 最有一条是更新操作
-            throw new KVDBException("no more execution allowed in batch");
+    public byte[] writeInBatch(BatchHook hook) throws RocksDBException {
+        if (batch.size() < MAX_BATCH_SIZE) {
+            synchronized (batch) {
+                if (batch.size() < MAX_BATCH_SIZE) {
+                    return hook.exec(batch);
+                }
+            }
         }
-
-        return null;
+        throw new KVDBException("executions in this batch is too huge, no more execution allowed");
     }
 }

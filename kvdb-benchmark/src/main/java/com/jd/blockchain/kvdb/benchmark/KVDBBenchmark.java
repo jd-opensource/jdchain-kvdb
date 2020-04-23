@@ -2,13 +2,18 @@ package com.jd.blockchain.kvdb.benchmark;
 
 import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.ArgumentSet;
 import com.jd.blockchain.utils.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class KVDBBenchmark {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(KVDBBenchmark.class);
 
     private static final String HOST = "-h";
     private static final String PORT = "-p";
@@ -21,7 +26,7 @@ public class KVDBBenchmark {
     private static final int DEFAULT_PORT = 7078;
     private static final int DEFAULT_CLIENT = 20;
     private static final int DEFAULT_REQUESTS = 100000;
-    private static final boolean DEFAULT_BATCH = false;
+    private static final int DEFAULT_BATCH = 1000;
     private static final boolean DEFAULT_KEEP_ALIVE = true;
 
     private String host;
@@ -29,7 +34,7 @@ public class KVDBBenchmark {
     private String db;
     private int clients;
     private int requests;
-    private boolean batch;
+    private int batch;
     private boolean keepAlive;
 
     public String getHost() {
@@ -64,11 +69,11 @@ public class KVDBBenchmark {
         this.requests = requests;
     }
 
-    public boolean isBatch() {
+    public int isBatch() {
         return batch;
     }
 
-    public void setBatch(boolean batch) {
+    public void setBatch(int batch) {
         this.batch = batch;
     }
 
@@ -122,12 +127,17 @@ public class KVDBBenchmark {
         }
         ArgumentSet.ArgEntry batchArg = arguments.getArg(BATCH);
         if (null != batchArg) {
-            this.batch = Boolean.valueOf(batchArg.getValue());
+            this.batch = Integer.valueOf(batchArg.getValue());
         } else {
             this.batch = DEFAULT_BATCH;
         }
         ArgumentSet.ArgEntry dbArg = arguments.getArg(DB);
-        this.db = dbArg.getValue();
+        if (null == dbArg) {
+            System.out.println("please set -db parameter");
+            System.exit(0);
+        } else {
+            this.db = dbArg.getValue();
+        }
     }
 
     public static void main(String[] args) {
@@ -135,13 +145,14 @@ public class KVDBBenchmark {
         ClientConfig config = new ClientConfig(bm.getHost(), bm.getPort(), bm.getDb());
         config.setKeepAlive(bm.keepAlive);
         AtomicLong requests = new AtomicLong(bm.requests);
+        AtomicLong failCount = new AtomicLong(0);
         CountDownLatch startCdl = new CountDownLatch(1);
         CountDownLatch endCdl = new CountDownLatch(bm.getClients());
         for (int i = 0; i < bm.getClients(); i++) {
             final int index = i;
             new Thread(() -> {
                 KVDBClient client = new KVDBClient(config);
-                if (bm.batch && bm.keepAlive) {
+                if (bm.batch > 0 && bm.keepAlive) {
                     client.batchBegin();
                 }
                 try {
@@ -151,9 +162,14 @@ public class KVDBBenchmark {
                 }
                 int j = 0;
                 while (requests.getAndDecrement() > 0) {
-                    client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
+                    try {
+                        client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
+                    } catch (KVDBException e) {
+                        failCount.incrementAndGet();
+                        LOGGER.error("put error", e);
+                    }
                 }
-                if (bm.batch && bm.keepAlive) {
+                if (bm.batch > 0 && bm.keepAlive) {
                     client.batchCommit();
                 }
                 endCdl.countDown();
@@ -169,8 +185,10 @@ public class KVDBBenchmark {
             e.printStackTrace();
         }
         long endTime = System.currentTimeMillis();
-        System.out.println(String.format("requests:%d, clients:%d, batch:%s times:%dms, tps:%f",
-                bm.getRequests(), bm.getClients(), bm.batch, endTime - startTime, bm.getRequests() / ((endTime - startTime) / 1000d)));
+        String result = String.format("requests:%d, clients:%d, batch:%s, times:%dms, errors:%d, tps:%f",
+                bm.getRequests(), bm.getClients(), bm.batch, endTime - startTime, failCount, bm.getRequests() / ((endTime - startTime) / 1000d));
+        LOGGER.info(result);
+        System.out.println(result);
 
     }
 

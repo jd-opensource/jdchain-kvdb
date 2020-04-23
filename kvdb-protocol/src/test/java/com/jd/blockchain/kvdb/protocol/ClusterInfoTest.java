@@ -13,10 +13,6 @@ public class ClusterInfoTest {
                 // 至少一方为空
                 new ClusterInfoCase(
                         new KVDBClusterInfo(new KVDBClusterItem[]{}),
-                        new KVDBClusterInfo(new KVDBClusterItem[]{}),
-                        new KVDBURI(""), 7078, false),
-                new ClusterInfoCase(
-                        new KVDBClusterInfo(new KVDBClusterItem[]{}),
                         new KVDBClusterInfo(new KVDBClusterItem[]{
                                 new KVDBClusterItem("test1", new String[]{"kvdb://localhost:7078/test1", "kvdb://localhost:7079/test1"})}),
                         new KVDBURI("kvdb://localhost:7079/test1"), 7078, false),

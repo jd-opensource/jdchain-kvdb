@@ -52,9 +52,6 @@ dbs.rootdir=/usr/kvdb/dbs
 
 # 数据库实例默认的本地分区数
 dbs.partitions=4
-
-# 批处理最大更新数量，<=0表示不限制，默认值1000
-dbs.maxbatchsize=1000
 ```
 
 #### `cluster.conf`
@@ -289,7 +286,7 @@ ALSO KNOWN AS
 
 ```
 
-用户可如下指令执行数据插入：
+示例（可执行如下指令插入数据）：
 ```bash
 localhost:7060>put k v
 localhost:7060>set k v
@@ -317,7 +314,7 @@ localhost:7060>set --key k --value v
 示例：
 ```bash
 ./kvdb-benchmark.sh -db test1 -c 20 -n 1000000
-requests:1000000, clients:20, batch:false times:22113ms, tps:45222.267444
+requests:1000000, clients:20, batch:false, times:22113ms, errors:0, tps:45222.267444
 ```
 其中：
 

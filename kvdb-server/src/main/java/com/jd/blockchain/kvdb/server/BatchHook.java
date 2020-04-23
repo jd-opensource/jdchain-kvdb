@@ -3,13 +3,13 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.utils.Bytes;
 import org.rocksdb.RocksDBException;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 /**
  * 批处理钩子
  */
 public interface BatchHook {
 
-    byte[] exec(ConcurrentHashMap<Bytes, byte[]> wb) throws RocksDBException;
+    byte[] exec(HashMap<Bytes, byte[]> wb) throws RocksDBException;
 
 }

@@ -12,6 +12,8 @@ import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +24,8 @@ import java.util.concurrent.TimeUnit;
  * KVDB-SDK
  */
 public class KVDBClient implements KVDBOperator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(KVDBClient.class);
 
     private ClientConfig config;
     /**
@@ -130,7 +134,14 @@ public class KVDBClient implements KVDBOperator {
                     } else {
                         nettyClient = clients.get(uri.getHost() + uri.getPort());
                     }
-                    nettyClient.send(KVDBMessage.use(uri.getDatabase()));
+                    response = nettyClient.send(KVDBMessage.use(uri.getDatabase()));
+                    if (null == response) {
+                        config.setDatabase(null);
+                        throw new KVDBTimeoutException("time out");
+                    } else if (response.getCode() == Constants.ERROR) {
+                        config.setDatabase(null);
+                        throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
+                    }
                     selectedClients[i] = nettyClient;
                 }
                 operator = new KVDBCluster(selectedClients);
@@ -141,6 +152,7 @@ public class KVDBClient implements KVDBOperator {
 
             return info;
         } catch (Exception e) {
+            LOGGER.error("use command error", e);
             String msg = e.getMessage();
             throw new KVDBException(!StringUtils.isEmpty(msg) ? msg : e.toString());
         }

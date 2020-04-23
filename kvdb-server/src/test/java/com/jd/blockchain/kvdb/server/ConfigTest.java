@@ -18,7 +18,6 @@ public class ConfigTest {
         Assert.assertEquals(7060, config.getManagerPort());
         Assert.assertEquals("../dbs", config.getDbsRootdir());
         Assert.assertEquals(4, config.getDbsPartitions());
-        Assert.assertEquals(1000, config.getDbsMaxBatchSize());
     }
 
     @Test

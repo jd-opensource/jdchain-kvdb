@@ -2,8 +2,8 @@ package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.KVWriteBatch;
-import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
@@ -38,7 +38,7 @@ public class PutExecutor implements Executor {
                     LOGGER.debug("execute put in batch, key:{}, value:{}", BytesUtils.toString(kvs[i].toBytes()), kvs[i + 1].toBytes());
                     final Bytes key = kvs[i];
                     final Bytes value = kvs[i + 1];
-                    request.getSession().writeInBatch((wb) -> wb.put(key, value.toBytes()), request.getServerContext().getConfig().getKvdbConfig().getDbsMaxBatchSize());
+                    request.getSession().writeInBatch((wb) -> wb.put(key, value.toBytes()));
                     i = i + 2;
                 }
             } catch (Exception e) {

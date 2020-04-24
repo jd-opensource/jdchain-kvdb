@@ -26,7 +26,7 @@ public class KVDBBenchmark {
     private static final int DEFAULT_PORT = 7078;
     private static final int DEFAULT_CLIENT = 20;
     private static final int DEFAULT_REQUESTS = 100000;
-    private static final int DEFAULT_BATCH = 1000;
+    private static final boolean DEFAULT_BATCH = false;
     private static final boolean DEFAULT_KEEP_ALIVE = true;
 
     private String host;
@@ -34,7 +34,7 @@ public class KVDBBenchmark {
     private String db;
     private int clients;
     private int requests;
-    private int batch;
+    private boolean batch;
     private boolean keepAlive;
 
     public String getHost() {
@@ -69,11 +69,11 @@ public class KVDBBenchmark {
         this.requests = requests;
     }
 
-    public int isBatch() {
+    public boolean isBatch() {
         return batch;
     }
 
-    public void setBatch(int batch) {
+    public void setBatch(boolean batch) {
         this.batch = batch;
     }
 
@@ -127,7 +127,7 @@ public class KVDBBenchmark {
         }
         ArgumentSet.ArgEntry batchArg = arguments.getArg(BATCH);
         if (null != batchArg) {
-            this.batch = Integer.valueOf(batchArg.getValue());
+            this.batch = Boolean.valueOf(batchArg.getValue());
         } else {
             this.batch = DEFAULT_BATCH;
         }
@@ -152,7 +152,7 @@ public class KVDBBenchmark {
             final int index = i;
             new Thread(() -> {
                 KVDBClient client = new KVDBClient(config);
-                if (bm.batch > 0 && bm.keepAlive) {
+                if (bm.batch && bm.keepAlive) {
                     client.batchBegin();
                 }
                 try {
@@ -169,7 +169,7 @@ public class KVDBBenchmark {
                         LOGGER.error("put error", e);
                     }
                 }
-                if (bm.batch > 0 && bm.keepAlive) {
+                if (bm.batch && bm.keepAlive) {
                     client.batchCommit();
                 }
                 endCdl.countDown();

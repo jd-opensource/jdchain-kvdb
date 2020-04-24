@@ -186,7 +186,7 @@ public class KVDBBenchmark {
         }
         long endTime = System.currentTimeMillis();
         String result = String.format("requests:%d, clients:%d, batch:%s, times:%dms, errors:%d, tps:%f",
-                bm.getRequests(), bm.getClients(), bm.batch, endTime - startTime, failCount, bm.getRequests() / ((endTime - startTime) / 1000d));
+                bm.getRequests(), bm.getClients(), bm.batch, endTime - startTime, failCount.get(), bm.getRequests() / ((endTime - startTime) / 1000d));
         LOGGER.info(result);
         System.out.println(result);
 

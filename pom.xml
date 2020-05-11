@@ -4,16 +4,21 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.jd.blockchain</groupId>
-		<artifactId>jdchain-root</artifactId>
+		<artifactId>jdchain-parent</artifactId>
 		<version>1.1.4.RELEASE</version>
+		<relativePath>../project/parent</relativePath>
 	</parent>
 	<groupId>com.jd.blockchain</groupId>
-	<artifactId>db-root</artifactId>
-	<version>0.6.0-SNAPSHOT</version>
+	<artifactId>kvdb</artifactId>
+	<version>1.0.0.RELEASE</version>
 	<packaging>pom</packaging>
 
+	<properties>
+		<core.version>1.1.4.RELEASE</core.version>
+	</properties>
+
 	<modules>
-		<module>kvdb</module>
+		<module>kvdb-engine</module>
 		<module>kvdb-protocol</module>
 		<module>kvdb-client</module>
 		<module>kvdb-benchmark</module>
@@ -21,25 +26,4 @@
 		<module>kvdb-server</module>
 	</modules>
 
-	<dependencies>
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-all</artifactId>
-			<version>4.1.47.Final</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.jd.blockchain</groupId>
-			<artifactId>binary-proto</artifactId>
-			<version>1.1.2.RELEASE</version>
-		</dependency>
-
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-
-	</dependencies>
 </project>

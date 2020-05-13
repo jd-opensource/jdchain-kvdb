@@ -3,6 +3,7 @@ package com.jd.blockchain.kvdb.client;
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.KVDBURI;
+import com.jd.blockchain.kvdb.protocol.URIUtils;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
@@ -123,8 +124,8 @@ public class KVDBClient implements KVDBOperator {
                 NettyClient[] selectedClients = new NettyClient[info.getClusterItem().getURLs().length];
                 for (int i = 0; i < info.getClusterItem().getURLs().length; i++) {
                     KVDBURI uri = new KVDBURI(info.getClusterItem().getURLs()[i]);
-                    if (uri.isLocalhost() && uri.getPort() == config.getPort()) {
-                        selectedClients[i] = clients.get(uri.getHost() + uri.getPort());
+                    if (URIUtils.isSameHost(config.getHost(), uri.getHost()) && uri.getPort() == config.getPort()) {
+                        selectedClients[i] = clients.get(config.getHost() + uri.getPort());
                         continue;
                     }
                     NettyClient nettyClient;

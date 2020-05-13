@@ -3,6 +3,10 @@ package com.jd.blockchain.kvdb.protocol;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.UnknownHostException;
+
 public class URITest {
 
     @Test
@@ -28,14 +32,23 @@ public class URITest {
     public void testDatabase() {
 
         KVDBURI uri1 = new KVDBURI("kvdb://localhost:7078/test");
-        Assert.assertTrue(uri1.isLocalhost());
+        Assert.assertTrue("test".equals(uri1.getDatabase()));
     }
 
     @Test
-    public void testLocalhost() {
+    public void testLocalhost() throws UnknownHostException {
         KVDBURI uri1 = new KVDBURI("kvdb://localhost:7078/test");
         KVDBURI uri2 = new KVDBURI("kvdb://127.0.0.1:7078/test");
         Assert.assertTrue(uri1.isLocalhost());
         Assert.assertTrue(uri2.isLocalhost());
+        Assert.assertTrue(URIUtils.isLocalhost(InetAddress.getLocalHost().getHostName()));
+    }
+
+    @Test
+    public void testSameHost() throws UnknownHostException {
+        KVDBURI uri1 = new KVDBURI("kvdb://localhost:7078/test");
+        KVDBURI uri2 = new KVDBURI("kvdb://127.0.0.1:7078/test");
+        Assert.assertTrue(URIUtils.isSameHost(uri1.getHost(), uri2.getHost()));
+        Assert.assertTrue(URIUtils.isSameHost(uri1.getHost(), InetAddress.getLocalHost().getHostAddress()));
     }
 }

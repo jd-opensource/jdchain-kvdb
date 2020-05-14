@@ -35,6 +35,7 @@ public class ClusterTest {
 
     @Before
     public void setUp() throws Exception {
+        System.setProperty("logging.path", "logs");
         context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/executor/cluster").getFile()));
         config = new PropertiesConfiguration();
         layout = new PropertiesConfigurationLayout();

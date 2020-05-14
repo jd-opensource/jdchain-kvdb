@@ -19,6 +19,7 @@ public class ContextTest {
 
     @Before
     public void setUp() throws Exception {
+        System.setProperty("logging.path", "logs");
         context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/context").getFile()));
     }
 

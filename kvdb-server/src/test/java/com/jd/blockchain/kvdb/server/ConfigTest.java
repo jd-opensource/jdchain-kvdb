@@ -4,11 +4,17 @@ import com.jd.blockchain.kvdb.server.config.ClusterConfig;
 import com.jd.blockchain.kvdb.server.config.DBList;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 
 public class ConfigTest {
+
+    @Before
+    public void setUp() {
+        System.setProperty("logging.path", "logs");
+    }
 
     @Test
     public void testKVDBConfig() throws IOException {

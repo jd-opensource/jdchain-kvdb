@@ -35,6 +35,7 @@ public class SingleTest {
 
     @Before
     public void setUp() throws Exception {
+        System.setProperty("logging.path", "logs");
         context = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/executor/single").getFile()));
         config = new PropertiesConfiguration();
         layout = new PropertiesConfigurationLayout();

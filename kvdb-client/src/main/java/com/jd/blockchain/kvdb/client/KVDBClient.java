@@ -123,10 +123,6 @@ public class KVDBClient implements KVDBOperator {
                 NettyClient[] selectedClients = new NettyClient[info.getClusterItem().getURLs().length];
                 for (int i = 0; i < info.getClusterItem().getURLs().length; i++) {
                     KVDBURI uri = new KVDBURI(info.getClusterItem().getURLs()[i]);
-                    if (uri.isLocalhost() && uri.getPort() == config.getPort()) {
-                        selectedClients[i] = clients.get(uri.getHost() + uri.getPort());
-                        continue;
-                    }
                     NettyClient nettyClient;
                     if (!clients.containsKey(uri.getHost() + uri.getPort())) {
                         nettyClient = newNettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()));

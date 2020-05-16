@@ -11,12 +11,18 @@ import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
 public class ServerTest {
+
+    @Before
+    public void setUp() {
+        System.setProperty("logging.path", "logs");
+    }
 
     @Test
     public void testSingle() throws Exception {

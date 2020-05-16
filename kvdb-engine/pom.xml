@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.jd.blockchain</groupId>
             <artifactId>binary-proto</artifactId>
-            <version>${core.version}</version>
+            <version>${framework.version}</version>
         </dependency>
     </dependencies>
 

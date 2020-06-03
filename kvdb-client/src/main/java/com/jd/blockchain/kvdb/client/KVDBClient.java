@@ -91,6 +91,7 @@ public class KVDBClient implements KVDBOperator {
      * 关闭客户端
      */
     public void close() {
+        operator.close();
         for (Map.Entry<String, NettyClient> entry : clients.entrySet()) {
             entry.getValue().stop();
         }

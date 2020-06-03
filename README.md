@@ -126,7 +126,7 @@ LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level.root=error"
 <dependency>
 	<groupId>com.jd.blockchain</groupId>
 	<artifactId>kvdb-client</artifactId>
-	<version>${version}</version>
+	<version>${project.version}</version>
 </dependency>
 ```
 

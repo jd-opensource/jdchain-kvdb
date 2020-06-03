@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.jd.blockchain</groupId>
             <artifactId>kvdb-protocol</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

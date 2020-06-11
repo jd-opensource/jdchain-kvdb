@@ -165,4 +165,14 @@ public class KVDBCluster implements KVDBOperator {
         }
         return true;
     }
+
+    @Override
+    public void close() {
+        for (KVDBSingle operator : operators) {
+            operator.close();
+        }
+        if (null != executor && !executor.isShutdown()) {
+            executor.shutdown();
+        }
+    }
 }

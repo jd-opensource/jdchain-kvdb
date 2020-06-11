@@ -130,4 +130,9 @@ public class KVDBSingle implements KVDBOperator {
 
         return true;
     }
+
+    @Override
+    public void close() {
+        client.stop();
+    }
 }

@@ -4,13 +4,20 @@ import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
-import org.rocksdb.*;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.Cache;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.IndexType;
+import org.rocksdb.LRUCache;
+import org.rocksdb.MutableColumnFamilyOptions;
+import org.rocksdb.Options;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.WriteBatch;
+import org.rocksdb.WriteOptions;
 import org.rocksdb.util.SizeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class RocksDBProxy extends KVDBInstance {
 
@@ -41,39 +48,30 @@ public class RocksDBProxy extends KVDBInstance {
     }
 
     private static Options initDBOptions() {
-        final Filter bloomFilter = new BloomFilter(32);
+        Cache cache = new LRUCache(512 * SizeUnit.MB, 64, false);
+
         final BlockBasedTableConfig tableOptions = new BlockBasedTableConfig()
-                .setFilter(bloomFilter)
-                .setBlockSize(4 * SizeUnit.KB)
-                .setBlockSizeDeviation(10)
-                .setBlockCacheSize(128 * SizeUnit.GB)
-                .setNoBlockCache(false)
-                .setCacheIndexAndFilterBlocks(true)
-                .setBlockRestartInterval(16);
-        final List<CompressionType> compressionLevels = new ArrayList<>();
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 0-1
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 1-2
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 2-3
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 3-4
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 4-5
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 5-6
-        compressionLevels.add(CompressionType.NO_COMPRESSION); // 6-7
+                .setBlockCache(cache)
+                .setMetadataBlockSize(4096)
+                .setCacheIndexAndFilterBlocks(true) // 设置索引和布隆过滤器使用Block Cache内存
+                .setCacheIndexAndFilterBlocksWithHighPriority(true)
+                .setIndexType(IndexType.kTwoLevelIndexSearch) // 设置两级索引，控制索引占用内存
+                .setPinTopLevelIndexAndFilter(false)
+                .setBlockSize(4096)
+                .setFilterPolicy(null) // 不设置布隆过滤器
+                ;
 
         Options options = new Options()
-                .setAllowConcurrentMemtableWrite(true)
-                .setEnableWriteThreadAdaptiveYield(true)
+                // 最多占用256 * 6 + 512 = 2G内存
+                .setWriteBufferSize(256 * SizeUnit.MB)
+                .setMaxWriteBufferNumber(6)
+                .setMinWriteBufferNumberToMerge(2)
+                .setMaxOpenFiles(100) // 控制最大打开文件数量，防止内存持续增加
+                .setAllowConcurrentMemtableWrite(true) //允许并行Memtable写入
                 .setCreateIfMissing(true)
-                .setMaxWriteBufferNumber(3)
                 .setTableFormatConfig(tableOptions)
-                .setMaxBackgroundCompactions(10)
-                .setMaxBackgroundFlushes(4)
-                .setBloomLocality(10)
-                .setMinWriteBufferNumberToMerge(4)
-                .setCompressionPerLevel(compressionLevels)
-                .setNumLevels(7)
-                .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
-                .setCompactionStyle(CompactionStyle.UNIVERSAL)
-                .setMemTableConfig(new SkipListMemTableConfig());
+                .setMaxBackgroundCompactions(5)
+                .setMaxBackgroundFlushes(4);
         return options;
     }
 

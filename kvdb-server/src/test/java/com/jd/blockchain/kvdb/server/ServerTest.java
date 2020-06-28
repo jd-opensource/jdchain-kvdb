@@ -10,6 +10,7 @@ import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.utils.io.FileUtils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,8 +21,20 @@ import java.util.concurrent.CountDownLatch;
 public class ServerTest {
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         System.setProperty("logging.path", "logs");
+        clearTestDBs();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        clearTestDBs();
+    }
+
+    private void clearTestDBs() throws Exception {
+        FileUtils.deletePath(new File(new ServerConfig(this.getClass().getResource("/server/single").getFile()).getKvdbConfig().getDbsRootdir()), true);
+        FileUtils.deletePath(new File(new ServerConfig(this.getClass().getResource("/server/cluster/1").getFile()).getKvdbConfig().getDbsRootdir()), true);
+        FileUtils.deletePath(new File(new ServerConfig(this.getClass().getResource("/server/cluster/2").getFile()).getKvdbConfig().getDbsRootdir()), true);
     }
 
     @Test
@@ -40,8 +53,6 @@ public class ServerTest {
         Assert.assertFalse(clusterInfo.isClusterMode());
 
         server.stop();
-
-        FileUtils.deletePath(new File(context.getConfig().getKvdbConfig().getDbsRootdir()), true);
     }
 
     @Test
@@ -78,8 +89,5 @@ public class ServerTest {
 
         server1.stop();
         server2.stop();
-
-        FileUtils.deletePath(new File(context1.getConfig().getKvdbConfig().getDbsRootdir()), true);
-        FileUtils.deletePath(new File(context2.getConfig().getKvdbConfig().getDbsRootdir()), true);
     }
 }

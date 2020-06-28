@@ -79,4 +79,9 @@ public interface KVDBOperator {
      * @throws KVDBException
      */
     boolean batchCommit() throws KVDBException;
+
+    /**
+     * 关闭
+     */
+    void close();
 }

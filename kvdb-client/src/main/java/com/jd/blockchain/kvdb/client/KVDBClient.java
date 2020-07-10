@@ -7,7 +7,12 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfos;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
@@ -91,7 +96,9 @@ public class KVDBClient implements KVDBOperator {
      * 关闭客户端
      */
     public void close() {
-        operator.close();
+        if (null != operator) {
+            operator.close();
+        }
         for (Map.Entry<String, NettyClient> entry : clients.entrySet()) {
             entry.getValue().stop();
         }

@@ -1,15 +1,25 @@
 package com.jd.blockchain.kvdb.protocol.client;
 
-import com.jd.blockchain.kvdb.protocol.*;
-import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.ConnectedCallback;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.KVDBConnectionHandler;
+import com.jd.blockchain.kvdb.protocol.KVDBDecoder;
+import com.jd.blockchain.kvdb.protocol.KVDBEncoder;
+import com.jd.blockchain.kvdb.protocol.KVDBHandler;
+import com.jd.blockchain.kvdb.protocol.KVDBInitializerHandler;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBResponse;
 import com.jd.blockchain.utils.Bytes;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -198,6 +208,21 @@ public class NettyClient implements KVDBHandler {
         if (context != null) {
             context.writeAndFlush(message);
         }
+    }
+
+    /**
+     * 发送消息，利用promise等待实现同步获取响应
+     *
+     * @param message
+     * @return
+     */
+    public boolean sendAsync(Message message) {
+        if (context == null) {
+            throw new KVDBException("channel context not ready");
+        }
+        writeAndFlush(message);
+
+        return true;
     }
 
 }

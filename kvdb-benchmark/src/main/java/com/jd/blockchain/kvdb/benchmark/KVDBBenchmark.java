@@ -160,17 +160,24 @@ public class KVDBBenchmark {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                int j = 0;
+                long j = 0;
                 while (requests.getAndDecrement() > 0) {
                     try {
-                        client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
+                        if (bm.batch && bm.keepAlive) {
+                            client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1), true);
+                        } else {
+                            client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
+                        }
                     } catch (KVDBException e) {
                         failCount.incrementAndGet();
                         LOGGER.error("put error", e);
                     }
+                    j++;
                 }
                 if (bm.batch && bm.keepAlive) {
-                    client.batchCommit();
+                    if (!client.batchCommit(j)) {
+                        LOGGER.error(index + " batch commit false");
+                    }
                 }
                 endCdl.countDown();
                 client.close();

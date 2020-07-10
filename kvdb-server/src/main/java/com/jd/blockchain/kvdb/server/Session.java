@@ -74,6 +74,14 @@ public interface Session {
     void batchCommit() throws RocksDBException;
 
     /**
+     * 提交批处理
+     *
+     * @param size 批处理操作校验
+     * @throws RocksDBException
+     */
+    void batchCommit(long size) throws RocksDBException;
+
+    /**
      * 批处理时读钩子方法
      *
      * @param hook

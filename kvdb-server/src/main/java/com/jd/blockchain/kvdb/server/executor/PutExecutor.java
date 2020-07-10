@@ -43,8 +43,9 @@ public class PutExecutor implements Executor {
                 }
             } catch (Exception e) {
                 LOGGER.debug("execute put error", e);
-                return KVDBMessage.error(request.getId(), e.toString());
             }
+
+            return null;
         } else {
             if (kvs.length == 2) {
                 // 单个键值对
@@ -70,8 +71,8 @@ public class PutExecutor implements Executor {
                     return KVDBMessage.error(request.getId(), e.toString());
                 }
             }
-        }
 
-        return KVDBMessage.success(request.getId());
+            return KVDBMessage.success(request.getId());
+        }
     }
 }

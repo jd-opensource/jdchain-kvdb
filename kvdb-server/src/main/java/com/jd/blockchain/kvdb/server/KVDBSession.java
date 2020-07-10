@@ -25,7 +25,7 @@ public class KVDBSession implements Session {
     // 当前数据库实例
     private KVDBInstance instance;
     // 批处理模式
-    private boolean batchMode;
+    private volatile boolean batchMode;
     // 待提交批处理数据集
     private HashMap<Bytes, byte[]> batch;
     // 最大batch数量
@@ -60,7 +60,9 @@ public class KVDBSession implements Session {
 
     @Override
     public void publish(Message msg) {
-        ctx.writeAndFlush(msg);
+        if (null != msg) {
+            ctx.writeAndFlush(msg);
+        }
     }
 
     @Override
@@ -85,10 +87,9 @@ public class KVDBSession implements Session {
      */
     @Override
     public synchronized void batchBegin() throws RocksDBException {
-        if (batchMode) {
-            return;
+        if (!batchMode) {
+            batchMode = true;
         }
-        batchMode = true;
         if (null != batch) {
             batch.clear();
         } else {
@@ -118,6 +119,23 @@ public class KVDBSession implements Session {
     public synchronized void batchCommit() throws RocksDBException {
         batchMode = false;
         if (null != batch) {
+            commit();
+        }
+    }
+
+    @Override
+    public synchronized void batchCommit(long size) throws RocksDBException {
+        batchMode = false;
+        if (null != batch) {
+            if (batch.size() != size) {
+                throw new KVDBException("batch size not match, expect:" + size + ", actually:" + batch.size());
+            }
+            commit();
+        }
+    }
+
+    private void commit() throws RocksDBException {
+        try {
             KVWriteBatch writeBatch = instance.beginBatch();
             Iterator<Map.Entry<Bytes, byte[]>> iterator = batch.entrySet().iterator();
             while (iterator.hasNext()) {
@@ -125,6 +143,7 @@ public class KVDBSession implements Session {
                 writeBatch.set(entry.getKey().toBytes(), entry.getValue());
             }
             writeBatch.commit();
+        } finally {
             batch.clear();
         }
     }

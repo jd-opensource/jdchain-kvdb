@@ -94,6 +94,18 @@ public class KVDBCluster implements KVDBOperator {
      */
     @Override
     public boolean put(Bytes key, Bytes value) throws KVDBException {
+        return put(key, value, false);
+    }
+
+    /**
+     * @param key
+     * @param value
+     * @param inBatch
+     * @return
+     * @throws KVDBException
+     */
+    @Override
+    public boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException {
         return operators[partition.partition(key.toBytes())].put(key, value);
     }
 
@@ -164,6 +176,12 @@ public class KVDBCluster implements KVDBOperator {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean batchCommit(long size) throws KVDBException {
+        // TODO 带有size参数的批量操作对于多实例无效
+        return batchBegin();
     }
 
     @Override

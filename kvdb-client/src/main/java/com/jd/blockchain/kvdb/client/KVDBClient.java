@@ -306,10 +306,15 @@ public class KVDBClient implements KVDBOperator {
 
     @Override
     public boolean put(Bytes key, Bytes value) throws KVDBException {
+        return put(key, value, false);
+    }
+
+    @Override
+    public boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
-        return operator.put(key, value);
+        return operator.put(key, value, inBatch);
     }
 
     @Override
@@ -334,5 +339,13 @@ public class KVDBClient implements KVDBOperator {
             throw new KVDBException("no database selected");
         }
         return operator.batchCommit();
+    }
+
+    @Override
+    public boolean batchCommit(long size) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no database selected");
+        }
+        return operator.batchCommit(size);
     }
 }

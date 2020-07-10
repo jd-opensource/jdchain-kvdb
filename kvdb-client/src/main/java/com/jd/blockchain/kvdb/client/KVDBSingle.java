@@ -30,6 +30,10 @@ public class KVDBSingle implements KVDBOperator {
         return client.send(message);
     }
 
+    private boolean sendAsync(Message message) throws KVDBException {
+        return client.sendAsync(message);
+    }
+
     @Override
     public boolean exists(Bytes key) throws KVDBException {
         Response response = send(KVDBMessage.exists(key));
@@ -85,7 +89,16 @@ public class KVDBSingle implements KVDBOperator {
 
     @Override
     public boolean put(Bytes key, Bytes value) throws KVDBException {
-        Response response = send(KVDBMessage.put(key, value));
+        return put(key, value, false);
+    }
+
+    @Override
+    public boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException {
+        Message msg = KVDBMessage.put(key, value);
+        if (inBatch) {
+            return sendAsync(msg);
+        }
+        Response response = send(msg);
         if (null == response) {
             throw new KVDBTimeoutException("time out");
         } else if (response.getCode() == Constants.ERROR) {
@@ -122,6 +135,18 @@ public class KVDBSingle implements KVDBOperator {
     @Override
     public boolean batchCommit() throws KVDBException {
         Response response = send(KVDBMessage.batchCommit());
+        if (null == response) {
+            throw new KVDBTimeoutException("time out");
+        } else if (response.getCode() == Constants.ERROR) {
+            throw new KVDBException(BytesUtils.toString(response.getResult()[0].toBytes()));
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean batchCommit(long size) throws KVDBException {
+        Response response = send(KVDBMessage.batchCommit(Bytes.fromLong(size)));
         if (null == response) {
             throw new KVDBTimeoutException("time out");
         } else if (response.getCode() == Constants.ERROR) {

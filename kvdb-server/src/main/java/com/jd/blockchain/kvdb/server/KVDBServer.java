@@ -1,16 +1,35 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
-import com.jd.blockchain.kvdb.protocol.*;
-import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
-import com.jd.blockchain.kvdb.protocol.client.NettyClient;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.KVDBConnectionHandler;
+import com.jd.blockchain.kvdb.protocol.KVDBDecoder;
+import com.jd.blockchain.kvdb.protocol.KVDBEncoder;
+import com.jd.blockchain.kvdb.protocol.KVDBHandler;
+import com.jd.blockchain.kvdb.protocol.KVDBInitializerHandler;
+import com.jd.blockchain.kvdb.protocol.URIUtils;
+import com.jd.blockchain.kvdb.protocol.proto.Command;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
-import com.jd.blockchain.kvdb.server.executor.*;
-import com.jd.blockchain.utils.io.BytesUtils;
+import com.jd.blockchain.kvdb.server.executor.BatchAbortExecutor;
+import com.jd.blockchain.kvdb.server.executor.BatchBeginExecutor;
+import com.jd.blockchain.kvdb.server.executor.BatchCommitExecutor;
+import com.jd.blockchain.kvdb.server.executor.ClusterInfoExecutor;
+import com.jd.blockchain.kvdb.server.executor.CreateDatabaseExecutor;
+import com.jd.blockchain.kvdb.server.executor.DisableDatabaseExecutor;
+import com.jd.blockchain.kvdb.server.executor.DropDatabaseExecutor;
+import com.jd.blockchain.kvdb.server.executor.EnableDatabaseExecutor;
+import com.jd.blockchain.kvdb.server.executor.ExistsExecutor;
+import com.jd.blockchain.kvdb.server.executor.GetExecutor;
+import com.jd.blockchain.kvdb.server.executor.PutExecutor;
+import com.jd.blockchain.kvdb.server.executor.ShowDatabasesExecutor;
+import com.jd.blockchain.kvdb.server.executor.UnknowExecutor;
+import com.jd.blockchain.kvdb.server.executor.UseExecutor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -25,10 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
 
@@ -36,13 +51,13 @@ public class KVDBServer implements KVDBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KVDBServer.class);
 
-    private static final int CLUSTER_CONFIRM_TIME_OUT = 3000;
     private final KVDBServerContext serverContext;
 
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private ChannelFuture future;
     private ChannelFuture managerFuture;
+    private ClusterService clusterService;
 
     /**
      * Whether this server is ready to service.
@@ -53,6 +68,7 @@ public class KVDBServer implements KVDBHandler {
     public KVDBServer(KVDBServerContext serverContext) {
         this.serverContext = serverContext;
         bindExecutors();
+        this.clusterService = new ClusterService(serverContext);
     }
 
     private void bindExecutors() {
@@ -95,10 +111,10 @@ public class KVDBServer implements KVDBHandler {
         managerFuture = bootstrap.bind("127.0.0.1", serverContext.getConfig().getKvdbConfig().getManagerPort());
         managerFuture.syncUninterruptibly();
 
-        LOGGER.info("server started: {}:{}", serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
-
         // Confirm cluster settings
-        clusterConfirm();
+        clusterService.confirm();
+
+        LOGGER.info("server started: {}:{}", serverContext.getConfig().getKvdbConfig().getHost(), serverContext.getConfig().getKvdbConfig().getPort());
 
         ready = true;
     }
@@ -192,67 +208,4 @@ public class KVDBServer implements KVDBHandler {
         }
     }
 
-    private void clusterConfirm() {
-        boolean confirmed = false;
-        LOGGER.info("cluster confirming ... ");
-        ClusterInfo localClusterInfo = serverContext.getClusterInfo();
-        if (localClusterInfo.size() == 0) {
-            return;
-        }
-        while (!confirmed) {
-            Set<String> confirmedHosts = new HashSet<>();
-            for (ClusterItem entry : localClusterInfo.getClusterItems()) {
-                boolean ok = true;
-                for (String url : entry.getURLs()) {
-                    KVDBURI uri = new KVDBURI(url);
-                    if (!(uri.isLocalhost() && uri.getPort() == serverContext.getConfig().getKvdbConfig().getPort())
-                            && !confirmedHosts.contains(uri.getHost() + uri.getPort())) {
-                        ok = confirmServer(localClusterInfo, uri);
-                        if (ok) {
-                            confirmedHosts.add(uri.getHost() + uri.getPort());
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                confirmed = ok;
-                if (!ok) {
-                    break;
-                }
-            }
-            if (!confirmed) {
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    LOGGER.error("sleep interrupted", e);
-                }
-            }
-        }
-        LOGGER.info("cluster confirmed");
-    }
-
-    private boolean confirmServer(ClusterInfo localClusterInfo, KVDBURI uri) {
-        NettyClient client = null;
-        try {
-            LOGGER.info("cluster confirm {}", uri.getOrigin());
-            CountDownLatch cdl = new CountDownLatch(1);
-            client = new NettyClient(new ClientConfig(uri.getHost(), uri.getPort(), uri.getDatabase()), () -> cdl.countDown());
-            cdl.await(CLUSTER_CONFIRM_TIME_OUT, TimeUnit.MILLISECONDS);
-            Response response = client.send(KVDBMessage.clusterInfo());
-            if (null == response || response.getCode() == Constants.ERROR) {
-                String bi = BytesUtils.toString(response.getResult()[0].toBytes());
-                LOGGER.error("cluster confirm {} error", BytesUtils.toString(response.getResult()[0].toBytes()));
-                return false;
-            }
-
-            return localClusterInfo.match(serverContext.getConfig().getKvdbConfig().getPort(), uri, BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), ClusterInfo.class));
-        } catch (Exception e) {
-            LOGGER.error("cluster confirm {} error", uri.getOrigin(), e);
-            return false;
-        } finally {
-            if (null != client) {
-                client.stop();
-            }
-        }
-    }
 }

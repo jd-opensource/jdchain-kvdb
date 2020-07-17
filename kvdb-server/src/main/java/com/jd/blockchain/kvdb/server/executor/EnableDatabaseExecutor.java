@@ -3,6 +3,7 @@ package com.jd.blockchain.kvdb.server.executor;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
+import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ public class EnableDatabaseExecutor implements Executor {
         try {
 
             String database = BytesUtils.toString(request.getCommand().getParameters()[0].toBytes());
+            request.getServerContext().getWal().append(WalEntity.newEnableDatabaseEntity(request.getId()));
             request.getServerContext().enableDatabase(database);
 
             return KVDBMessage.success(request.getId());

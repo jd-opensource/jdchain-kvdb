@@ -6,6 +6,8 @@ import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
+import com.jd.blockchain.kvdb.server.wal.WalCommand;
+import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +20,7 @@ public class CreateDatabaseExecutor implements Executor {
     public Message execute(Request request) {
         try {
             // name 必填，rootDir 和 partitions 可选
-            DatabaseBaseInfo param = BinaryProtocol.decodeAs(request.getCommand().getParameters()[0].toBytes(), DatabaseBaseInfo.class);
+            DatabaseBaseInfo param = BinaryProtocol.decode(request.getCommand().getParameters()[0].toBytes(), DatabaseBaseInfo.class);
             DBInfo dbInfo = new DBInfo();
             dbInfo.setEnable(true);
             if (StringUtils.isEmpty(param.getName().trim())) {
@@ -37,6 +39,7 @@ public class CreateDatabaseExecutor implements Executor {
             } else {
                 dbInfo.setPartitions(request.getServerContext().getConfig().getKvdbConfig().getDbsPartitions());
             }
+            request.getServerContext().getWal().append(WalEntity.newCreateDatabaseEntity(request.getId()));
             request.getServerContext().createDatabase(dbInfo);
             return KVDBMessage.success(request.getId());
         } catch (Exception e) {

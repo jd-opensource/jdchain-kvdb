@@ -1,21 +1,17 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
-import com.jd.blockchain.utils.Bytes;
 import io.netty.channel.ChannelHandlerContext;
 import org.rocksdb.RocksDBException;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * 连接会话
  */
 public class KVDBSession implements Session {
+    // 最大batch数量
+    private static final int MAX_BATCH_SIZE = 10000000;
     // 会话ID
     private final String id;
     // Channel上下文
@@ -26,14 +22,13 @@ public class KVDBSession implements Session {
     private KVDBInstance instance;
     // 批处理模式
     private volatile boolean batchMode;
-    // 待提交批处理数据集
-    private HashMap<Bytes, byte[]> batch;
-    // 最大batch数量
-    private static final int MAX_BATCH_SIZE = 10000000;
+    // 批处理
+    private KVDBBatch batch;
 
     public KVDBSession(String id, ChannelHandlerContext ctx) {
         this.id = id;
         this.ctx = ctx;
+        this.batch = new KVDBBatch();
     }
 
     @Override
@@ -67,9 +62,7 @@ public class KVDBSession implements Session {
 
     @Override
     public void close() {
-        if (null != batch) {
-            batch.clear();
-        }
+        batch.close();
         if (null != ctx) {
             ctx.close();
         }
@@ -90,11 +83,7 @@ public class KVDBSession implements Session {
         if (!batchMode) {
             batchMode = true;
         }
-        if (null != batch) {
-            batch.clear();
-        } else {
-            batch = new HashMap<>();
-        }
+        batch.begin();
     }
 
     /**
@@ -105,9 +94,7 @@ public class KVDBSession implements Session {
     @Override
     public synchronized void batchAbort() throws RocksDBException {
         batchMode = false;
-        if (null != batch) {
-            batch.clear();
-        }
+        batch.abort();
     }
 
     /**
@@ -118,34 +105,16 @@ public class KVDBSession implements Session {
     @Override
     public synchronized void batchCommit() throws RocksDBException {
         batchMode = false;
-        if (null != batch) {
-            commit();
-        }
+        batch.commit(instance);
     }
 
     @Override
     public synchronized void batchCommit(long size) throws RocksDBException {
         batchMode = false;
-        if (null != batch) {
-            if (batch.size() != size) {
-                throw new KVDBException("batch size not match, expect:" + size + ", actually:" + batch.size());
-            }
-            commit();
+        if (batch.size() != size) {
+            throw new KVDBException("batch size not match, expect:" + size + ", actually:" + batch.size());
         }
-    }
-
-    private void commit() throws RocksDBException {
-        try {
-            KVWriteBatch writeBatch = instance.beginBatch();
-            Iterator<Map.Entry<Bytes, byte[]>> iterator = batch.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Bytes, byte[]> entry = iterator.next();
-                writeBatch.set(entry.getKey().toBytes(), entry.getValue());
-            }
-            writeBatch.commit();
-        } finally {
-            batch.clear();
-        }
+        batch.commit(instance);
     }
 
     /**

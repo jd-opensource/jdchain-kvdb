@@ -1,12 +1,13 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
-import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
+import com.jd.blockchain.kvdb.server.wal.Wal;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.rocksdb.RocksDBException;
 
@@ -88,4 +89,10 @@ public interface ServerContext {
      * @param database
      */
     void dropDatabase(String database) throws KVDBException;
+
+    /**
+     * write ahead log
+     * @return
+     */
+    Wal getWal();
 }

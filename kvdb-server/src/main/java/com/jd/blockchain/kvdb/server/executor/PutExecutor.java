@@ -5,6 +5,8 @@ import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
+import com.jd.blockchain.kvdb.server.wal.WalEntity;
+import com.jd.blockchain.kvdb.server.wal.WalKV;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
@@ -38,7 +40,10 @@ public class PutExecutor implements Executor {
                     LOGGER.debug("execute put in batch, key:{}, value:{}", BytesUtils.toString(kvs[i].toBytes()), kvs[i + 1].toBytes());
                     final Bytes key = kvs[i];
                     final Bytes value = kvs[i + 1];
-                    request.getSession().writeInBatch((wb) -> wb.put(key, value.toBytes()));
+                    request.getSession().writeInBatch((wb) -> {
+                        wb.put(key, value.toBytes());
+                        return null;
+                    });
                     i = i + 2;
                 }
             } catch (Exception e) {
@@ -50,7 +55,10 @@ public class PutExecutor implements Executor {
             if (kvs.length == 2) {
                 // 单个键值对
                 try {
-                    LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(kvs[0].toBytes()), kvs[1].toBytes());
+                    byte[] key = kvs[0].toBytes();
+                    byte[] value = kvs[1].toBytes();
+                    LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(key), value);
+                    request.getServerContext().getWal().append(WalEntity.newPutEntity(request.getId(), new WalKV(key, value)));
                     db.set(kvs[0].toBytes(), kvs[1].toBytes());
                 } catch (Exception e) {
                     LOGGER.debug("execute put error", e);
@@ -60,11 +68,16 @@ public class PutExecutor implements Executor {
                 // 多个键值对
                 KVWriteBatch wb = db.beginBatch();
                 try {
+                    WalKV[] wkvs = new WalKV[kvs.length];
                     for (int i = 0; i < kvs.length; ) {
-                        LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(kvs[i].toBytes()), kvs[i + 1].toBytes());
-                        wb.set(kvs[i].toBytes(), kvs[i + 1].toBytes());
+                        byte[] key = kvs[i].toBytes();
+                        byte[] value = kvs[i + 1].toBytes();
+                        LOGGER.debug("execute put, key:{}, value:{}", BytesUtils.toString(key), value);
+                        wb.set(key, value);
+                        wkvs[i / 2] = new WalKV(key, value);
                         i = i + 2;
                     }
+                    request.getServerContext().getWal().append(WalEntity.newPutEntity(request.getId(), wkvs));
                     wb.commit();
                 } catch (Exception e) {
                     LOGGER.debug("execute put error", e);

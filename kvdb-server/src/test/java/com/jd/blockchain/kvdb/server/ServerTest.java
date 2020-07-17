@@ -9,6 +9,7 @@ import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
+import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -51,7 +52,15 @@ public class ServerTest {
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
         DatabaseClusterInfo clusterInfo = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseClusterInfo.class);
         Assert.assertFalse(clusterInfo.isClusterMode());
-
+        for (int i = 0; i < 100; i++) {
+            response = client.send(KVDBMessage.put(Bytes.fromInt(i), Bytes.fromInt(i)));
+            Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        }
+        client.send(KVDBMessage.batchBegin());
+        for (int i = 0; i < 10000; i++) {
+            Assert.assertTrue(client.sendAsync(KVDBMessage.put(Bytes.fromInt(i), Bytes.fromInt(i))));
+        }
+        client.send(KVDBMessage.batchCommit());
         server.stop();
     }
 

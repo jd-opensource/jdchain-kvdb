@@ -8,6 +8,8 @@ import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
+import com.jd.blockchain.kvdb.server.wal.RedoLog;
+import com.jd.blockchain.kvdb.server.wal.Wal;
 import com.jd.blockchain.utils.StringUtils;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -42,8 +44,10 @@ public class KVDBServerContext implements ServerContext {
     // 数据库实例-集群配置对照关系，数据库名-集群名
     private Map<String, String> dbClusterMapping;
 
+    private Wal wal;
 
-    public KVDBServerContext(ServerConfig config) throws RocksDBException {
+
+    public KVDBServerContext(ServerConfig config) throws RocksDBException, IOException {
         this.config = config;
         // 创建或加载 dblist 中配置的数据库实例
         rocksdbs = KVDB.initDBs(config.getDbList());
@@ -57,6 +61,7 @@ public class KVDBServerContext implements ServerContext {
                 dbClusterMapping.put(uri.getDatabase(), entry.getKey());
             }
         }
+        wal = new RedoLog(config.getKvdbConfig().getDbsRootdir());
     }
 
     public ServerConfig getConfig() {
@@ -176,6 +181,11 @@ public class KVDBServerContext implements ServerContext {
         } catch (Exception e) {
             throw new KVDBException(e.toString());
         }
+    }
+
+    @Override
+    public Wal getWal() {
+        return wal;
     }
 
     public void stop() {

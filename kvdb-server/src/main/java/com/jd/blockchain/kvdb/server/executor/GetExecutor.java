@@ -9,6 +9,9 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_GET;
+
+@KVDBExecutor(command = COMMAND_GET)
 public class GetExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetExecutor.class);
@@ -18,7 +21,7 @@ public class GetExecutor implements Executor {
 
         try {
             KVDBInstance db = request.getSession().getDBInstance();
-            if(null == db) {
+            if (null == db) {
                 return KVDBMessage.error(request.getId(), "no database selected");
             }
             boolean batch = request.getSession().batchMode();

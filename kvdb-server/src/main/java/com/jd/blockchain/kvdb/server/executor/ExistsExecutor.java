@@ -9,9 +9,12 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_EXISTS;
+
 /**
  * 存在性查询
  */
+@KVDBExecutor(command = COMMAND_EXISTS)
 public class ExistsExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExistsExecutor.class);

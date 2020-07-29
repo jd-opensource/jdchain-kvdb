@@ -2,13 +2,16 @@ package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
-import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_CLUSTER_INFO;
+
+@KVDBExecutor(command = COMMAND_CLUSTER_INFO)
 public class ClusterInfoExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterInfoExecutor.class);

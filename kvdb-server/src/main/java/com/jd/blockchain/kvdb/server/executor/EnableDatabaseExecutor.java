@@ -8,6 +8,9 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_ENABLE_DATABASE;
+
+@KVDBExecutor(command = COMMAND_ENABLE_DATABASE)
 public class EnableDatabaseExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EnableDatabaseExecutor.class);

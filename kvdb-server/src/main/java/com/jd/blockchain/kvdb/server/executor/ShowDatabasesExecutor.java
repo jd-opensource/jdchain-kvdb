@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_SHOW_DATABASES;
+
+@KVDBExecutor(command = COMMAND_SHOW_DATABASES)
 public class ShowDatabasesExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowDatabasesExecutor.class);

@@ -6,12 +6,14 @@ import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
-import com.jd.blockchain.kvdb.server.wal.WalCommand;
 import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_CREATE_DATABASE;
+
+@KVDBExecutor(command = COMMAND_CREATE_DATABASE)
 public class CreateDatabaseExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateDatabaseExecutor.class);

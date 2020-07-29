@@ -9,20 +9,8 @@ import com.jd.blockchain.kvdb.protocol.URIUtils;
 import com.jd.blockchain.kvdb.protocol.proto.Command;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
-import com.jd.blockchain.kvdb.server.executor.BatchAbortExecutor;
-import com.jd.blockchain.kvdb.server.executor.BatchBeginExecutor;
-import com.jd.blockchain.kvdb.server.executor.BatchCommitExecutor;
-import com.jd.blockchain.kvdb.server.executor.ClusterInfoExecutor;
-import com.jd.blockchain.kvdb.server.executor.CreateDatabaseExecutor;
-import com.jd.blockchain.kvdb.server.executor.DisableDatabaseExecutor;
-import com.jd.blockchain.kvdb.server.executor.DropDatabaseExecutor;
-import com.jd.blockchain.kvdb.server.executor.EnableDatabaseExecutor;
-import com.jd.blockchain.kvdb.server.executor.ExistsExecutor;
-import com.jd.blockchain.kvdb.server.executor.GetExecutor;
-import com.jd.blockchain.kvdb.server.executor.PutExecutor;
-import com.jd.blockchain.kvdb.server.executor.ShowDatabasesExecutor;
-import com.jd.blockchain.kvdb.server.executor.UnknowExecutor;
-import com.jd.blockchain.kvdb.server.executor.UseExecutor;
+import com.jd.blockchain.kvdb.server.executor.Executor;
+import com.jd.blockchain.kvdb.server.executor.KVDBExecutor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -40,12 +28,14 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 
-import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
+import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.CLUSTER_INFO;
 
 public class KVDBServer implements KVDBHandler {
 
@@ -65,27 +55,18 @@ public class KVDBServer implements KVDBHandler {
      */
     private boolean ready = false;
 
-    public KVDBServer(KVDBServerContext serverContext) {
+    public KVDBServer(KVDBServerContext serverContext) throws InstantiationException, IllegalAccessException {
         this.serverContext = serverContext;
         bindExecutors();
         this.clusterService = new ClusterService(serverContext);
     }
 
-    private void bindExecutors() {
-        serverContext.addExecutor(USE.getCommand(), new UseExecutor());
-        serverContext.addExecutor(SHOW_DATABASES.getCommand(), new ShowDatabasesExecutor());
-        serverContext.addExecutor(CREATE_DATABASE.getCommand(), new CreateDatabaseExecutor());
-        serverContext.addExecutor(ENABLE_DATABASE.getCommand(), new EnableDatabaseExecutor());
-        serverContext.addExecutor(DISABLE_DATABASE.getCommand(), new DisableDatabaseExecutor());
-        serverContext.addExecutor(DROP_DATABASE.getCommand(), new DropDatabaseExecutor());
-        serverContext.addExecutor(CLUSTER_INFO.getCommand(), new ClusterInfoExecutor());
-        serverContext.addExecutor(EXISTS.getCommand(), new ExistsExecutor());
-        serverContext.addExecutor(GET.getCommand(), new GetExecutor());
-        serverContext.addExecutor(PUT.getCommand(), new PutExecutor());
-        serverContext.addExecutor(BATCH_BEGIN.getCommand(), new BatchBeginExecutor());
-        serverContext.addExecutor(BATCH_ABORT.getCommand(), new BatchAbortExecutor());
-        serverContext.addExecutor(BATCH_COMMIT.getCommand(), new BatchCommitExecutor());
-        serverContext.addExecutor(UNKNOWN.getCommand(), new UnknowExecutor());
+    private void bindExecutors() throws IllegalAccessException, InstantiationException {
+        Set<Class<?>> clazzes = new Reflections("com.jd.blockchain.kvdb.server.executor").getTypesAnnotatedWith(KVDBExecutor.class);
+        for (Class clazz : clazzes) {
+            KVDBExecutor executor = (KVDBExecutor) clazz.getAnnotation(KVDBExecutor.class);
+            serverContext.addExecutor(executor.command(), (Executor) clazz.newInstance());
+        }
     }
 
     public void start() {

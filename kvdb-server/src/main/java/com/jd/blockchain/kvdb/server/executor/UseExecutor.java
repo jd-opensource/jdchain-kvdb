@@ -3,8 +3,8 @@ package com.jd.blockchain.kvdb.server.executor;
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
-import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
@@ -12,9 +12,12 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_USE;
+
 /**
  * 切换数据库实例
  */
+@KVDBExecutor(command = COMMAND_USE)
 public class UseExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UseExecutor.class);

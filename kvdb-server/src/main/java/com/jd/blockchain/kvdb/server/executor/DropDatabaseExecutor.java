@@ -8,6 +8,9 @@ import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_DROP_DATABASE;
+
+@KVDBExecutor(command = COMMAND_DROP_DATABASE)
 public class DropDatabaseExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DropDatabaseExecutor.class);

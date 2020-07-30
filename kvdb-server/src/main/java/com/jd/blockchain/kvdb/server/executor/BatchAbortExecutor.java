@@ -15,14 +15,14 @@ public class BatchAbortExecutor implements Executor {
 
     @Override
     public Message execute(Request request) {
-
-        LOGGER.debug("execute begin batch");
-
+        LOGGER.debug("{}-{} execute batch abort", request.getSession().getId(), request.getId());
         try {
             request.getSession().batchAbort();
+
             return KVDBMessage.success(request.getId());
         } catch (Exception e) {
-            LOGGER.debug("execute batch abort error", e);
+            LOGGER.error("{}-{} execute batch abort error", request.getSession().getId(), request.getId(), e);
+
             return KVDBMessage.error(request.getId(), e.toString());
         }
 

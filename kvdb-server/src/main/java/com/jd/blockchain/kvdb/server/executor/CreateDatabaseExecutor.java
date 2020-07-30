@@ -6,7 +6,6 @@ import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
-import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +19,14 @@ public class CreateDatabaseExecutor implements Executor {
 
     @Override
     public Message execute(Request request) {
+        LOGGER.debug("{}-{} execute create database: {}", request.getSession().getId(), request.getId(), request.getCommand().getParameters());
         try {
             // name 必填，rootDir 和 partitions 可选
             DatabaseBaseInfo param = BinaryProtocol.decode(request.getCommand().getParameters()[0].toBytes(), DatabaseBaseInfo.class);
             DBInfo dbInfo = new DBInfo();
             dbInfo.setEnable(true);
             if (StringUtils.isEmpty(param.getName().trim())) {
+
                 return KVDBMessage.error(request.getId(), "database name empty");
             }
             dbInfo.setName(param.getName().trim());
@@ -35,17 +36,19 @@ public class CreateDatabaseExecutor implements Executor {
                 dbInfo.setDbRootdir(param.getRootDir().trim());
             }
             if (param.getPartitions() < 0) {
+
                 return KVDBMessage.error(request.getId(), "partitions can not be negative");
             } else if (param.getPartitions() > 0) {
                 dbInfo.setPartitions(param.getPartitions());
             } else {
                 dbInfo.setPartitions(request.getServerContext().getConfig().getKvdbConfig().getDbsPartitions());
             }
-            request.getServerContext().getWal().append(WalEntity.newCreateDatabaseEntity(request.getId()));
             request.getServerContext().createDatabase(dbInfo);
+
             return KVDBMessage.success(request.getId());
         } catch (Exception e) {
-            LOGGER.error("execute create databases", e);
+            LOGGER.error("{}-{} execute create databases", request.getSession().getId(), request.getId(), e);
+
             return KVDBMessage.error(request.getId(), e.toString());
         }
     }

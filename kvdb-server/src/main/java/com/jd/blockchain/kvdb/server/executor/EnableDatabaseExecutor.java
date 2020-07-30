@@ -3,7 +3,6 @@ package com.jd.blockchain.kvdb.server.executor;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
-import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.utils.io.BytesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,15 +16,15 @@ public class EnableDatabaseExecutor implements Executor {
 
     @Override
     public Message execute(Request request) {
+        LOGGER.debug("{}-{} execute enable databases: {}", request.getSession().getId(), request.getId(), request.getCommand().getParameters());
         try {
-
             String database = BytesUtils.toString(request.getCommand().getParameters()[0].toBytes());
-            request.getServerContext().getWal().append(WalEntity.newEnableDatabaseEntity(request.getId()));
             request.getServerContext().enableDatabase(database);
 
             return KVDBMessage.success(request.getId());
         } catch (Exception e) {
-            LOGGER.error("execute create databases", e);
+            LOGGER.error("{}-{} execute enable databases", request.getSession().getId(), request.getId(), e);
+
             return KVDBMessage.error(request.getId(), e.toString());
         }
     }

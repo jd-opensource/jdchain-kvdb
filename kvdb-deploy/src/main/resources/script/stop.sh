@@ -21,7 +21,7 @@ if [ -z "$PID" ]; then
     echo "Unable to find kvdb PID. stop aborted."
 else
     echo "Start to kill PID = $PID ..."
-    kill -9 $PID
+    kill $PID
     echo "kvdb has been stopped ..."
     echo "" > $PID_LOG
 fi

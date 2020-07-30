@@ -2,7 +2,11 @@ package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.utils.Bytes;
 import org.rocksdb.RocksDBException;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * 连接会话
@@ -23,7 +27,7 @@ public interface Session {
      * @param instance
      * @throws RocksDBException
      */
-    void setDB(String dbName, KVDBInstance instance) throws RocksDBException;
+    void setDB(String dbName, KVDBInstance instance);
 
     /**
      * @return 数据库实例
@@ -71,7 +75,7 @@ public interface Session {
      *
      * @throws RocksDBException
      */
-    void batchCommit() throws RocksDBException;
+    void batchCommit() throws RocksDBException, IOException;
 
     /**
      * 提交批处理
@@ -79,23 +83,31 @@ public interface Session {
      * @param size 批处理操作校验
      * @throws RocksDBException
      */
-    void batchCommit(long size) throws RocksDBException;
+    void batchCommit(long size) throws RocksDBException, IOException;
 
     /**
-     * 批处理时读钩子方法
+     * 键值存在性查询
      *
-     * @param hook
+     * @param keys 支持多个键
      * @return
      * @throws RocksDBException
      */
-    byte[] readInBatch(BatchHook hook) throws RocksDBException;
+    boolean[] exists(Bytes... keys) throws RocksDBException;
 
     /**
-     * 批处理时写钩子方法
+     * 查询键值
      *
-     * @param hook
+     * @param keys 支持多个键
      * @return
      * @throws RocksDBException
      */
-    byte[] writeInBatch(BatchHook hook) throws RocksDBException;
+    Bytes[] get(Bytes... keys) throws RocksDBException;
+
+    /**
+     * 设置键值
+     *
+     * @param kvs 支持批量写入
+     * @throws RocksDBException
+     */
+    void put(Map<Bytes, byte[]> kvs) throws RocksDBException, IOException;
 }

@@ -7,6 +7,8 @@ import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
+import com.jd.blockchain.kvdb.server.wal.Entity;
+import com.jd.blockchain.kvdb.server.wal.Meta;
 import com.jd.blockchain.kvdb.server.wal.Wal;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.rocksdb.RocksDBException;
@@ -46,6 +48,14 @@ public interface ServerContext {
      * @return 数据库实例
      */
     KVDBInstance getDatabase(String name);
+
+    /**
+     * 绑定数据库实例
+     *
+     * @param session
+     * @param dbName
+     */
+    DatabaseClusterInfo setDB(Session session, String dbName);
 
     /**
      * 创建数据库
@@ -92,7 +102,13 @@ public interface ServerContext {
 
     /**
      * write ahead log
+     *
      * @return
      */
-    Wal getWal();
+    Wal<Entity, Meta> getWal();
+
+    /**
+     * redo wal
+     */
+    void redo() throws IOException, RocksDBException;
 }

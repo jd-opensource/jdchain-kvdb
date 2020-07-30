@@ -55,11 +55,11 @@ public class SingleTest {
     }
 
     private Session newSession() {
-        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
+        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null, null));
     }
 
     private Session newSessionWithTestDB() throws RocksDBException {
-        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
+        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null, null));
 
         session.setDB("test1", context.getDatabase("test1"));
 

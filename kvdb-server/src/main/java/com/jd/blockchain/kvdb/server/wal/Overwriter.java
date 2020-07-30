@@ -1,0 +1,25 @@
+package com.jd.blockchain.kvdb.server.wal;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Overwriter implements Overwrite<byte[]> {
+
+    private Path path;
+
+    public Overwriter(String path) {
+        this.path = Paths.get(path);
+    }
+
+    @Override
+    public byte[] readMeta() throws IOException {
+        return Files.readAllBytes(path);
+    }
+
+    @Override
+    public void writeMeta(byte[] data) throws IOException {
+        Files.write(path, data);
+    }
+}

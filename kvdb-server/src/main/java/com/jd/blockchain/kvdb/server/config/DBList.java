@@ -14,11 +14,11 @@ import java.util.*;
  */
 public class DBList {
 
-    private static final String PROPERTITY_PREFIX = "db";
-    private static final String PROPERTITY_SEPARATOR = ".";
-    private static final String PROPERTITY_ENABLE = "enable";
-    private static final String PROPERTITY_ROOTDIR = "rootdir";
-    private static final String PROPERTITY_PARTITIONS = "partitions";
+    public static final String PROPERTITY_PREFIX = "db";
+    public static final String PROPERTITY_SEPARATOR = ".";
+    public static final String PROPERTITY_ENABLE = "enable";
+    public static final String PROPERTITY_ROOTDIR = "rootdir";
+    public static final String PROPERTITY_PARTITIONS = "partitions";
 
     private String configFile;
 

@@ -29,9 +29,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import org.reflections.Reflections;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 
@@ -69,7 +71,7 @@ public class KVDBServer implements KVDBHandler {
         }
     }
 
-    public void start() {
+    public void start() throws IOException, RocksDBException {
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() * 2);
 
@@ -92,6 +94,9 @@ public class KVDBServer implements KVDBHandler {
         managerFuture = bootstrap.bind("127.0.0.1", serverContext.getConfig().getKvdbConfig().getManagerPort());
         managerFuture.syncUninterruptibly();
 
+        // Check redo log
+        serverContext.redo();
+
         // Confirm cluster settings
         clusterService.confirm();
 
@@ -100,7 +105,7 @@ public class KVDBServer implements KVDBHandler {
         ready = true;
     }
 
-    public void stop() {
+    public void stop() throws IOException {
         try {
             if (future != null) {
                 closeFuture(future.channel().close());
@@ -155,7 +160,7 @@ public class KVDBServer implements KVDBHandler {
     }
 
     private Session getSession(ChannelHandlerContext ctx, String sourceKey) {
-        return serverContext.getSession(sourceKey, key -> new KVDBSession(key, ctx));
+        return serverContext.getSession(sourceKey, key -> new KVDBSession(key, ctx, serverContext.getWal()));
     }
 
     public void disconnected(ChannelHandlerContext ctx) {

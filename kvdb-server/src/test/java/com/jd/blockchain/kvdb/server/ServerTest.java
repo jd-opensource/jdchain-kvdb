@@ -15,8 +15,10 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.rocksdb.RocksDBException;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 public class ServerTest {
@@ -70,7 +72,13 @@ public class ServerTest {
         KVDBServer server1 = new KVDBServer(context1);
         CountDownLatch cdl = new CountDownLatch(2);
         new Thread(() -> {
-            server1.start();
+            try {
+                server1.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (RocksDBException e) {
+                e.printStackTrace();
+            }
             cdl.countDown();
 
         }).start();
@@ -78,7 +86,13 @@ public class ServerTest {
         KVDBServerContext context2 = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/server/cluster/2").getFile()));
         KVDBServer server2 = new KVDBServer(context2);
         new Thread(() -> {
-            server2.start();
+            try {
+                server2.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (RocksDBException e) {
+                e.printStackTrace();
+            }
             cdl.countDown();
         }).start();
 

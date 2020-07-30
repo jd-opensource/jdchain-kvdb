@@ -19,11 +19,13 @@ public class ClusterInfoExecutor implements Executor {
     @Override
     public Message execute(Request request) {
         try {
-            LOGGER.debug("execute cluster sync");
+            LOGGER.debug("{}-{} execute cluster sync", request.getSession().getId(), request.getId());
             ClusterInfo info = request.getServerContext().getClusterInfo();
+
             return KVDBMessage.success(request.getId(), new Bytes(BinaryProtocol.encode(info, ClusterInfo.class)));
         } catch (Exception e) {
-            LOGGER.error("execute cluster sync", e);
+            LOGGER.error("{}-{}, execute cluster sync", request.getSession().getId(), request.getId(), e);
+
             return KVDBMessage.error(request.getId(), e.toString());
         }
     }

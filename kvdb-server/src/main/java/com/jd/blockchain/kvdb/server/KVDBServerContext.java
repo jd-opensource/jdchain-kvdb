@@ -15,10 +15,9 @@ import com.jd.blockchain.kvdb.server.config.DBList;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
 import com.jd.blockchain.kvdb.server.wal.Entity;
+import com.jd.blockchain.kvdb.server.wal.Iterator;
 import com.jd.blockchain.kvdb.server.wal.KV;
-import com.jd.blockchain.kvdb.server.wal.Meta;
 import com.jd.blockchain.kvdb.server.wal.RedoLog;
-import com.jd.blockchain.kvdb.server.wal.Wal;
 import com.jd.blockchain.kvdb.server.wal.WalCommand;
 import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.utils.StringUtils;
@@ -56,7 +55,7 @@ public class KVDBServerContext implements ServerContext {
     // 数据库实例-集群配置对照关系，数据库名-集群名
     private Map<String, String> dbClusterMapping;
 
-    private Wal<Entity, Meta> wal;
+    private RedoLog wal;
 
 
     public KVDBServerContext(ServerConfig config) throws RocksDBException, IOException {
@@ -177,11 +176,11 @@ public class KVDBServerContext implements ServerContext {
             }
             long lsn = wal.append(WalEntity.newDisableDatabaseEntity(database));
             rocksdbs.remove(database);
-            // 关闭数据库
-            instance.close();
             // 更新数据库状态
             config.getDbList().disableDatabase(database);
             wal.updateMeta(lsn);
+            // 关闭数据库
+            instance.close();
         } catch (Exception e) {
             throw new KVDBException(e.toString());
         }
@@ -201,80 +200,75 @@ public class KVDBServerContext implements ServerContext {
             }
             KVDBInstance instance = rocksdbs.get(database);
             long lsn = wal.append(WalEntity.newDropDatabaseEntity(database));
-            // 关闭数据库实例
-            if (null != instance) {
-                instance.close();
-            }
             rocksdbs.remove(database);
             // 更新配置并删除数据库目录
             config.getDbList().dropDatabase(dbInfo);
             wal.updateMeta(lsn);
+            // 关闭数据库实例
+            if (null != instance) {
+                instance.close();
+            }
         } catch (Exception e) {
             throw new KVDBException(e.toString());
         }
     }
 
     @Override
-    public Wal<Entity, Meta> getWal() {
+    public RedoLog getWal() {
         return wal;
     }
 
     @Override
-    public void redo() throws IOException, RocksDBException {
+    public void redoWal() throws IOException, RocksDBException {
         LOGGER.debug("redo wal...");
 
         if (!wal.metaUpdated()) {
             // disable wal for redo
             wal.disable();
 
-            Meta meta = wal.readMeta();
-            long position = wal.position(meta.getLsn());
-            long lsn = meta.getLsn();
-            while (position >= 0) {
-                position = wal.next(position);
-                if (position < 0) {
-                    break;
-                }
-                Entity e = wal.get(position);
-                if (e == null) {
-                    break;
-                }
-                LOGGER.debug("redo {} {} {}", e.getLsn(), e.getCommand(), e.getDB());
-                if (e.getCommand().equals(WalCommand.PUT)) { // redo put
-                    KVDBInstance instance = getDatabase(e.getDB());
-                    KVWriteBatch batch = instance.beginBatch();
-                    for (KV kv : e.getKVs()) {
-                        batch.set(kv.getKey(), kv.getValue());
-                    }
-                    batch.commit();
-                } else if (e.getCommand().equals(WalCommand.CREATE_DATABASE)) { // redo create database
-                    DBInfo info = new DBInfo();
-                    info.setName(e.getDB());
-                    for (KV kv : e.getKVs()) {
-                        String key = new String(kv.getKey());
-                        if (key.equals(DBList.PROPERTITY_ENABLE)) {
-                            info.setEnable(BytesUtils.toBoolean(kv.getValue()[0]));
-                        } else if (key.equals(DBList.PROPERTITY_ROOTDIR)) {
-                            info.setDbRootdir(BytesUtils.toString(kv.getValue()));
-                        } else if (key.equals(DBList.PROPERTITY_PARTITIONS)) {
-                            info.setPartitions(BytesUtils.toInt(kv.getValue()));
+            long lsn = wal.getMeta().getLsn();
+            long position = wal.position(lsn);
+            Iterator iterator = wal.entityIterator(position < 0 ? 0 : position);
+            while (iterator.hasNext()) {
+                Entity e = iterator.next();
+                if (e.getLsn() > lsn) {
+                    LOGGER.info("redo {} {} {}", e.getLsn(), e.getCommand(), e.getDB());
+                    if (e.getCommand().equals(WalCommand.PUT)) { // redo put
+                        KVDBInstance instance = getDatabase(e.getDB());
+                        KVWriteBatch batch = instance.beginBatch();
+                        for (KV kv : e.getKVs()) {
+                            batch.set(kv.getKey(), kv.getValue());
+                        }
+                        batch.commit();
+                    } else if (e.getCommand().equals(WalCommand.CREATE_DATABASE)) { // redo create database
+                        DBInfo info = new DBInfo();
+                        info.setName(e.getDB());
+                        for (KV kv : e.getKVs()) {
+                            String key = new String(kv.getKey());
+                            if (key.equals(DBList.PROPERTITY_ENABLE)) {
+                                info.setEnable(BytesUtils.toBoolean(kv.getValue()[0]));
+                            } else if (key.equals(DBList.PROPERTITY_ROOTDIR)) {
+                                info.setDbRootdir(BytesUtils.toString(kv.getValue()));
+                            } else if (key.equals(DBList.PROPERTITY_PARTITIONS)) {
+                                info.setPartitions(BytesUtils.toInt(kv.getValue()));
+                            }
+                        }
+                        if (!config.getDbList().getDatabaseNameSet().contains(info.getName())) {
+                            createDatabase(info);
+                        }
+                    } else if (e.getCommand().equals(WalCommand.ENABLE_DATABASE)) { // redo enable database
+                        enableDatabase(e.getDB());
+                    } else if (e.getCommand().equals(WalCommand.DISABLE_DATABASE)) { // redo disable database
+                        if (rocksdbs.containsKey(e.getDB())) {
+                            disableDatabase(e.getDB());
+                        }
+                    } else if (e.getCommand().equals(WalCommand.DROP_DATABASE)) { // redo drop database
+                        if (config.getDbList().getDatabaseNameSet().contains(e.getDB())) {
+                            dropDatabase(e.getDB());
                         }
                     }
-                    if (!config.getDbList().getDatabaseNameSet().contains(info.getName())) {
-                        createDatabase(info);
-                    }
-                } else if (e.getCommand().equals(WalCommand.ENABLE_DATABASE)) { // redo enable database
-                    enableDatabase(e.getDB());
-                } else if (e.getCommand().equals(WalCommand.DISABLE_DATABASE)) { // redo disable database
-                    if (rocksdbs.containsKey(e.getDB())) {
-                        disableDatabase(e.getDB());
-                    }
-                } else if (e.getCommand().equals(WalCommand.DROP_DATABASE)) { // redo drop database
-                    if (config.getDbList().getDatabaseNameSet().contains(e.getDB())) {
-                        dropDatabase(e.getDB());
-                    }
+                    lsn = e.getLsn();
                 }
-                lsn = e.getLsn();
             }
 
             // update meta
@@ -286,7 +280,7 @@ public class KVDBServerContext implements ServerContext {
             }
 
         }
-        LOGGER.debug("redo wal complete");
+        LOGGER.info("redo wal complete");
     }
 
     public void stop() throws IOException {

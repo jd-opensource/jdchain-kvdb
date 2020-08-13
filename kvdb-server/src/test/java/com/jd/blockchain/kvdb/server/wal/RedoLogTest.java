@@ -15,7 +15,7 @@ import java.io.IOException;
 public class RedoLogTest {
 
     private KVDBConfig kvdbConfig;
-    private Wal<Entity, Meta> wal;
+    private RedoLog wal;
 
     @Before
     public void setUp() throws IOException {
@@ -27,36 +27,60 @@ public class RedoLogTest {
     @After
     public void tearDown() throws IOException {
         wal.close();
-//        FileUtils.deletePath(new File(kvdbConfig.getDbsRootdir()), true);
+        FileUtils.deletePath(new File(kvdbConfig.getDbsRootdir()), true);
     }
 
     @Test
+    public void test() throws IOException {
+        testWrite();
+        testRead();
+    }
+
     public void testWrite() throws IOException {
+        String db = "test";
         DBInfo dbInfo = new DBInfo();
-        dbInfo.setName("test");
+        dbInfo.setName(db);
         dbInfo.setPartitions(4);
         dbInfo.setDbRootdir(kvdbConfig.getDbsRootdir());
         dbInfo.setEnable(true);
         Long lsn = wal.append(WalEntity.newCreateDatabaseEntity(dbInfo));
-        wal.flush(true);
-        Assert.assertTrue(wal.exists(lsn));
-        Entity entity = wal.get(lsn);
+        wal.flush();
+        Entity entity = wal.query(lsn);
+        Assert.assertNotNull(entity);
         Assert.assertTrue(WalCommand.CREATE_DATABASE.equals(entity.getCommand()));
 
-        Assert.assertFalse(wal.exists(lsn + lsn));
+        lsn = wal.append(WalEntity.newPutEntity(db, new WalKV("k".getBytes(), "v".getBytes())));
+        wal.flush();
+        entity = wal.query(lsn);
+        Assert.assertNotNull(entity);
+        Assert.assertTrue(WalCommand.PUT.equals(entity.getCommand()));
+
+        lsn = wal.append(WalEntity.newDisableDatabaseEntity(db));
+        wal.flush();
+        entity = wal.query(lsn);
+        Assert.assertNotNull(entity);
+        Assert.assertTrue(WalCommand.DISABLE_DATABASE.equals(entity.getCommand()));
+
+        lsn = wal.append(WalEntity.newEnableDatabaseEntity(db));
+        wal.flush();
+        entity = wal.query(lsn);
+        Assert.assertNotNull(entity);
+        Assert.assertTrue(WalCommand.ENABLE_DATABASE.equals(entity.getCommand()));
+
+        lsn = wal.append(WalEntity.newDropDatabaseEntity(db));
+        wal.flush();
+        entity = wal.query(lsn);
+        Assert.assertNotNull(entity);
+        Assert.assertTrue(WalCommand.DROP_DATABASE.equals(entity.getCommand()));
+
+        Assert.assertNull(wal.query(lsn + lsn));
     }
 
-    @Test
     public void testRead() throws IOException {
-        wal.latestLsn();
-        long position = 0;
         long i = 0;
-        while (true) {
-            long next = wal.next(position);
-            if (next == -1) {
-                break;
-            }
-            Entity e = wal.get(position, (int) (next - position - RedoLog.HEADER_SIZE * 2));
+        Iterator iterator = wal.entityIterator(0);
+        while (iterator.hasNext()) {
+            Entity e = iterator.next();
             System.out.println(e.getLsn());
             System.out.println(e.getCommand().toString());
             for (KV kv : e.getKVs()) {
@@ -64,7 +88,6 @@ public class RedoLogTest {
                 System.out.println(kv.getValue());
                 i++;
             }
-            position = next;
         }
 
         System.out.println("total count : " + i);

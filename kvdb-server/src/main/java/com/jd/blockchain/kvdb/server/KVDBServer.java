@@ -95,7 +95,7 @@ public class KVDBServer implements KVDBHandler {
         managerFuture.syncUninterruptibly();
 
         // Check redo log
-        serverContext.redo();
+        serverContext.redoWal();
 
         // Confirm cluster settings
         clusterService.confirm();

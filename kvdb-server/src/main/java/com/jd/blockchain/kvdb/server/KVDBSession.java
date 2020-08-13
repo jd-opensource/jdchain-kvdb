@@ -4,9 +4,7 @@ import com.jd.blockchain.kvdb.KVDBInstance;
 import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
-import com.jd.blockchain.kvdb.server.wal.Entity;
-import com.jd.blockchain.kvdb.server.wal.Meta;
-import com.jd.blockchain.kvdb.server.wal.Wal;
+import com.jd.blockchain.kvdb.server.wal.RedoLog;
 import com.jd.blockchain.kvdb.server.wal.WalEntity;
 import com.jd.blockchain.kvdb.server.wal.WalKV;
 import com.jd.blockchain.utils.Bytes;
@@ -36,9 +34,9 @@ public class KVDBSession implements Session {
     // 待提交批处理数据集
     private HashMap<Bytes, byte[]> batch;
     // WAL
-    private Wal<Entity, Meta> wal;
+    private RedoLog wal;
 
-    public KVDBSession(String id, ChannelHandlerContext ctx, Wal<Entity, Meta> wal) {
+    public KVDBSession(String id, ChannelHandlerContext ctx, RedoLog wal) {
         this.id = id;
         this.ctx = ctx;
         this.wal = wal;
@@ -136,18 +134,20 @@ public class KVDBSession implements Session {
             throw new KVDBException("batch size not match, expect:" + size + ", actually:" + batch.size());
         }
         try {
-            KVWriteBatch writeBatch = instance.beginBatch();
-            WalKV[] walkvs = new WalKV[batch.size()];
-            int i = 0;
-            for (Map.Entry<Bytes, byte[]> entry : batch.entrySet()) {
-                byte[] key = entry.getKey().toBytes();
-                writeBatch.set(key, entry.getValue());
-                walkvs[i] = new WalKV(key, entry.getValue());
-                i++;
+            synchronized (instance) {
+                KVWriteBatch writeBatch = instance.beginBatch();
+                WalKV[] walkvs = new WalKV[batch.size()];
+                int i = 0;
+                for (Map.Entry<Bytes, byte[]> entry : batch.entrySet()) {
+                    byte[] key = entry.getKey().toBytes();
+                    writeBatch.set(key, entry.getValue());
+                    walkvs[i] = new WalKV(key, entry.getValue());
+                    i++;
+                }
+                long lsn = wal.append(WalEntity.newPutEntity(getDBName(), walkvs));
+                writeBatch.commit();
+                wal.updateMeta(lsn);
             }
-            long lsn = wal.append(WalEntity.newPutEntity(getDBName(), walkvs));
-            writeBatch.commit();
-            wal.updateMeta(lsn);
         } finally {
             batch.clear();
         }
@@ -202,18 +202,20 @@ public class KVDBSession implements Session {
                 batch.putAll(kvs);
             }
         } else {
-            KVWriteBatch wb = instance.beginBatch();
-            WalKV[] walkvs = new WalKV[kvs.size()];
-            int i = 0;
-            for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
-                byte[] key = entry.getKey().toBytes();
-                wb.set(key, entry.getValue());
-                walkvs[i] = new WalKV(key, entry.getValue());
-                i++;
+            synchronized (instance) {
+                KVWriteBatch wb = instance.beginBatch();
+                WalKV[] walkvs = new WalKV[kvs.size()];
+                int i = 0;
+                for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
+                    byte[] key = entry.getKey().toBytes();
+                    wb.set(key, entry.getValue());
+                    walkvs[i] = new WalKV(key, entry.getValue());
+                    i++;
+                }
+                long lsn = wal.append(WalEntity.newPutEntity(getDBName(), walkvs));
+                wb.commit();
+                wal.updateMeta(lsn);
             }
-            long lsn = wal.append(WalEntity.newPutEntity(getDBName(), walkvs));
-            wb.commit();
-            wal.updateMeta(lsn);
         }
     }
 

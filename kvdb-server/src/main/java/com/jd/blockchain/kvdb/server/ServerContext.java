@@ -7,9 +7,7 @@ import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
-import com.jd.blockchain.kvdb.server.wal.Entity;
-import com.jd.blockchain.kvdb.server.wal.Meta;
-import com.jd.blockchain.kvdb.server.wal.Wal;
+import com.jd.blockchain.kvdb.server.wal.RedoLog;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.rocksdb.RocksDBException;
 
@@ -105,10 +103,10 @@ public interface ServerContext {
      *
      * @return
      */
-    Wal<Entity, Meta> getWal();
+    RedoLog getWal();
 
     /**
      * redo wal
      */
-    void redo() throws IOException, RocksDBException;
+    void redoWal() throws IOException, RocksDBException;
 }

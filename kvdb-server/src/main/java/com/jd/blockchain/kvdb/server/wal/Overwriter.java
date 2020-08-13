@@ -14,12 +14,12 @@ public class Overwriter implements Overwrite<byte[]> {
     }
 
     @Override
-    public byte[] readMeta() throws IOException {
+    public byte[] read() throws IOException {
         return Files.readAllBytes(path);
     }
 
     @Override
-    public void writeMeta(byte[] data) throws IOException {
+    public void write(byte[] data) throws IOException {
         Files.write(path, data);
     }
 }

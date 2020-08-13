@@ -1,11 +1,12 @@
 package com.jd.blockchain.kvdb.server.wal;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * file overwrite
  */
-public interface Overwrite<T> {
+public interface Overwrite<T extends Serializable> {
 
     /**
      * 查询出所有数据
@@ -13,7 +14,7 @@ public interface Overwrite<T> {
      * @return
      * @throws IOException
      */
-    T readMeta() throws IOException;
+    T read() throws IOException;
 
     /**
      * 覆盖写入新数据
@@ -21,6 +22,6 @@ public interface Overwrite<T> {
      * @param data
      * @throws IOException
      */
-    void writeMeta(T data) throws IOException;
+    void write(T data) throws IOException;
 
 }

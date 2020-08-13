@@ -3,8 +3,11 @@ package com.jd.blockchain.kvdb.server.wal;
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
-import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
+import com.jd.blockchain.wal.FileLogger;
+import com.jd.blockchain.wal.Wal;
+import com.jd.blockchain.wal.WalConfig;
+import com.jd.blockchain.wal.WalIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +21,7 @@ import java.nio.file.Paths;
  * HEADER_SIZE + ENTITY + HEADER_SIZE
  * 支持逆向查询
  */
-public class RedoLog implements Wal<Entity, Meta> {
+public class RedoLog {
 
     private static final String WAL_FILE = "kvdb.wal";
     private static final String META_FILE = "wal.meta";
@@ -31,13 +34,13 @@ public class RedoLog implements Wal<Entity, Meta> {
     }
 
     private boolean disable;
-    public static final int HEADER_SIZE = 4;
     private long lsn;
-    private Append<byte[]> appender;
+    private Wal wal;
     private Overwrite<byte[]> overwriter;
     private Meta walMeta;
 
     public RedoLog(KVDBConfig kvdbConfig) throws IOException {
+
         disable = kvdbConfig.isWalDisable();
         if (!disable) {
             if (!Files.exists(Paths.get(kvdbConfig.getDbsRootdir()))) {
@@ -47,23 +50,21 @@ public class RedoLog implements Wal<Entity, Meta> {
             if (!Files.exists(walPath)) {
                 Files.createFile(walPath);
             }
-            this.appender = new Appender(walPath.toString(), kvdbConfig.getWalFlush());
+            this.wal = new FileLogger(new WalConfig(kvdbConfig.getWalFlush(), true), walPath.toString());
             Path metaPath = Paths.get(kvdbConfig.getDbsRootdir(), META_FILE);
             if (!Files.exists(metaPath)) {
                 Files.createFile(metaPath);
             }
             this.overwriter = new Overwriter(metaPath.toString());
-            walMeta = readMeta();
+            walMeta = getMeta();
             this.lsn = latestLsn();
         }
     }
 
-    @Override
     public long latestLsn() throws IOException {
-        long position = appender.size();
-        if (position > 0) {
-            int length = readHeader(position - HEADER_SIZE);
-            Entity entity = get(position - length - HEADER_SIZE * 2, length);
+        WalIterator iterator = wal.backwardIterator(wal.size());
+        if (iterator.hasNext()) {
+            Entity entity = BinaryProtocol.decode(iterator.next());
             return entity.getLsn();
         }
         // 如果不存在WAL则返回meta中记录的LSN
@@ -76,153 +77,141 @@ public class RedoLog implements Wal<Entity, Meta> {
      * @param entity
      * @throws IOException
      */
-    @Override
-    public synchronized long append(Entity entity) throws IOException {
+    public long append(Entity entity) throws IOException {
         if (disable) {
             return -1l;
         }
-        lsn++;
-        entity.setLsn(lsn);
-        LOGGER.debug("wal append {} ...", lsn);
-        byte[] oprBytes = BinaryProtocol.encode(entity, Entity.class);
-        byte[] header = BytesUtils.toBytes(oprBytes.length);
-        byte[] bytes = new byte[oprBytes.length + header.length * 2];
-        System.arraycopy(header, 0, bytes, 0, header.length);
-        System.arraycopy(oprBytes, 0, bytes, header.length, oprBytes.length);
-        System.arraycopy(header, 0, bytes, header.length + oprBytes.length, header.length);
-        appender.append(bytes);
+        synchronized (this) {
+            if (lsn < 0) {
+                lsn = 0;
+            }
+            lsn++;
+            entity.setLsn(lsn);
+            LOGGER.debug("wal append {}", lsn);
+            wal.append(BinaryProtocol.encode(entity, Entity.class));
 
-        return lsn;
+            return lsn;
+        }
     }
 
-    @Override
-    public void flush(boolean meta) throws IOException {
-        appender.flush(meta);
+    public void flush() throws IOException {
+        wal.flush();
     }
 
-    @Override
     public long size() throws IOException {
-        return appender.size();
+        return wal.size();
     }
 
-    @Override
-    public long next(long position) throws IOException {
-        int length = readHeader(position);
-        if (length > 0) {
-            return position + length + HEADER_SIZE * 2;
-        } else {
-            return -1;
-        }
-    }
-
-    @Override
-    public Entity get(long position, int length) throws IOException {
-        if (length > 0) {
-            return BinaryProtocol.decode(appender.get(position + HEADER_SIZE, length));
-        } else {
-            return null;
-        }
-    }
-
-    @Override
     public Entity get(long position) throws IOException {
-        return get(position, readHeader(position));
+        byte[] data = wal.get(position);
+        return null != data ? BinaryProtocol.decode(data) : null;
     }
 
-    @Override
-    public Entity get(Long lsn) throws IOException {
-        long position = appender.size();
-        while (position > 0) {
-            int length = readHeader(position - HEADER_SIZE);
-            Entity entity = get(position - length - HEADER_SIZE * 2, length);
-            if (entity.getLsn().equals(lsn)) {
+    public Entity query(long lsn) throws IOException {
+        WalIterator iterator = wal.backwardIterator(wal.size());
+        while (iterator.hasNext()) {
+            Entity entity = BinaryProtocol.decode(iterator.next());
+            if (entity.getLsn() == lsn) {
                 return entity;
             }
-            position = position - length - 2 * HEADER_SIZE;
         }
         return null;
     }
 
-    @Override
-    public long position(Long lsn) throws IOException {
+    /**
+     * 数据在日志文件中的起始位置
+     *
+     * @param lsn
+     * @return
+     * @throws IOException
+     */
+    public long position(long lsn) throws IOException {
         if (lsn <= 0) {
-            return 0;
+            return -1;
         }
-        long position = appender.size();
-        while (position > 0) {
-            int length = readHeader(position - HEADER_SIZE);
-            Entity entity = get(position - length - HEADER_SIZE * 2, length);
-            position = position - length - 2 * HEADER_SIZE;
-            if (entity.getLsn().equals(lsn)) {
-                return position;
+        WalIterator iterator = wal.backwardIterator(wal.size());
+        while (iterator.hasNext()) {
+            Entity entity = BinaryProtocol.decode(iterator.next());
+            if (entity.getLsn() == lsn) {
+                return iterator.position();
             }
         }
         return -1;
     }
 
-    @Override
-    public boolean exists(Long lsn) throws IOException {
-        return null != get(lsn);
-    }
-
-    @Override
     public synchronized void disable() {
         disable = true;
     }
 
-    @Override
     public synchronized void enable() {
         disable = false;
     }
 
-    private int readHeader(long position) throws IOException {
-        byte[] data = appender.get(position, HEADER_SIZE);
-        if (data != null && data.length > 0) {
-            return BytesUtils.toInt(data);
-        } else {
-            return -1;
-        }
-    }
-
-    @Override
     public void close() throws IOException {
-        if (null != appender) {
-            appender.close();
+        if (null != wal) {
+            wal.close();
         }
     }
 
-    @Override
-    public boolean metaUpdated() throws IOException {
+    public boolean metaUpdated() {
+        if(disable) {
+           return true;
+        }
         return walMeta.getLsn() == lsn;
     }
 
-    @Override
-    public Meta readMeta() throws IOException {
+    public Meta getMeta() throws IOException {
         if (null == walMeta) {
-            byte[] meta = overwriter.readMeta();
+            byte[] meta = overwriter.read();
             if (null != meta && meta.length > 0) {
                 walMeta = BinaryProtocol.decode(meta);
             } else {
-                Meta metaInfo = new MetaInfo(-1);
-                writeMeta(metaInfo);
-                walMeta = metaInfo;
+                walMeta = new MetaInfo(-1);
+                writeMeta(walMeta);
             }
         }
 
         return walMeta;
     }
 
-    @Override
-    public synchronized void updateMeta(long lsn) throws IOException {
-        if (lsn > walMeta.getLsn()) {
-            MetaInfo info = new MetaInfo(lsn);
-            writeMeta(info);
-            walMeta = info;
+    public void updateMeta(long lsn) throws IOException {
+        if(null == walMeta) {
+            return;
+        }
+        synchronized (walMeta) {
+            if (lsn > walMeta.getLsn()) {
+                MetaInfo info = new MetaInfo(lsn);
+                writeMeta(info);
+                walMeta = info;
+            }
         }
     }
 
-    @Override
-    public synchronized void writeMeta(Meta data) throws IOException {
-        overwriter.writeMeta(BinaryProtocol.encode(data, Meta.class));
+    private void writeMeta(Meta data) throws IOException {
+        overwriter.write(BinaryProtocol.encode(data, Meta.class));
     }
+
+    public Iterator entityIterator(long position) throws IOException {
+        return new EntityIterator(wal.forwardIterator(position));
+    }
+
+    class EntityIterator implements Iterator {
+
+        private WalIterator iterator;
+
+        public EntityIterator(WalIterator iterator) {
+            this.iterator = iterator;
+        }
+
+        @Override
+        public boolean hasNext() throws IOException {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public Entity next() throws IOException {
+            return BinaryProtocol.decode(iterator.next());
+        }
+    }
+
 }

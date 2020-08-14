@@ -6,6 +6,4 @@ public interface KVRead {
 
     byte[] get(byte[] key) throws RocksDBException;
 
-    String get(String key) throws RocksDBException;
-
 }

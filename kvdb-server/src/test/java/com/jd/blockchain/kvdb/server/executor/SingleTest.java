@@ -2,7 +2,12 @@ package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfos;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseBaseInfo;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.KVDBRequest;
@@ -55,11 +60,11 @@ public class SingleTest {
     }
 
     private Session newSession() {
-        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null, null));
+        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
     }
 
     private Session newSessionWithTestDB() throws RocksDBException {
-        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null, null));
+        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
 
         session.setDB("test1", context.getDatabase("test1"));
 

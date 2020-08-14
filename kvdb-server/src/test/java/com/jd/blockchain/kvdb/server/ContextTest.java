@@ -59,7 +59,7 @@ public class ContextTest {
     @Test
     public void testSession() {
         String sourceKey = UUID.randomUUID().toString();
-        Session session = context.getSession(sourceKey, key -> new KVDBSession(key, null, null));
+        Session session = context.getSession(sourceKey, key -> new KVDBSession(key, null));
         Assert.assertEquals(session, context.getSession(sourceKey));
         context.removeSession(sourceKey);
         Assert.assertNull(context.getSession(sourceKey));

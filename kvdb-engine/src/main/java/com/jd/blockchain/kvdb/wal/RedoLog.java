@@ -1,12 +1,13 @@
-package com.jd.blockchain.kvdb.server.wal;
+package com.jd.blockchain.kvdb.wal;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.binaryproto.DataContractRegistry;
-import com.jd.blockchain.kvdb.server.config.KVDBConfig;
+import com.jd.blockchain.kvdb.proto.Entity;
+import com.jd.blockchain.kvdb.proto.Meta;
+import com.jd.blockchain.kvdb.proto.MetaInfo;
 import com.jd.blockchain.utils.io.FileUtils;
 import com.jd.blockchain.wal.FileLogger;
 import com.jd.blockchain.wal.Wal;
-import com.jd.blockchain.wal.WalConfig;
 import com.jd.blockchain.wal.WalIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,32 +34,28 @@ public class RedoLog {
         DataContractRegistry.register(Meta.class);
     }
 
-    private boolean disable;
     private long lsn;
     private Wal wal;
     private Overwrite<byte[]> overwriter;
     private Meta walMeta;
 
-    public RedoLog(KVDBConfig kvdbConfig) throws IOException {
+    public RedoLog(String path, int flushInterval) throws IOException {
 
-        disable = kvdbConfig.isWalDisable();
-        if (!disable) {
-            if (!Files.exists(Paths.get(kvdbConfig.getDbsRootdir()))) {
-                FileUtils.makeDirectory(kvdbConfig.getDbsRootdir());
-            }
-            Path walPath = Paths.get(kvdbConfig.getDbsRootdir(), WAL_FILE);
-            if (!Files.exists(walPath)) {
-                Files.createFile(walPath);
-            }
-            this.wal = new FileLogger(new WalConfig(kvdbConfig.getWalFlush(), true), walPath.toString());
-            Path metaPath = Paths.get(kvdbConfig.getDbsRootdir(), META_FILE);
-            if (!Files.exists(metaPath)) {
-                Files.createFile(metaPath);
-            }
-            this.overwriter = new Overwriter(metaPath.toString());
-            walMeta = getMeta();
-            this.lsn = latestLsn();
+        if (!Files.exists(Paths.get(path))) {
+            FileUtils.makeDirectory(path);
         }
+        Path walPath = Paths.get(path, WAL_FILE);
+        if (!Files.exists(walPath)) {
+            Files.createFile(walPath);
+        }
+        this.wal = new FileLogger(new com.jd.blockchain.wal.WalConfig(flushInterval, true), walPath.toString());
+        Path metaPath = Paths.get(path, META_FILE);
+        if (!Files.exists(metaPath)) {
+            Files.createFile(metaPath);
+        }
+        this.overwriter = new Overwriter(metaPath.toString());
+        walMeta = getMeta();
+        this.lsn = latestLsn();
     }
 
     public long latestLsn() throws IOException {
@@ -78,20 +75,15 @@ public class RedoLog {
      * @throws IOException
      */
     public long append(Entity entity) throws IOException {
-        if (disable) {
-            return -1l;
+        if (lsn < 0) {
+            lsn = 0;
         }
-        synchronized (this) {
-            if (lsn < 0) {
-                lsn = 0;
-            }
-            lsn++;
-            entity.setLsn(lsn);
-            LOGGER.debug("wal append {}", lsn);
-            wal.append(BinaryProtocol.encode(entity, Entity.class));
+        lsn++;
+        entity.setLsn(lsn);
+        LOGGER.debug("wal append {}", lsn);
+        wal.append(BinaryProtocol.encode(entity, Entity.class));
 
-            return lsn;
-        }
+        return lsn;
     }
 
     public void flush() throws IOException {
@@ -139,14 +131,6 @@ public class RedoLog {
         return -1;
     }
 
-    public synchronized void disable() {
-        disable = true;
-    }
-
-    public synchronized void enable() {
-        disable = false;
-    }
-
     public void close() throws IOException {
         if (null != wal) {
             wal.close();
@@ -154,9 +138,6 @@ public class RedoLog {
     }
 
     public boolean metaUpdated() {
-        if(disable) {
-           return true;
-        }
         return walMeta.getLsn() == lsn;
     }
 
@@ -175,15 +156,13 @@ public class RedoLog {
     }
 
     public void updateMeta(long lsn) throws IOException {
-        if(null == walMeta) {
+        if (null == walMeta) {
             return;
         }
-        synchronized (walMeta) {
-            if (lsn > walMeta.getLsn()) {
-                MetaInfo info = new MetaInfo(lsn);
-                writeMeta(info);
-                walMeta = info;
-            }
+        if (walMeta.getLsn() == -1 || lsn == walMeta.getLsn() + 1) {
+            MetaInfo info = new MetaInfo(lsn);
+            writeMeta(info);
+            walMeta = info;
         }
     }
 

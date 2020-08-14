@@ -1,13 +1,13 @@
-package com.jd.blockchain.kvdb.server.wal;
+package com.jd.blockchain.kvdb.proto;
 
 /**
  * Key-Value
  */
-public class WalKV implements KV {
+public class KVItem implements KV {
     private byte[] key;
     private byte[] value;
 
-    public WalKV(byte[] key, byte[] value) {
+    public KVItem(byte[] key, byte[] value) {
         this.key = key;
         this.value = value;
     }

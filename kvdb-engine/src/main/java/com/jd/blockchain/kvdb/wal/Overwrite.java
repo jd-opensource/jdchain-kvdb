@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.server.wal;
+package com.jd.blockchain.kvdb.wal;
 
 import java.io.IOException;
 import java.io.Serializable;

@@ -55,11 +55,11 @@ public class ClusterTest {
     }
 
     private Session newSession() {
-        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null, null));
+        return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
     }
 
-    private Session newSessionWithTestDB() throws RocksDBException {
-        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null, null));
+    private Session newSessionWithTestDB() {
+        Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
 
         session.setDB("test1", context.getDatabase("test1"));
 

@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.server.wal;
+package com.jd.blockchain.kvdb.proto;
 
 public class MetaInfo implements Meta {
 

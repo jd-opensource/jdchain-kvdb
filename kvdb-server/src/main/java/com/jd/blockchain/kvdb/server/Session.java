@@ -5,7 +5,6 @@ import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.utils.Bytes;
 import org.rocksdb.RocksDBException;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -75,7 +74,7 @@ public interface Session {
      *
      * @throws RocksDBException
      */
-    void batchCommit() throws RocksDBException, IOException;
+    void batchCommit() throws RocksDBException;
 
     /**
      * 提交批处理
@@ -83,7 +82,7 @@ public interface Session {
      * @param size 批处理操作校验
      * @throws RocksDBException
      */
-    void batchCommit(long size) throws RocksDBException, IOException;
+    void batchCommit(long size) throws RocksDBException;
 
     /**
      * 键值存在性查询
@@ -109,5 +108,5 @@ public interface Session {
      * @param kvs 支持批量写入
      * @throws RocksDBException
      */
-    void put(Map<Bytes, byte[]> kvs) throws RocksDBException, IOException;
+    void put(Map<Bytes, byte[]> kvs) throws RocksDBException;
 }

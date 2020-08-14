@@ -1,4 +1,6 @@
-package com.jd.blockchain.kvdb.server.wal;
+package com.jd.blockchain.kvdb.wal;
+
+import com.jd.blockchain.kvdb.proto.Entity;
 
 import java.io.IOException;
 

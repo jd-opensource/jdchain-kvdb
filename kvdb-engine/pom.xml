@@ -24,6 +24,12 @@
             <artifactId>binary-proto</artifactId>
             <version>${framework.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.jd.blockchain</groupId>
+            <artifactId>wal</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 

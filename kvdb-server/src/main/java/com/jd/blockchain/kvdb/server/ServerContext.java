@@ -7,7 +7,6 @@ import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
-import com.jd.blockchain.kvdb.server.wal.RedoLog;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.rocksdb.RocksDBException;
 
@@ -97,16 +96,4 @@ public interface ServerContext {
      * @param database
      */
     void dropDatabase(String database) throws KVDBException;
-
-    /**
-     * write ahead log
-     *
-     * @return
-     */
-    RedoLog getWal();
-
-    /**
-     * redo wal
-     */
-    void redoWal() throws IOException, RocksDBException;
 }

@@ -94,9 +94,6 @@ public class KVDBServer implements KVDBHandler {
         managerFuture = bootstrap.bind("127.0.0.1", serverContext.getConfig().getKvdbConfig().getManagerPort());
         managerFuture.syncUninterruptibly();
 
-        // Check redo log
-        serverContext.redoWal();
-
         // Confirm cluster settings
         clusterService.confirm();
 
@@ -160,7 +157,7 @@ public class KVDBServer implements KVDBHandler {
     }
 
     private Session getSession(ChannelHandlerContext ctx, String sourceKey) {
-        return serverContext.getSession(sourceKey, key -> new KVDBSession(key, ctx, serverContext.getWal()));
+        return serverContext.getSession(sourceKey, key -> new KVDBSession(key, ctx));
     }
 
     public void disconnected(ChannelHandlerContext ctx) {

@@ -1,17 +1,12 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.KVWriteBatch;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
-import com.jd.blockchain.kvdb.server.wal.RedoLog;
-import com.jd.blockchain.kvdb.server.wal.WalEntity;
-import com.jd.blockchain.kvdb.server.wal.WalKV;
 import com.jd.blockchain.utils.Bytes;
 import io.netty.channel.ChannelHandlerContext;
 import org.rocksdb.RocksDBException;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,13 +28,10 @@ public class KVDBSession implements Session {
     private volatile boolean batchMode;
     // 待提交批处理数据集
     private HashMap<Bytes, byte[]> batch;
-    // WAL
-    private RedoLog wal;
 
-    public KVDBSession(String id, ChannelHandlerContext ctx, RedoLog wal) {
+    public KVDBSession(String id, ChannelHandlerContext ctx) {
         this.id = id;
         this.ctx = ctx;
-        this.wal = wal;
         this.batch = new HashMap<>();
     }
 
@@ -120,12 +112,12 @@ public class KVDBSession implements Session {
      * @throws RocksDBException
      */
     @Override
-    public void batchCommit() throws RocksDBException, IOException {
+    public void batchCommit() throws RocksDBException {
         batchCommit(batch.size());
     }
 
     @Override
-    public void batchCommit(long size) throws RocksDBException, IOException {
+    public void batchCommit(long size) throws RocksDBException {
         if (!batchMode) {
             throw new KVDBException("not in batch mode");
         }
@@ -134,20 +126,7 @@ public class KVDBSession implements Session {
             throw new KVDBException("batch size not match, expect:" + size + ", actually:" + batch.size());
         }
         try {
-            synchronized (instance) {
-                KVWriteBatch writeBatch = instance.beginBatch();
-                WalKV[] walkvs = new WalKV[batch.size()];
-                int i = 0;
-                for (Map.Entry<Bytes, byte[]> entry : batch.entrySet()) {
-                    byte[] key = entry.getKey().toBytes();
-                    writeBatch.set(key, entry.getValue());
-                    walkvs[i] = new WalKV(key, entry.getValue());
-                    i++;
-                }
-                long lsn = wal.append(WalEntity.newPutEntity(getDBName(), walkvs));
-                writeBatch.commit();
-                wal.updateMeta(lsn);
-            }
+            instance.batchSet(batch);
         } finally {
             batch.clear();
         }
@@ -190,7 +169,7 @@ public class KVDBSession implements Session {
     }
 
     @Override
-    public void put(Map<Bytes, byte[]> kvs) throws RocksDBException, IOException {
+    public void put(Map<Bytes, byte[]> kvs) throws RocksDBException {
         if (kvs.size() > MAX_BATCH_SIZE) {
             throw new KVDBException("too large executions");
         }
@@ -202,20 +181,7 @@ public class KVDBSession implements Session {
                 batch.putAll(kvs);
             }
         } else {
-            synchronized (instance) {
-                KVWriteBatch wb = instance.beginBatch();
-                WalKV[] walkvs = new WalKV[kvs.size()];
-                int i = 0;
-                for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
-                    byte[] key = entry.getKey().toBytes();
-                    wb.set(key, entry.getValue());
-                    walkvs[i] = new WalKV(key, entry.getValue());
-                    i++;
-                }
-                long lsn = wal.append(WalEntity.newPutEntity(getDBName(), walkvs));
-                wb.commit();
-                wal.updateMeta(lsn);
-            }
+            instance.batchSet(kvs);
         }
     }
 

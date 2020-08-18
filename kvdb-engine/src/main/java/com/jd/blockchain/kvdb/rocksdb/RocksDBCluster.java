@@ -82,8 +82,8 @@ public class RocksDBCluster extends KVDBInstance {
         if (wal != null) {
             LOGGER.debug("redo wal...");
 
-            if (!wal.metaUpdated()) {
-                long lsn = wal.getMeta().getLsn();
+            if (!wal.updated()) {
+                long lsn = wal.getCheckpoint();
                 long position = wal.position(lsn);
                 Iterator iterator = wal.entityIterator(position < 0 ? 0 : position);
                 while (iterator.hasNext()) {
@@ -108,7 +108,9 @@ public class RocksDBCluster extends KVDBInstance {
                 }
 
                 // update meta
-                wal.updateMeta(lsn);
+                if (null != wal) {
+                    wal.setCheckpoint(lsn);
+                }
             }
             // 清空WAL
             wal.clear();
@@ -118,22 +120,18 @@ public class RocksDBCluster extends KVDBInstance {
 
     @Override
     public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
-        long lsn = -1;
-        if (null != wal) {
-            try {
+        try {
+            long lsn = -1;
+            if (null != wal) {
                 lsn = wal.append(WalEntity.newPutEntity());
-            } catch (IOException e) {
-                throw new RocksDBException(e.toString());
             }
-        }
-        int pid = partitioner.partition(key);
-        dbPartitions[pid].set(key, value);
-        if (lsn > 0) {
-            try {
-                wal.updateMeta(lsn);
-            } catch (IOException e) {
-                throw new RocksDBException(e.toString());
+            int pid = partitioner.partition(key);
+            dbPartitions[pid].set(key, value);
+            if (null != wal) {
+                wal.setCheckpoint(lsn);
             }
+        } catch (IOException e) {
+            throw new RocksDBException(e.toString());
         }
     }
 
@@ -242,8 +240,8 @@ public class RocksDBCluster extends KVDBInstance {
                     throw new RocksDBException("Sub thread batch commit error");
                 }
             }
-            if (lsn > 0) {
-                wal.updateMeta(lsn);
+            if (null != wal) {
+                wal.setCheckpoint(lsn);
             }
         } catch (Exception e) {
             LOGGER.error("KVWrite batch commit error! --" + e.getMessage(), e);

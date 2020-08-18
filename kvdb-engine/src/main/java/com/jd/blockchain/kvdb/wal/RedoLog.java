@@ -3,8 +3,6 @@ package com.jd.blockchain.kvdb.wal;
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.proto.Entity;
-import com.jd.blockchain.kvdb.proto.Meta;
-import com.jd.blockchain.kvdb.proto.MetaInfo;
 import com.jd.blockchain.wal.FileLogger;
 import com.jd.blockchain.wal.Wal;
 import com.jd.blockchain.wal.WalConfig;
@@ -24,18 +22,17 @@ public class RedoLog {
 
     static {
         DataContractRegistry.register(Entity.class);
-        DataContractRegistry.register(Meta.class);
     }
 
     private long lsn;
     private Wal wal;
-    private Overwrite<byte[]> overwriter;
-    private Meta walMeta;
+    private Overwrite<Long> overwriter;
+    private long checkPoint = -1l;
 
     public RedoLog(String path, int flushInterval) throws IOException {
         this.wal = new FileLogger(new WalConfig(flushInterval, true), Paths.get(path, WAL_FILE).toString());
-        this.overwriter = new Overwriter(Paths.get(path, META_FILE));
-        walMeta = getMeta();
+        this.overwriter = new CheckpointWriter(Paths.get(path, META_FILE));
+        this.checkPoint = getCheckpoint();
         this.lsn = latestLsn();
     }
 
@@ -46,7 +43,7 @@ public class RedoLog {
             return entity.getLsn();
         }
         // 如果不存在WAL则返回meta中记录的LSN
-        return walMeta.getLsn();
+        return checkPoint;
     }
 
     /**
@@ -57,9 +54,10 @@ public class RedoLog {
      */
     public long append(Entity entity) throws IOException {
         if (lsn < 0) {
-            lsn = 0;
+            lsn = 1;
+        } else {
+            lsn++;
         }
-        lsn++;
         entity.setLsn(lsn);
         LOGGER.debug("wal append {}", lsn);
         wal.append(BinaryProtocol.encode(entity, Entity.class));
@@ -120,39 +118,35 @@ public class RedoLog {
         if (null != wal) {
             wal.close();
         }
+        if (null != overwriter) {
+            overwriter.close();
+        }
     }
 
-    public boolean metaUpdated() {
-        return walMeta.getLsn() == lsn;
+    public boolean updated() {
+        return checkPoint == lsn;
     }
 
-    public Meta getMeta() throws IOException {
-        if (null == walMeta) {
-            byte[] meta = overwriter.read();
-            if (null != meta && meta.length > 0) {
-                walMeta = BinaryProtocol.decode(meta);
-            } else {
-                walMeta = new MetaInfo(-1);
-                writeMeta(walMeta);
-            }
+    public long getCheckpoint() throws IOException {
+        if (checkPoint < 0) {
+            checkPoint = overwriter.read();
         }
 
-        return walMeta;
+        return checkPoint;
     }
 
-    public void updateMeta(long lsn) throws IOException {
-        if (null == walMeta) {
+    public void setCheckpoint(long lsn) throws IOException {
+        if (lsn <= 0) {
             return;
         }
-        if (walMeta.getLsn() == -1 || lsn == walMeta.getLsn() + 1) {
-            MetaInfo info = new MetaInfo(lsn);
-            writeMeta(info);
-            walMeta = info;
+        if ((checkPoint == -1 && lsn == 1) || lsn == checkPoint + 1) {
+            writeCheckpoint(lsn);
+            checkPoint = lsn;
         }
     }
 
-    private void writeMeta(Meta data) throws IOException {
-        overwriter.write(BinaryProtocol.encode(data, Meta.class));
+    private void writeCheckpoint(long checkPoint) throws IOException {
+        overwriter.write(checkPoint);
     }
 
     public Iterator entityIterator(long position) throws IOException {

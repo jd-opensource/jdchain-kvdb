@@ -23,5 +23,4 @@ public class Constants {
 
     public static final int WAL_KV = 100;
     public static final int WAL_ENTITY = 101;
-    public static final int WAL_META = 102;
 }

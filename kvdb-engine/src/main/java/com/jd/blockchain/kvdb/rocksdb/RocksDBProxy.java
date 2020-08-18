@@ -135,8 +135,8 @@ public class RocksDBProxy extends KVDBInstance {
         if (wal != null) {
             LOGGER.debug("redo wal...");
 
-            if (!wal.metaUpdated()) {
-                long lsn = wal.getMeta().getLsn();
+            if (!wal.updated()) {
+                long lsn = wal.getCheckpoint();
                 long position = wal.position(lsn);
                 Iterator iterator = wal.entityIterator(position < 0 ? 0 : position);
                 while (iterator.hasNext()) {
@@ -153,7 +153,9 @@ public class RocksDBProxy extends KVDBInstance {
                 }
 
                 // update meta
-                wal.updateMeta(lsn);
+                if (null != wal) {
+                    wal.setCheckpoint(lsn);
+                }
             }
             // 清空WAL
             wal.clear();
@@ -168,50 +170,42 @@ public class RocksDBProxy extends KVDBInstance {
 
     @Override
     public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
-        long lsn = -1;
-        if (null != wal) {
-            try {
+        try {
+            long lsn = -1;
+            if (null != wal) {
                 lsn = wal.append(WalEntity.newPutEntity());
-            } catch (IOException e) {
-                throw new RocksDBException(e.toString());
             }
-        }
-        db.put(writeOptions, key, value);
-        if (lsn > 0) {
-            try {
-                wal.updateMeta(lsn);
-            } catch (IOException e) {
-                throw new RocksDBException(e.toString());
+            db.put(writeOptions, key, value);
+            if (null != wal) {
+                wal.setCheckpoint(lsn);
             }
+        } catch (IOException e) {
+            throw new RocksDBException(e.toString());
         }
     }
 
     @Override
     public synchronized void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
-        WriteBatch batch = new WriteBatch();
-        KVItem[] walkvs = new KVItem[kvs.size()];
-        int i = 0;
-        for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
-            byte[] key = entry.getKey().toBytes();
-            batch.put(key, entry.getValue());
-            walkvs[i] = new KVItem(key, entry.getValue());
-            i++;
-        }
-        long lsn = -1;
-        if (null != wal) {
-            try {
+        try {
+            WriteBatch batch = new WriteBatch();
+            KVItem[] walkvs = new KVItem[kvs.size()];
+            int i = 0;
+            for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
+                byte[] key = entry.getKey().toBytes();
+                batch.put(key, entry.getValue());
+                walkvs[i] = new KVItem(key, entry.getValue());
+                i++;
+            }
+            long lsn = -1;
+            if (null != wal) {
                 lsn = wal.append(WalEntity.newPutEntity());
-            } catch (IOException e) {
-                throw new RocksDBException(e.toString());
             }
-        }
-        db.write(new WriteOptions(), batch);
-        if (lsn > 0) {
-            try {
-                wal.updateMeta(lsn);
-            } catch (IOException e) {
-                throw new RocksDBException(e.toString());
+            db.write(new WriteOptions(), batch);
+            if (null != wal) {
+                wal.setCheckpoint(lsn);
             }
+        } catch (IOException e) {
+            throw new RocksDBException(e.toString());
         }
     }
 

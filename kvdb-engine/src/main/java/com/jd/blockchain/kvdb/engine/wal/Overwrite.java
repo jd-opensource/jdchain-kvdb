@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.wal;
+package com.jd.blockchain.kvdb.engine.wal;
 
 import java.io.Closeable;
 import java.io.IOException;

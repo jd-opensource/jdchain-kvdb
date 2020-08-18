@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb;
+package com.jd.blockchain.kvdb.engine;
 
 import org.rocksdb.RocksDBException;
 

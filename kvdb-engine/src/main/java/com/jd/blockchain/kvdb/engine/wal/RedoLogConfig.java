@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.wal;
+package com.jd.blockchain.kvdb.engine.wal;
 
 public class RedoLogConfig {
 

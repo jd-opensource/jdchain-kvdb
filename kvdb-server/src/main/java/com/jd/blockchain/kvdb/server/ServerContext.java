@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;

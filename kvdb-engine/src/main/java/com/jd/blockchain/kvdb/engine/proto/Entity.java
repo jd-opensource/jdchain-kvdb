@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.proto;
+package com.jd.blockchain.kvdb.engine.proto;
 
 import com.jd.blockchain.binaryproto.DataContract;
 import com.jd.blockchain.binaryproto.DataField;

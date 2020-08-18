@@ -1,11 +1,11 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.KVDBInstance;
-import com.jd.blockchain.kvdb.rocksdb.RocksDBCluster;
-import com.jd.blockchain.kvdb.rocksdb.RocksDBProxy;
+import com.jd.blockchain.kvdb.engine.KVDBInstance;
+import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBCluster;
+import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBProxy;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
-import com.jd.blockchain.kvdb.wal.RedoLogConfig;
+import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;

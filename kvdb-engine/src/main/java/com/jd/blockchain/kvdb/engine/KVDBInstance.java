@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb;
+package com.jd.blockchain.kvdb.engine;
 
 public abstract class KVDBInstance implements KVStorage {
 

@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.proto;
+package com.jd.blockchain.kvdb.engine.proto;
 
 /**
  * Key-Value

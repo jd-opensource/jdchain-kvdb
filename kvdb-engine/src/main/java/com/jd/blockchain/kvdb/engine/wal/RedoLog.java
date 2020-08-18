@@ -1,8 +1,8 @@
-package com.jd.blockchain.kvdb.wal;
+package com.jd.blockchain.kvdb.engine.wal;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.binaryproto.DataContractRegistry;
-import com.jd.blockchain.kvdb.proto.Entity;
+import com.jd.blockchain.kvdb.engine.proto.Entity;
 import com.jd.blockchain.wal.FileLogger;
 import com.jd.blockchain.wal.Wal;
 import com.jd.blockchain.wal.WalConfig;

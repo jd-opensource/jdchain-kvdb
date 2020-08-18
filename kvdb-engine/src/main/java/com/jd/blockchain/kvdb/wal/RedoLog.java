@@ -5,23 +5,16 @@ import com.jd.blockchain.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.proto.Entity;
 import com.jd.blockchain.kvdb.proto.Meta;
 import com.jd.blockchain.kvdb.proto.MetaInfo;
-import com.jd.blockchain.utils.io.FileUtils;
 import com.jd.blockchain.wal.FileLogger;
 import com.jd.blockchain.wal.Wal;
+import com.jd.blockchain.wal.WalConfig;
 import com.jd.blockchain.wal.WalIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/**
- * RedoLog:
- * HEADER_SIZE + ENTITY + HEADER_SIZE
- * 支持逆向查询
- */
 public class RedoLog {
 
     private static final String WAL_FILE = "kvdb.wal";
@@ -40,20 +33,8 @@ public class RedoLog {
     private Meta walMeta;
 
     public RedoLog(String path, int flushInterval) throws IOException {
-
-        if (!Files.exists(Paths.get(path))) {
-            FileUtils.makeDirectory(path);
-        }
-        Path walPath = Paths.get(path, WAL_FILE);
-        if (!Files.exists(walPath)) {
-            Files.createFile(walPath);
-        }
-        this.wal = new FileLogger(new com.jd.blockchain.wal.WalConfig(flushInterval, true), walPath.toString());
-        Path metaPath = Paths.get(path, META_FILE);
-        if (!Files.exists(metaPath)) {
-            Files.createFile(metaPath);
-        }
-        this.overwriter = new Overwriter(metaPath.toString());
+        this.wal = new FileLogger(new WalConfig(flushInterval, true), Paths.get(path, WAL_FILE).toString());
+        this.overwriter = new Overwriter(Paths.get(path, META_FILE));
         walMeta = getMeta();
         this.lsn = latestLsn();
     }
@@ -88,6 +69,10 @@ public class RedoLog {
 
     public void flush() throws IOException {
         wal.flush();
+    }
+
+    public void clear() throws IOException {
+        wal.clear();
     }
 
     public long size() throws IOException {

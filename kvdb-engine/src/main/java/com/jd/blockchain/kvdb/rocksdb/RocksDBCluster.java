@@ -110,6 +110,8 @@ public class RocksDBCluster extends KVDBInstance {
                 // update meta
                 wal.updateMeta(lsn);
             }
+            // 清空WAL
+            wal.clear();
             LOGGER.info("redo wal complete");
         }
     }

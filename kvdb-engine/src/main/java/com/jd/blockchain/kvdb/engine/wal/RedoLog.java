@@ -15,8 +15,8 @@ import java.nio.file.Paths;
 
 public class RedoLog {
 
-    private static final String WAL_FILE = "kvdb.wal";
-    private static final String META_FILE = "wal.meta";
+    public static final String WAL_FILE = "kvdb.wal";
+    public static final String META_FILE = "wal.meta";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedoLog.class);
 
@@ -29,9 +29,9 @@ public class RedoLog {
     private Overwrite<Long> overwriter;
     private long checkPoint = -1l;
 
-    public RedoLog(String path, int flushInterval) throws IOException {
-        this.wal = new FileLogger(new WalConfig(flushInterval, true), Paths.get(path, WAL_FILE).toString());
-        this.overwriter = new CheckpointWriter(Paths.get(path, META_FILE));
+    public RedoLog(String dir, int flushInterval) throws IOException {
+        this.wal = new FileLogger(new WalConfig(flushInterval, true), Paths.get(dir, WAL_FILE).toString());
+        this.overwriter = new CheckpointWriter(Paths.get(dir, META_FILE));
         this.checkPoint = getCheckpoint();
         this.lsn = latestLsn();
     }

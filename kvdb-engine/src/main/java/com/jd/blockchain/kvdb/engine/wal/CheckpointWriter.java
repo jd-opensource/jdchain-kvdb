@@ -26,7 +26,7 @@ public class CheckpointWriter implements Overwrite<Long> {
         }
         MappedByteBuffer byteBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());
         try {
-            byte[] bs = new byte[64];
+            byte[] bs = new byte[8];
             byteBuffer.get(bs);
             return BytesUtils.toLong(bs);
         } finally {
@@ -36,7 +36,7 @@ public class CheckpointWriter implements Overwrite<Long> {
 
     @Override
     public void write(Long data) throws IOException {
-        MappedByteBuffer mb = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 64);
+        MappedByteBuffer mb = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 8);
         mb.put(BytesUtils.toBytes(data));
     }
 

@@ -34,8 +34,8 @@ public class PutExecutor implements Executor {
             }
 
             Map<Bytes, byte[]> kvs = new HashMap<>();
-            for (int i = 0; i < params.length / 2; i = i + 2) {
-                kvs.put(params[i], params[i + 1].toBytes());
+            for (int i = 0; i < params.length / 2; i++) {
+                kvs.put(params[2 * i], params[2 * i + 1].toBytes());
             }
 
             request.getSession().put(kvs);

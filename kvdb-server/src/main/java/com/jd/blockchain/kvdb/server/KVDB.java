@@ -3,9 +3,10 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBCluster;
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBProxy;
-import com.jd.blockchain.kvdb.server.config.DBInfo;
-import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
+import com.jd.blockchain.kvdb.server.config.DBInfo;
+import com.jd.blockchain.kvdb.server.config.KVDBConfig;
+import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -38,7 +39,7 @@ public class KVDB {
             if (dbInfo.isEnable()) {
                 String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
                 FileUtils.makeDirectory(dbPath);
-                RedoLogConfig logConfig = new RedoLogConfig(config.getKvdbConfig().isWalDisable(), config.getKvdbConfig().getWalFlush());
+                RedoLogConfig logConfig = new RedoLogConfig(dbPath, config.getKvdbConfig().isWalDisable(), config.getKvdbConfig().getWalFlush());
                 if (dbInfo.getPartitions() > 1) {
                     dbs.put(dbInfo.getName(), RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig));
                 } else {
@@ -57,14 +58,14 @@ public class KVDB {
      * @return
      * @throws RocksDBException
      */
-    public static KVDBInstance initDB(DBInfo dbInfo, RedoLogConfig config) throws RocksDBException {
+    public static KVDBInstance initDB(DBInfo dbInfo, KVDBConfig config) throws RocksDBException {
         Map<String, KVDBInstance> dbs = new HashMap<>();
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
         if (dbInfo.getPartitions() > 1) {
-            return RocksDBCluster.open(dbPath, dbInfo.getPartitions(), config);
+            return RocksDBCluster.open(dbPath, dbInfo.getPartitions(), new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush()));
         } else {
-            return dbs.put(dbInfo.getName(), RocksDBProxy.open(dbPath, config));
+            return dbs.put(dbInfo.getName(), RocksDBProxy.open(dbPath, new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush())));
         }
 
     }
@@ -77,12 +78,12 @@ public class KVDB {
      * @return
      * @throws RocksDBException
      */
-    public static KVDBInstance createDB(DBInfo dbInfo, RedoLogConfig config) throws RocksDBException {
+    public static KVDBInstance createDB(DBInfo dbInfo, KVDBConfig config) throws RocksDBException {
         KVDBInstance db;
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
         if (dbInfo.getPartitions() > 1) {
-            db = RocksDBCluster.open(dbPath, dbInfo.getPartitions(), config);
+            db = RocksDBCluster.open(dbPath, dbInfo.getPartitions(), new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush()));
         } else {
             db = RocksDBProxy.open(dbPath);
         }

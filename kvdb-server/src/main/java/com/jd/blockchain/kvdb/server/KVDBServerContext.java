@@ -103,7 +103,7 @@ public class KVDBServerContext implements ServerContext {
         if (rocksdbs.containsKey(dbInfo.getName())) {
             throw new KVDBException("database already exists");
         }
-        KVDBInstance kvdbInstance = KVDB.createDB(dbInfo, new RedoLogConfig(config.getKvdbConfig().isWalDisable(), config.getKvdbConfig().getWalFlush()));
+        KVDBInstance kvdbInstance = KVDB.createDB(dbInfo, config.getKvdbConfig());
         config.getDbList().createDatabase(dbInfo);
         rocksdbs.put(dbInfo.getName(), kvdbInstance);
         return kvdbInstance;
@@ -140,7 +140,7 @@ public class KVDBServerContext implements ServerContext {
                 throw new KVDBException("database not exists");
             }
             config.getDbList().enableDatabase(database);
-            rocksdbs.put(database, KVDB.initDB(dbInfo, new RedoLogConfig(config.getKvdbConfig().isWalDisable(), config.getKvdbConfig().getWalFlush())));
+            rocksdbs.put(database, KVDB.initDB(dbInfo, config.getKvdbConfig()));
         } catch (Exception e) {
             throw new KVDBException(e.toString());
         }

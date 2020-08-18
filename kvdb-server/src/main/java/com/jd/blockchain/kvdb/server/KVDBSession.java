@@ -136,7 +136,7 @@ public class KVDBSession implements Session {
     public boolean[] exists(Bytes... keys) throws RocksDBException {
         boolean[] values = new boolean[keys.length];
         for (int i = 0; i < keys.length; i++) {
-            final Bytes key = keys[i];
+            Bytes key = keys[i];
             byte[] value = null;
             if (batchMode) {
                 value = batch.get(key);

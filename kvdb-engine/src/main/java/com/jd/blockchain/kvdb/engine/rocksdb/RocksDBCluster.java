@@ -50,6 +50,10 @@ public class RocksDBCluster extends KVDBInstance {
         this.wal = wal;
     }
 
+    public static RocksDBCluster open(String path, int partitions) throws RocksDBException {
+        return open(path, partitions, null);
+    }
+
     public static RocksDBCluster open(String path, int partitions, RedoLogConfig config) throws RocksDBException {
         String rootPath = FileUtils.getFullPath(path);
         RocksDBProxy[] dbPartitions = new RocksDBProxy[partitions];
@@ -66,7 +70,7 @@ public class RocksDBCluster extends KVDBInstance {
             if (null == config || config.isWalDisable()) {
                 instance = new RocksDBCluster(rootPath, dbPartitions, executor);
             } else {
-                instance = new RocksDBCluster(rootPath, dbPartitions, executor, new RedoLog(rootPath, config.getWalFlush()));
+                instance = new RocksDBCluster(rootPath, dbPartitions, executor, new RedoLog(config.getWalpath(), config.getWalFlush()));
             }
 
             instance.redo();
@@ -104,12 +108,8 @@ public class RocksDBCluster extends KVDBInstance {
                             }
                         }
                         lsn = e.getLsn();
+                        wal.setCheckpoint(lsn);
                     }
-                }
-
-                // update meta
-                if (null != wal) {
-                    wal.setCheckpoint(lsn);
                 }
             }
             // 清空WAL
@@ -123,7 +123,7 @@ public class RocksDBCluster extends KVDBInstance {
         try {
             long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity());
+                lsn = wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
             }
             int pid = partitioner.partition(key);
             dbPartitions[pid].set(key, value);

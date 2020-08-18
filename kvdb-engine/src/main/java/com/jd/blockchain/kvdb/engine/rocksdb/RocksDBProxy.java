@@ -115,7 +115,7 @@ public class RocksDBProxy extends KVDBInstance {
             if (null == config || config.isWalDisable()) {
                 instance = new RocksDBProxy(db, path);
             } else {
-                instance = new RocksDBProxy(db, path, new RedoLog(path, config.getWalFlush()));
+                instance = new RocksDBProxy(db, path, new RedoLog(config.getWalpath(), config.getWalFlush()));
             }
 
             instance.redo();
@@ -149,12 +149,8 @@ public class RocksDBProxy extends KVDBInstance {
                         }
                         db.write(writeOptions, batch);
                         lsn = e.getLsn();
+                        wal.setCheckpoint(e.getLsn());
                     }
-                }
-
-                // update meta
-                if (null != wal) {
-                    wal.setCheckpoint(lsn);
                 }
             }
             // 清空WAL
@@ -173,7 +169,7 @@ public class RocksDBProxy extends KVDBInstance {
         try {
             long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity());
+                lsn = wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
             }
             db.put(writeOptions, key, value);
             if (null != wal) {
@@ -198,7 +194,7 @@ public class RocksDBProxy extends KVDBInstance {
             }
             long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity());
+                lsn = wal.append(WalEntity.newPutEntity(walkvs));
             }
             db.write(new WriteOptions(), batch);
             if (null != wal) {

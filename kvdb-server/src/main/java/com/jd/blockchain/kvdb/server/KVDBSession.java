@@ -177,9 +177,7 @@ public class KVDBSession implements Session {
             if (batch.size() + kvs.size() > MAX_BATCH_SIZE) {
                 throw new KVDBException("too large executions in batch");
             }
-            for (int i = 0; i < kvs.size(); i++) {
-                batch.putAll(kvs);
-            }
+            batch.putAll(kvs);
         } else {
             instance.batchSet(kvs);
         }

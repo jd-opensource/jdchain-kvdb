@@ -8,6 +8,7 @@ import com.jd.blockchain.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -17,17 +18,30 @@ public class KVDBBenchmark {
 
     private static final String HOST = "-h";
     private static final String PORT = "-p";
+
+    // 数据库
     private static final String DB = "-db";
+    // 并发数
     private static final String CLIENTS = "-c";
+    // 请求总数
     private static final String REQUESTS = "-n";
+    // KV 数据字节数
+    private static final String KV_DATA_SIZE = "-ds";
+    // 是否开启批量操作
     private static final String BATCH = "-b";
+    // 一次批量提交数量
+    private static final String BATCH_SIZE = "-bs";
+    // 长连接
     private static final String KEEPALIVE = "-k";
+
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_PORT = 7078;
     private static final int DEFAULT_CLIENT = 20;
     private static final int DEFAULT_REQUESTS = 100000;
     private static final boolean DEFAULT_BATCH = false;
+    private static final int DEFAULT_BATCH_SIZE = 100;
     private static final boolean DEFAULT_KEEP_ALIVE = true;
+    private static final int DEFAULT_KV_DATA_SIZE = 16;
 
     private String host;
     private int port;
@@ -35,66 +49,12 @@ public class KVDBBenchmark {
     private int clients;
     private int requests;
     private boolean batch;
+    private int batchSize;
+    private int kvDataSize;
     private boolean keepAlive;
 
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public int getClients() {
-        return clients;
-    }
-
-    public void setClients(int clients) {
-        this.clients = clients;
-    }
-
-    public int getRequests() {
-        return requests;
-    }
-
-    public void setRequests(int requests) {
-        this.requests = requests;
-    }
-
-    public boolean isBatch() {
-        return batch;
-    }
-
-    public void setBatch(boolean batch) {
-        this.batch = batch;
-    }
-
-    public boolean getKeepAlive() {
-        return keepAlive;
-    }
-
-    public void setKeepAlive(boolean keepAlive) {
-        this.keepAlive = keepAlive;
-    }
-
-    public String getDb() {
-        return db;
-    }
-
-    public void setDb(String db) {
-        this.db = db;
-    }
-
     public KVDBBenchmark(String[] args) {
-        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, CLIENTS, REQUESTS, KEEPALIVE, BATCH, DB));
+        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, CLIENTS, REQUESTS, KV_DATA_SIZE, KEEPALIVE, BATCH, BATCH_SIZE, DB));
         ArgumentSet.ArgEntry hostArg = arguments.getArg(HOST);
         if (null != hostArg) {
             this.host = hostArg.getValue();
@@ -131,6 +91,18 @@ public class KVDBBenchmark {
         } else {
             this.batch = DEFAULT_BATCH;
         }
+        ArgumentSet.ArgEntry batchSizeArg = arguments.getArg(BATCH_SIZE);
+        if (null != batchSizeArg) {
+            this.batchSize = Integer.valueOf(batchSizeArg.getValue());
+        } else {
+            this.batchSize = DEFAULT_BATCH_SIZE;
+        }
+        ArgumentSet.ArgEntry kvDataSizeArg = arguments.getArg(KV_DATA_SIZE);
+        if (null != kvDataSizeArg) {
+            this.kvDataSize = Integer.valueOf(kvDataSizeArg.getValue());
+        } else {
+            this.kvDataSize = DEFAULT_KV_DATA_SIZE;
+        }
         ArgumentSet.ArgEntry dbArg = arguments.getArg(DB);
         if (null == dbArg) {
             System.out.println("please set -db parameter");
@@ -142,13 +114,13 @@ public class KVDBBenchmark {
 
     public static void main(String[] args) {
         KVDBBenchmark bm = new KVDBBenchmark(args);
-        ClientConfig config = new ClientConfig(bm.getHost(), bm.getPort(), bm.getDb());
+        ClientConfig config = new ClientConfig(bm.host, bm.port, bm.db);
         config.setKeepAlive(bm.keepAlive);
         AtomicLong requests = new AtomicLong(bm.requests);
         AtomicLong failCount = new AtomicLong(0);
         CountDownLatch startCdl = new CountDownLatch(1);
-        CountDownLatch endCdl = new CountDownLatch(bm.getClients());
-        for (int i = 0; i < bm.getClients(); i++) {
+        CountDownLatch endCdl = new CountDownLatch(bm.clients);
+        for (int i = 0; i < bm.clients; i++) {
             final int index = i;
             new Thread(() -> {
                 KVDBClient client = new KVDBClient(config);
@@ -163,19 +135,27 @@ public class KVDBBenchmark {
                 long j = 0;
                 while (requests.getAndDecrement() > 0) {
                     try {
+                        Bytes kv = randomBytes(bm.kvDataSize);
                         if (bm.batch && bm.keepAlive) {
-                            client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1), true);
+                            client.put(kv, kv, true);
                         } else {
-                            client.put(Bytes.fromString(index + ":" + j), Bytes.fromInt(1));
+                            client.put(kv, kv);
                         }
                     } catch (KVDBException e) {
                         failCount.incrementAndGet();
                         LOGGER.error("put error", e);
                     }
                     j++;
+                    if (bm.batch && bm.keepAlive && bm.batchSize == j) {
+                        if (!client.batchCommit()) {
+                            LOGGER.error(index + " batch commit false");
+                        }
+                        client.batchBegin();
+                        j = 0;
+                    }
                 }
-                if (bm.batch && bm.keepAlive) {
-                    if (!client.batchCommit(j)) {
+                if (j > 0 && bm.batch && bm.keepAlive) {
+                    if (!client.batchCommit()) {
                         LOGGER.error(index + " batch commit false");
                     }
                 }
@@ -192,11 +172,22 @@ public class KVDBBenchmark {
             e.printStackTrace();
         }
         long endTime = System.currentTimeMillis();
-        String result = String.format("requests:%d, clients:%d, batch:%s, times:%dms, errors:%d, tps:%f",
-                bm.getRequests(), bm.getClients(), bm.batch, endTime - startTime, failCount.get(), bm.getRequests() / ((endTime - startTime) / 1000d));
+        String result = String.format("requests:%d, clients:%d, batch:%s, batch_size:%d, kv_data_size:%dbytes, times:%dms, errors:%d, tps:%f",
+                bm.requests, bm.clients, bm.batch, bm.batchSize, bm.kvDataSize, endTime - startTime, failCount.get(), bm.requests / ((endTime - startTime) / 1000d));
         LOGGER.info(result);
         System.out.println(result);
 
+    }
+
+    private static final String STRING = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    private static Random random = new Random();
+
+    public static Bytes randomBytes(int size) {
+        StringBuilder sb = new StringBuilder(size);
+        for (int i = 0; i < size; i++)
+            sb.append(STRING.charAt(random.nextInt(STRING.length())));
+
+        return Bytes.fromString(sb.toString());
     }
 
 }

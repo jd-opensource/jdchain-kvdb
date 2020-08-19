@@ -62,10 +62,11 @@ public class KVDB {
         Map<String, KVDBInstance> dbs = new HashMap<>();
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
+        RedoLogConfig logConfig = new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush());
         if (dbInfo.getPartitions() > 1) {
-            return RocksDBCluster.open(dbPath, dbInfo.getPartitions(), new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush()));
+            return RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig);
         } else {
-            return dbs.put(dbInfo.getName(), RocksDBProxy.open(dbPath, new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush())));
+            return dbs.put(dbInfo.getName(), RocksDBProxy.open(dbPath, logConfig));
         }
 
     }
@@ -82,10 +83,11 @@ public class KVDB {
         KVDBInstance db;
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
+        RedoLogConfig logConfig = new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush());
         if (dbInfo.getPartitions() > 1) {
-            db = RocksDBCluster.open(dbPath, dbInfo.getPartitions(), new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush()));
+            db = RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig);
         } else {
-            db = RocksDBProxy.open(dbPath);
+            db = RocksDBProxy.open(dbPath, logConfig);
         }
 
         return db;

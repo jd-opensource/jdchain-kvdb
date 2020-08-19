@@ -196,7 +196,11 @@ public class RocksDBProxy extends KVDBInstance {
             if (null != wal) {
                 lsn = wal.append(WalEntity.newPutEntity(walkvs));
             }
-            db.write(new WriteOptions(), batch);
+            if (kvs.size() > 1) {
+                db.write(writeOptions, batch);
+            } else {
+                db.put(walkvs[0].getKey(), walkvs[0].getValue());
+            }
             if (null != wal) {
                 wal.setCheckpoint(lsn);
             }

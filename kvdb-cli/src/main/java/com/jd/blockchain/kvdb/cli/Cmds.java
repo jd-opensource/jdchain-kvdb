@@ -173,16 +173,13 @@ public class Cmds extends KVDBClient implements Quit.Command {
     @ShellMethod(group = "KVDB Commands",
             value = "Create a database use the giving name",
             key = "create database")
-    public boolean createDatabaseCmd(String name, @ShellOption(defaultValue = NULL) String rootDir, @ShellOption(defaultValue = NULL) Integer partitions) throws KVDBException {
-        if (null == rootDir) {
-            rootDir = "";
-        }
+    public boolean createDatabaseCmd(String name, @ShellOption(defaultValue = NULL) Integer partitions) throws KVDBException {
         if (null == partitions) {
             partitions = 0;
         } else if (partitions < 0) {
             throw new KVDBException("partitions can not be negative");
         }
-        return super.createDatabase(new KVDBDatabaseBaseInfo(name, rootDir, partitions));
+        return super.createDatabase(new KVDBDatabaseBaseInfo(name, "", partitions));
     }
 
     /**

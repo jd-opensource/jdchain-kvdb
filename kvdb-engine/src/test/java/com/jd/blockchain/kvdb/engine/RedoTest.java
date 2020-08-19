@@ -2,9 +2,6 @@ package com.jd.blockchain.kvdb.engine;
 
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBCluster;
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBProxy;
-import com.jd.blockchain.kvdb.engine.wal.CheckpointWriter;
-import com.jd.blockchain.kvdb.engine.wal.RedoLog;
-import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
 import com.jd.blockchain.utils.io.BytesUtils;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.junit.After;
@@ -15,12 +12,15 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 public class RedoTest {
 
     static final String dbPath = "dbs/test";
-    static final String walPath = "dbs";
+    static final String walPath = "dbs/kvdb.wal";
 
     static {
         RocksDB.loadLibrary();
@@ -33,115 +33,102 @@ public class RedoTest {
 
     @After
     public void tearDown() {
-        FileUtils.deleteFile(walPath, true);
+        FileUtils.deleteFile("dbs", true);
+    }
+
+    private int setTestKVs(KVDBInstance instance) throws RocksDBException {
+        for (int i = 0; i < 100; i++) {
+            instance.set(BytesUtils.toBytes(i), BytesUtils.toBytes(i));
+        }
+
+        return 100;
+    }
+
+    private void resetCheckpoint() throws IOException {
+        FileChannel fileChannel = FileChannel.open(Paths.get(walPath), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        MappedByteBuffer mb = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 8);
+        mb.put(BytesUtils.toBytes(8l));
+        fileChannel.close();
     }
 
     @Test
     public void testSingle() throws RocksDBException, IOException {
         // without wal
         KVDBInstance instance = RocksDBProxy.open(dbPath);
-        long lsn = setTestKVs(instance);
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn), instance.get(BytesUtils.toBytes(lsn)));
+        int lsn = setTestKVs(instance);
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertArrayEquals(BytesUtils.toBytes(i), instance.get(BytesUtils.toBytes(i)));
+        }
         instance.close();
         FileUtils.deleteFile(dbPath, true);
         instance = RocksDBProxy.open(dbPath);
-        Assert.assertNull(instance.get(BytesUtils.toBytes(lsn)));
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertNull(instance.get(BytesUtils.toBytes(i)));
+        }
         instance.close();
 
         // with wal disabled
-        instance = RocksDBProxy.open(dbPath, new RedoLogConfig(walPath, true, -1));
+        instance = RocksDBProxy.open(dbPath, new Config(walPath, true, -1));
         lsn = setTestKVs(instance);
         instance.close();
         FileUtils.deleteFile(dbPath, true);
-        instance = RocksDBProxy.open(dbPath, new RedoLogConfig(walPath, true, -1));
-        Assert.assertNull(instance.get(BytesUtils.toBytes(lsn)));
+        instance = RocksDBProxy.open(dbPath, new Config(walPath, true, -1));
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertNull(instance.get(BytesUtils.toBytes(i)));
+        }
         instance.close();
 
         // with wal enabled
-        instance = RocksDBProxy.open(dbPath, new RedoLogConfig(walPath, false, -1));
+        instance = RocksDBProxy.open(dbPath, new Config(walPath, false, -1));
         lsn = setTestKVs(instance);
         instance.close();
         FileUtils.deleteFile(dbPath, true);
-        // delete meta file
-        FileUtils.deleteFile(Paths.get(walPath, RedoLog.META_FILE).toString(), true);
-        instance = RocksDBProxy.open(dbPath, new RedoLogConfig(walPath, false, -1));
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn), instance.get(BytesUtils.toBytes(lsn)));
-        instance.close();
-
-        // with wal enabled, reset meta file
-        FileUtils.deleteFile(walPath, true);
-        FileUtils.makeDirectory(dbPath);
-        instance = RocksDBProxy.open(dbPath, new RedoLogConfig(walPath, false, -1));
-        lsn = setTestKVs(instance);
-        instance.close();
-        FileUtils.deleteFile(dbPath, true);
-        CheckpointWriter writer = new CheckpointWriter(Paths.get(walPath, RedoLog.META_FILE));
-        Assert.assertEquals(lsn, writer.read().longValue());
-        writer.write(lsn - 2);
-        instance = RocksDBProxy.open(dbPath, new RedoLogConfig(walPath, false, -1));
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn), instance.get(BytesUtils.toBytes(lsn)));
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn - 1), instance.get(BytesUtils.toBytes(lsn - 1)));
-        for (int i = 1; i <= lsn - 2; i++) {
-            Assert.assertNull(instance.get(BytesUtils.toBytes((long) i)));
+        // reset wal checkpoint
+        resetCheckpoint();
+        instance = RocksDBProxy.open(dbPath, new Config(walPath, false, -1));
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertArrayEquals(BytesUtils.toBytes(i), instance.get(BytesUtils.toBytes(i)));
         }
         instance.close();
-    }
-
-    private long setTestKVs(KVDBInstance instance) throws RocksDBException, IOException {
-        for (int i = 1; i <= 100; i++) {
-            instance.set(BytesUtils.toBytes((long) i), BytesUtils.toBytes((long) i));
-        }
-
-        return 100;
     }
 
     @Test
-    public void testCluster() throws RocksDBException, IOException {
+    public void testCluster() throws IOException, RocksDBException {
 // without wal
         KVDBInstance instance = RocksDBCluster.open(dbPath, 4);
-        long lsn = setTestKVs(instance);
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn), instance.get(BytesUtils.toBytes(lsn)));
+        int lsn = setTestKVs(instance);
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertArrayEquals(BytesUtils.toBytes(i), instance.get(BytesUtils.toBytes(i)));
+        }
         instance.close();
         FileUtils.deleteFile(dbPath, true);
         instance = RocksDBCluster.open(dbPath, 4);
-        Assert.assertNull(instance.get(BytesUtils.toBytes(lsn)));
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertNull(instance.get(BytesUtils.toBytes(i)));
+        }
         instance.close();
 
         // with wal disabled
-        instance = RocksDBCluster.open(dbPath, 4, new RedoLogConfig(walPath, true, -1));
+        instance = RocksDBCluster.open(dbPath, 4, new Config(walPath, true, -1));
         lsn = setTestKVs(instance);
         instance.close();
         FileUtils.deleteFile(dbPath, true);
-        instance = RocksDBCluster.open(dbPath, 4, new RedoLogConfig(walPath, true, -1));
-        Assert.assertNull(instance.get(BytesUtils.toBytes(lsn)));
+        instance = RocksDBCluster.open(dbPath, 4, new Config(walPath, true, -1));
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertNull(instance.get(BytesUtils.toBytes(i)));
+        }
         instance.close();
 
         // with wal enabled
-        instance = RocksDBCluster.open(dbPath, 4, new RedoLogConfig(walPath, false, -1));
+        instance = RocksDBCluster.open(dbPath, 4, new Config(walPath, false, -1));
         lsn = setTestKVs(instance);
         instance.close();
         FileUtils.deleteFile(dbPath, true);
-        // delete meta file
-        FileUtils.deleteFile(Paths.get(walPath, RedoLog.META_FILE).toString(), true);
-        instance = RocksDBCluster.open(dbPath, 4, new RedoLogConfig(walPath, false, -1));
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn), instance.get(BytesUtils.toBytes(lsn)));
-        instance.close();
-
-        // with wal enabled, reset meta file
-        FileUtils.deleteFile(walPath, true);
-        FileUtils.makeDirectory(dbPath);
-        instance = RocksDBCluster.open(dbPath, 4, new RedoLogConfig(walPath, false, -1));
-        lsn = setTestKVs(instance);
-        instance.close();
-        FileUtils.deleteFile(dbPath, true);
-        CheckpointWriter writer = new CheckpointWriter(Paths.get(walPath, RedoLog.META_FILE));
-        Assert.assertEquals(lsn, writer.read().longValue());
-        writer.write(lsn - 2);
-        instance = RocksDBCluster.open(dbPath, 4, new RedoLogConfig(walPath, false, -1));
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn), instance.get(BytesUtils.toBytes(lsn)));
-        Assert.assertArrayEquals(BytesUtils.toBytes(lsn - 1), instance.get(BytesUtils.toBytes(lsn - 1)));
-        for (int i = 1; i <= lsn - 2; i++) {
-            Assert.assertNull(instance.get(BytesUtils.toBytes((long) i)));
+        // reset wal checkpoint
+        resetCheckpoint();
+        instance = RocksDBCluster.open(dbPath, 4, new Config(walPath, false, -1));
+        for (int i = 0; i < lsn; i++) {
+            Assert.assertArrayEquals(BytesUtils.toBytes(i), instance.get(BytesUtils.toBytes(i)));
         }
         instance.close();
     }

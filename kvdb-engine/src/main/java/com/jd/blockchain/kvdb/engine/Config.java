@@ -1,6 +1,8 @@
-package com.jd.blockchain.kvdb.engine.wal;
+package com.jd.blockchain.kvdb.engine;
 
-public class RedoLogConfig {
+import java.nio.file.Paths;
+
+public class Config {
 
     // 日志文件目录
     private String walpath;
@@ -9,8 +11,8 @@ public class RedoLogConfig {
     // 刷盘机制：<=-1跟随系统，0实时刷盘，>0定时刷盘
     private int walFlush;
 
-    public RedoLogConfig(String path, boolean walDisable, int walFlush) {
-        this.walpath = path;
+    public Config(String path, boolean walDisable, int walFlush) {
+        this.walpath = Paths.get(path).toString();
         this.walDisable = walDisable;
         this.walFlush = walFlush;
     }

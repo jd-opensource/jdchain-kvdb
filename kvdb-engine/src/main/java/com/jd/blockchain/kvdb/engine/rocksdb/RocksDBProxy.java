@@ -1,15 +1,17 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
+import com.jd.blockchain.kvdb.engine.Config;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.engine.proto.Entity;
+import com.jd.blockchain.kvdb.engine.proto.EntityCoder;
 import com.jd.blockchain.kvdb.engine.proto.KV;
 import com.jd.blockchain.kvdb.engine.proto.KVItem;
 import com.jd.blockchain.kvdb.engine.proto.WalEntity;
-import com.jd.blockchain.kvdb.engine.wal.Iterator;
-import com.jd.blockchain.kvdb.engine.wal.RedoLog;
-import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.FileUtils;
+import com.jd.blockchain.wal.FileLogger;
+import com.jd.blockchain.wal.WalConfig;
+import com.jd.blockchain.wal.WalIterator;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.Cache;
 import org.rocksdb.ColumnFamilyHandle;
@@ -38,7 +40,7 @@ public class RocksDBProxy extends KVDBInstance {
 
     protected String path;
 
-    private RedoLog wal;
+    private FileLogger<Entity> wal;
 
     public String getPath() {
         return path;
@@ -48,7 +50,7 @@ public class RocksDBProxy extends KVDBInstance {
         this(db, path, null);
     }
 
-    private RocksDBProxy(RocksDB db, String path, RedoLog wal) {
+    private RocksDBProxy(RocksDB db, String path, FileLogger<Entity> wal) {
         this.db = db;
         this.path = path;
         this.wal = wal;
@@ -107,7 +109,7 @@ public class RocksDBProxy extends KVDBInstance {
         return open(path, null);
     }
 
-    public static RocksDBProxy open(String path, RedoLogConfig config) throws RocksDBException {
+    public static RocksDBProxy open(String path, Config config) throws RocksDBException {
         RocksDB db = RocksDB.open(initDBOptions(), path);
         initDB(db);
         try {
@@ -115,7 +117,8 @@ public class RocksDBProxy extends KVDBInstance {
             if (null == config || config.isWalDisable()) {
                 instance = new RocksDBProxy(db, path);
             } else {
-                instance = new RocksDBProxy(db, path, new RedoLog(config.getWalpath(), config.getWalFlush()));
+                WalConfig walConfig = new WalConfig(config.getWalpath(), config.getWalFlush(), true);
+                instance = new RocksDBProxy(db, path, new FileLogger(walConfig, EntityCoder.getInstance()));
             }
 
             instance.redo();
@@ -135,24 +138,16 @@ public class RocksDBProxy extends KVDBInstance {
         if (wal != null) {
             LOGGER.debug("redo wal...");
 
-            if (!wal.updated()) {
-                long lsn = wal.getCheckpoint();
-                long position = wal.position(lsn);
-                Iterator iterator = wal.entityIterator(position < 0 ? 0 : position);
-                while (iterator.hasNext()) {
-                    Entity e = iterator.next();
-                    if (e.getLsn() > lsn) {
-                        LOGGER.debug("redo {} {}", path, e.getLsn());
-                        WriteBatch batch = new WriteBatch();
-                        for (KV kv : e.getKVs()) {
-                            batch.put(kv.getKey(), kv.getValue());
-                        }
-                        db.write(writeOptions, batch);
-                        lsn = e.getLsn();
-                        wal.setCheckpoint(e.getLsn());
-                    }
+            WalIterator<Entity> iterator = wal.forwardIterator();
+            while (iterator.hasNext()) {
+                Entity e = iterator.next();
+                WriteBatch batch = new WriteBatch();
+                for (KV kv : e.getKVs()) {
+                    batch.put(kv.getKey(), kv.getValue());
                 }
+                db.write(writeOptions, batch);
             }
+
             // 清空WAL
             wal.clear();
             LOGGER.info("redo wal complete");
@@ -167,13 +162,12 @@ public class RocksDBProxy extends KVDBInstance {
     @Override
     public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
         try {
-            long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
+                wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
             }
             db.put(writeOptions, key, value);
             if (null != wal) {
-                wal.setCheckpoint(lsn);
+                wal.checkpoint();
             }
         } catch (IOException e) {
             throw new RocksDBException(e.toString());
@@ -192,9 +186,8 @@ public class RocksDBProxy extends KVDBInstance {
                 walkvs[i] = new KVItem(key, entry.getValue());
                 i++;
             }
-            long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity(walkvs));
+                wal.append(WalEntity.newPutEntity(walkvs));
             }
             if (kvs.size() > 1) {
                 db.write(writeOptions, batch);
@@ -202,7 +195,7 @@ public class RocksDBProxy extends KVDBInstance {
                 db.put(walkvs[0].getKey(), walkvs[0].getValue());
             }
             if (null != wal) {
-                wal.setCheckpoint(lsn);
+                wal.checkpoint();
             }
         } catch (IOException e) {
             throw new RocksDBException(e.toString());

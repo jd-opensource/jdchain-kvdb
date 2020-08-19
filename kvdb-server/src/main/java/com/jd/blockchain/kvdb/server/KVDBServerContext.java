@@ -12,7 +12,6 @@ import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
-import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
 import com.jd.blockchain.utils.StringUtils;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;

@@ -5,7 +5,6 @@ package com.jd.blockchain.kvdb.engine.proto;
  */
 public class WalEntity implements Entity {
 
-    private Long lsn;
     private KV[] kvs;
 
     public WalEntity(KV[] kvs) {
@@ -13,18 +12,8 @@ public class WalEntity implements Entity {
     }
 
     @Override
-    public Long getLsn() {
-        return lsn;
-    }
-
-    @Override
     public KV[] getKVs() {
         return kvs;
-    }
-
-    @Override
-    public void setLsn(Long lsn) {
-        this.lsn = lsn;
     }
 
     public static WalEntity newPutEntity(KV... kvs) {

@@ -1,17 +1,15 @@
 package com.jd.blockchain.kvdb.server;
 
+import com.jd.blockchain.kvdb.engine.Config;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBCluster;
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBProxy;
-import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.HashMap;
@@ -19,7 +17,7 @@ import java.util.Map;
 
 public class KVDB {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(KVDB.class);
+    private static final String WAL_FILE = "kvdb.wal";
 
     static {
         RocksDB.loadLibrary();
@@ -39,7 +37,7 @@ public class KVDB {
             if (dbInfo.isEnable()) {
                 String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
                 FileUtils.makeDirectory(dbPath);
-                RedoLogConfig logConfig = new RedoLogConfig(dbPath, config.getKvdbConfig().isWalDisable(), config.getKvdbConfig().getWalFlush());
+                Config logConfig = new Config(dbPath + File.separator + WAL_FILE, config.getKvdbConfig().isWalDisable(), config.getKvdbConfig().getWalFlush());
                 if (dbInfo.getPartitions() > 1) {
                     dbs.put(dbInfo.getName(), RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig));
                 } else {
@@ -62,7 +60,7 @@ public class KVDB {
         Map<String, KVDBInstance> dbs = new HashMap<>();
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
-        RedoLogConfig logConfig = new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush());
+        Config logConfig = new Config(dbPath + File.separator + WAL_FILE, config.isWalDisable(), config.getWalFlush());
         if (dbInfo.getPartitions() > 1) {
             return RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig);
         } else {
@@ -83,7 +81,7 @@ public class KVDB {
         KVDBInstance db;
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
-        RedoLogConfig logConfig = new RedoLogConfig(dbPath, config.isWalDisable(), config.getWalFlush());
+        Config logConfig = new Config(dbPath + File.separator + WAL_FILE, config.isWalDisable(), config.getWalFlush());
         if (dbInfo.getPartitions() > 1) {
             db = RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig);
         } else {

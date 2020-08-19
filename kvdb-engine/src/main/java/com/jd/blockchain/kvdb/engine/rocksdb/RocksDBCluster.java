@@ -1,15 +1,17 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
+import com.jd.blockchain.kvdb.engine.Config;
+import com.jd.blockchain.kvdb.engine.proto.EntityCoder;
 import com.jd.blockchain.kvdb.engine.proto.Entity;
 import com.jd.blockchain.kvdb.engine.proto.KV;
 import com.jd.blockchain.kvdb.engine.proto.KVItem;
 import com.jd.blockchain.kvdb.engine.proto.WalEntity;
-import com.jd.blockchain.kvdb.engine.wal.Iterator;
-import com.jd.blockchain.kvdb.engine.wal.RedoLog;
-import com.jd.blockchain.kvdb.engine.wal.RedoLogConfig;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.FileUtils;
+import com.jd.blockchain.wal.FileLogger;
+import com.jd.blockchain.wal.WalConfig;
+import com.jd.blockchain.wal.WalIterator;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 import org.slf4j.Logger;
@@ -32,7 +34,7 @@ public class RocksDBCluster extends KVDBInstance {
 
     private String rootPath;
 
-    private RedoLog wal;
+    private FileLogger<Entity> wal;
 
     private RocksDBProxy[] dbPartitions;
 
@@ -42,7 +44,7 @@ public class RocksDBCluster extends KVDBInstance {
         this(rootPath, dbPartitions, executor, null);
     }
 
-    private RocksDBCluster(String rootPath, RocksDBProxy[] dbPartitions, ExecutorService executor, RedoLog wal) {
+    private RocksDBCluster(String rootPath, RocksDBProxy[] dbPartitions, ExecutorService executor, FileLogger<Entity> wal) {
         this.rootPath = rootPath;
         this.dbPartitions = dbPartitions;
         this.executor = executor;
@@ -54,7 +56,7 @@ public class RocksDBCluster extends KVDBInstance {
         return open(path, partitions, null);
     }
 
-    public static RocksDBCluster open(String path, int partitions, RedoLogConfig config) throws RocksDBException {
+    public static RocksDBCluster open(String path, int partitions, Config config) throws RocksDBException {
         String rootPath = FileUtils.getFullPath(path);
         RocksDBProxy[] dbPartitions = new RocksDBProxy[partitions];
         for (int i = 0; i < partitions; i++) {
@@ -70,7 +72,8 @@ public class RocksDBCluster extends KVDBInstance {
             if (null == config || config.isWalDisable()) {
                 instance = new RocksDBCluster(rootPath, dbPartitions, executor);
             } else {
-                instance = new RocksDBCluster(rootPath, dbPartitions, executor, new RedoLog(config.getWalpath(), config.getWalFlush()));
+                WalConfig walConfig = new WalConfig(config.getWalpath(), config.getWalFlush(), true);
+                instance = new RocksDBCluster(rootPath, dbPartitions, executor, new FileLogger<>(walConfig, EntityCoder.getInstance()));
             }
 
             instance.redo();
@@ -86,32 +89,24 @@ public class RocksDBCluster extends KVDBInstance {
         if (wal != null) {
             LOGGER.debug("redo wal...");
 
-            if (!wal.updated()) {
-                long lsn = wal.getCheckpoint();
-                long position = wal.position(lsn);
-                Iterator iterator = wal.entityIterator(position < 0 ? 0 : position);
-                while (iterator.hasNext()) {
-                    Entity e = iterator.next();
-                    if (e.getLsn() > lsn) {
-                        LOGGER.debug("redo {} {}", rootPath, e.getLsn());
-                        WriteBatch[] batchs = new WriteBatch[dbPartitions.length];
-                        for (KV kv : e.getKVs()) {
-                            int index = partitioner.partition(kv.getKey());
-                            if (null == batchs[index]) {
-                                batchs[index] = new WriteBatch();
-                            }
-                            batchs[index].put(kv.getKey(), kv.getValue());
-                        }
-                        for (int i = 0; i < dbPartitions.length; i++) {
-                            if (batchs[i] != null && batchs[i].getDataSize() > 0) {
-                                dbPartitions[i].write(batchs[i]);
-                            }
-                        }
-                        lsn = e.getLsn();
-                        wal.setCheckpoint(lsn);
+            WalIterator<Entity> iterator = wal.forwardIterator();
+            while (iterator.hasNext()) {
+                Entity e = iterator.next();
+                WriteBatch[] batchs = new WriteBatch[dbPartitions.length];
+                for (KV kv : e.getKVs()) {
+                    int index = partitioner.partition(kv.getKey());
+                    if (null == batchs[index]) {
+                        batchs[index] = new WriteBatch();
+                    }
+                    batchs[index].put(kv.getKey(), kv.getValue());
+                }
+                for (int i = 0; i < dbPartitions.length; i++) {
+                    if (batchs[i] != null && batchs[i].getDataSize() > 0) {
+                        dbPartitions[i].write(batchs[i]);
                     }
                 }
             }
+
             // 清空WAL
             wal.clear();
             LOGGER.info("redo wal complete");
@@ -121,14 +116,13 @@ public class RocksDBCluster extends KVDBInstance {
     @Override
     public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
         try {
-            long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
+                wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
             }
             int pid = partitioner.partition(key);
             dbPartitions[pid].set(key, value);
             if (null != wal) {
-                wal.setCheckpoint(lsn);
+                wal.checkpoint();
             }
         } catch (IOException e) {
             throw new RocksDBException(e.toString());
@@ -211,9 +205,8 @@ public class RocksDBCluster extends KVDBInstance {
         }
 
         try {
-            long lsn = -1;
             if (null != wal) {
-                lsn = wal.append(WalEntity.newPutEntity(walkvs));
+                wal.append(WalEntity.newPutEntity(walkvs));
             }
             // TODO 多线程提交不同分片存在数据不一致问题
             CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
@@ -241,7 +234,7 @@ public class RocksDBCluster extends KVDBInstance {
                 }
             }
             if (null != wal) {
-                wal.setCheckpoint(lsn);
+                wal.checkpoint();
             }
         } catch (Exception e) {
             LOGGER.error("KVWrite batch commit error! --" + e.getMessage(), e);

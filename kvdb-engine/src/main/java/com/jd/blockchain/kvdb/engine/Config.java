@@ -28,4 +28,13 @@ public class Config {
     public int getWalFlush() {
         return walFlush;
     }
+
+    @Override
+    public String toString() {
+        return "Config{" +
+                "walpath='" + walpath + '\'' +
+                ", walDisable=" + walDisable +
+                ", walFlush=" + walFlush +
+                '}';
+    }
 }

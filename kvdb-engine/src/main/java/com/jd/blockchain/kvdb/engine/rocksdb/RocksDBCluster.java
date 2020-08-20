@@ -57,6 +57,7 @@ public class RocksDBCluster extends KVDBInstance {
     }
 
     public static RocksDBCluster open(String path, int partitions, Config config) throws RocksDBException {
+        LOGGER.info("db [{}] wal config: {}", path, null != config ? config.toString() : "null");
         String rootPath = FileUtils.getFullPath(path);
         RocksDBProxy[] dbPartitions = new RocksDBProxy[partitions];
         for (int i = 0; i < partitions; i++) {

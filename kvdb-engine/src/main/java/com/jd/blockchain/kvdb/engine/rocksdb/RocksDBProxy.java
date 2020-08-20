@@ -110,6 +110,7 @@ public class RocksDBProxy extends KVDBInstance {
     }
 
     public static RocksDBProxy open(String path, Config config) throws RocksDBException {
+        LOGGER.info("db [{}] wal config: {}", path, null != config ? config.toString() : "null");
         RocksDB db = RocksDB.open(initDBOptions(), path);
         initDB(db);
         try {

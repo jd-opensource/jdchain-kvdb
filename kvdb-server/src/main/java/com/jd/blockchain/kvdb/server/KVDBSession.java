@@ -183,4 +183,16 @@ public class KVDBSession implements Session {
         }
     }
 
+    @Override
+    public void put(Bytes key, byte[] value) throws RocksDBException {
+        if (batchMode) {
+            if (batch.size() + 1 > MAX_BATCH_SIZE) {
+                throw new KVDBException("too large executions in batch");
+            }
+            batch.put(key, value);
+        } else {
+            instance.set(key.toBytes(), value);
+        }
+    }
+
 }

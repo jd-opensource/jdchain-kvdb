@@ -109,4 +109,13 @@ public interface Session {
      * @throws RocksDBException
      */
     void put(Map<Bytes, byte[]> kvs) throws RocksDBException;
+
+    /**
+     * 设置键值
+     *
+     * @param key
+     * @param value
+     * @throws RocksDBException
+     */
+    void put(Bytes key, byte[] value) throws RocksDBException;
 }

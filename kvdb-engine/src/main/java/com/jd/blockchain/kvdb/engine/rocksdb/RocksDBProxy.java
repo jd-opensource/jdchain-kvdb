@@ -42,6 +42,8 @@ public class RocksDBProxy extends KVDBInstance {
 
     private FileLogger<Entity> wal;
 
+    private boolean checkpointDisable = false;
+
     public String getPath() {
         return path;
     }
@@ -162,44 +164,66 @@ public class RocksDBProxy extends KVDBInstance {
 
     @Override
     public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
-        try {
-            if (null != wal) {
+        if (null != wal) {
+            try {
                 wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
+            } catch (IOException e) {
+                LOGGER.error("DBProxy set, wal append error! --" + e.getMessage(), e);
+                throw new RocksDBException(e.toString());
             }
+        }
+        try {
             db.put(writeOptions, key, value);
-            if (null != wal) {
-                wal.checkpoint();
-            }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            checkpointDisable = true;
+            LOGGER.error("DBProxy set error! --" + e.getMessage(), e);
             throw new RocksDBException(e.toString());
+        }
+        if (null != wal && !checkpointDisable) {
+            try {
+                wal.checkpoint();
+            } catch (IOException e) {
+                LOGGER.error("DBProxy set, wal checkpoint error! --" + e.getMessage(), e);
+            }
         }
     }
 
     @Override
     public synchronized void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
-        try {
-            WriteBatch batch = new WriteBatch();
-            KVItem[] walkvs = new KVItem[kvs.size()];
-            int i = 0;
-            for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
-                byte[] key = entry.getKey().toBytes();
-                batch.put(key, entry.getValue());
-                walkvs[i] = new KVItem(key, entry.getValue());
-                i++;
-            }
-            if (null != wal) {
+        WriteBatch batch = new WriteBatch();
+        KVItem[] walkvs = new KVItem[kvs.size()];
+        int i = 0;
+        for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
+            byte[] key = entry.getKey().toBytes();
+            batch.put(key, entry.getValue());
+            walkvs[i] = new KVItem(key, entry.getValue());
+            i++;
+        }
+        if (null != wal) {
+            try {
                 wal.append(WalEntity.newPutEntity(walkvs));
+            } catch (IOException e) {
+                LOGGER.error("DBProxy batch commit, wal append error! --" + e.getMessage(), e);
+                throw new RocksDBException(e.toString());
             }
+        }
+        try {
             if (kvs.size() > 1) {
                 db.write(writeOptions, batch);
             } else {
                 db.put(walkvs[0].getKey(), walkvs[0].getValue());
             }
-            if (null != wal) {
+        } catch (Exception e) {
+            checkpointDisable = true;
+            LOGGER.error("DBProxy batch commit error! --" + e.getMessage(), e);
+            throw e;
+        }
+        if (null != wal && !checkpointDisable) {
+            try {
                 wal.checkpoint();
+            } catch (IOException e) {
+                LOGGER.error("DBProxy batch commit, wal checkpoint error! --" + e.getMessage(), e);
             }
-        } catch (IOException e) {
-            throw new RocksDBException(e.toString());
         }
     }
 

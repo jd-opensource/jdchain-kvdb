@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
-import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.engine.Config;
-import com.jd.blockchain.kvdb.engine.proto.EntityCoder;
+import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.engine.proto.Entity;
+import com.jd.blockchain.kvdb.engine.proto.EntityCoder;
 import com.jd.blockchain.kvdb.engine.proto.KV;
 import com.jd.blockchain.kvdb.engine.proto.KVItem;
 import com.jd.blockchain.kvdb.engine.proto.WalEntity;
@@ -39,6 +39,8 @@ public class RocksDBCluster extends KVDBInstance {
     private RocksDBProxy[] dbPartitions;
 
     private ExecutorService executor;
+
+    private boolean checkpointDisable = false;
 
     private RocksDBCluster(String rootPath, RocksDBProxy[] dbPartitions, ExecutorService executor) {
         this(rootPath, dbPartitions, executor, null);
@@ -116,18 +118,30 @@ public class RocksDBCluster extends KVDBInstance {
 
     @Override
     public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
-        try {
-            if (null != wal) {
+        if (null != wal) {
+            try {
                 wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
+            } catch (IOException e) {
+                LOGGER.error("DBCluster set, wal append error! --" + e.getMessage(), e);
+                throw new RocksDBException(e.toString());
             }
+        }
+        try {
             int pid = partitioner.partition(key);
             dbPartitions[pid].set(key, value);
-            if (null != wal) {
-                wal.checkpoint();
-            }
-        } catch (IOException e) {
-            throw new RocksDBException(e.toString());
+        } catch (Exception e) {
+            checkpointDisable = true;
+            LOGGER.error("DBCluster set error! --" + e.getMessage(), e);
+            throw e;
         }
+        if (null != wal && !checkpointDisable) {
+            try {
+                wal.checkpoint();
+            } catch (IOException e) {
+                LOGGER.error("DBCluster set, wal checkpoint error! --" + e.getMessage(), e);
+            }
+        }
+
     }
 
     @Override
@@ -205,11 +219,15 @@ public class RocksDBCluster extends KVDBInstance {
             j++;
         }
 
-        try {
-            if (null != wal) {
+        if (null != wal) {
+            try {
                 wal.append(WalEntity.newPutEntity(walkvs));
+            } catch (Exception e) {
+                LOGGER.error("DBCluster batch commit, wal append error! --" + e.getMessage(), e);
+                throw new RocksDBException(e.toString());
             }
-            // TODO 多线程提交不同分片存在数据不一致问题
+        }
+        try {
             CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
             int batchThreads = 0;
             for (int i = 0; i < batches.length; i++) {
@@ -234,12 +252,18 @@ public class RocksDBCluster extends KVDBInstance {
                     throw new RocksDBException("Sub thread batch commit error");
                 }
             }
-            if (null != wal) {
-                wal.checkpoint();
-            }
         } catch (Exception e) {
-            LOGGER.error("KVWrite batch commit error! --" + e.getMessage(), e);
+            checkpointDisable = true;
+            LOGGER.error("DBCluster batch commit error! --" + e.getMessage(), e);
             throw new RocksDBException(e.toString());
+        }
+
+        if (null != wal && !checkpointDisable) {
+            try {
+                wal.checkpoint();
+            } catch (IOException e) {
+                LOGGER.error("DBCluster batch commit, wal checkpoint error! --" + e.getMessage(), e);
+            }
         }
     }
 }

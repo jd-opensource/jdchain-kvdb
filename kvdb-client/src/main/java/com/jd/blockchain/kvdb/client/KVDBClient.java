@@ -112,7 +112,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected synchronized DatabaseClusterInfo use(String db) throws KVDBException {
+    public synchronized DatabaseClusterInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
         }
@@ -169,7 +169,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
+    public boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(parameter, DatabaseBaseInfo.class))));
         if (null == response) {
@@ -188,7 +188,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean enableDatabase(String database) throws KVDBException {
+    public boolean enableDatabase(String database) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.enableDatabase(database));
         if (null == response) {
@@ -207,7 +207,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean disableDatabase(String database) throws KVDBException {
+    public boolean disableDatabase(String database) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.disableDatabase(database));
         if (null == response) {
@@ -226,7 +226,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean dropDatabase(String database) throws KVDBException {
+    public boolean dropDatabase(String database) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.dropDatabase(database));
         if (null == response) {
@@ -244,7 +244,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected ClusterItem[] clusterInfo() throws KVDBException {
+    public ClusterItem[] clusterInfo() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.clusterInfo());
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -261,7 +261,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected DatabaseBaseInfo[] showDatabases() throws KVDBException {
+    public DatabaseBaseInfo[] showDatabases() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.showDatabases());
         if (null == response) {
             throw new KVDBTimeoutException("time out");

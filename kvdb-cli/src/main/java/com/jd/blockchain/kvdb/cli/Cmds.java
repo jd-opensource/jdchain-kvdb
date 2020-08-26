@@ -20,13 +20,14 @@ import org.springframework.shell.standard.commands.Quit;
 import static org.springframework.shell.standard.ShellOption.NULL;
 
 @ShellComponent
-public class Cmds extends KVDBClient implements Quit.Command {
+public class Cmds implements Quit.Command {
 
-    @Autowired
-    ClientConfig config;
+    final ClientConfig config;
+    private KVDBClient client;
 
     public Cmds(ClientConfig config) throws KVDBException {
-        super(config);
+        this.config = config;
+        this.client = new KVDBClient(config);
     }
 
     @ShellMethod(
@@ -35,7 +36,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = {"quit", "exit"}
     )
     public void quit() {
-        super.close();
+        client.close();
         throw new ExitRequest();
     }
 
@@ -71,7 +72,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             value = "Server cluster information.",
             key = "cluster info")
     public String clusterInfoCmd() throws KVDBException {
-        ClusterItem[] infos = super.clusterInfo();
+        ClusterItem[] infos = client.clusterInfo();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < infos.length; i++) {
             builder.append(infos[i].getName());
@@ -100,7 +101,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             value = "Show databases",
             key = "show databases")
     public String showDatabasesCmd() throws KVDBException {
-        DatabaseBaseInfo[] dbs = super.showDatabases();
+        DatabaseBaseInfo[] dbs = client.showDatabases();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < dbs.length; i++) {
             DatabaseBaseInfo info = dbs[i];
@@ -129,7 +130,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = {"set", "put"})
     public boolean putCmd(String key, String value) throws KVDBException {
 
-        return super.put(Bytes.fromString(key), Bytes.fromString(value));
+        return client.put(Bytes.fromString(key), Bytes.fromString(value));
     }
 
     /**
@@ -144,7 +145,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = "get")
     public String getCmd(String key) throws KVDBException {
 
-        Bytes value = super.get(Bytes.fromString(key));
+        Bytes value = client.get(Bytes.fromString(key));
         return null != value ? BytesUtils.toString(value.toBytes()) : "not exists";
     }
 
@@ -160,7 +161,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = "exists")
     public boolean existsCmd(String key) throws KVDBException {
 
-        return super.exists(Bytes.fromString(key));
+        return client.exists(Bytes.fromString(key));
     }
 
     /**
@@ -179,7 +180,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
         } else if (partitions < 0) {
             throw new KVDBException("partitions can not be negative");
         }
-        return super.createDatabase(new KVDBDatabaseBaseInfo(name, "", partitions));
+        return client.createDatabase(new KVDBDatabaseBaseInfo(name, "", partitions));
     }
 
     /**
@@ -193,7 +194,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             value = "enable database",
             key = "enable database")
     public boolean enableDatabaseCmd(String name) throws KVDBException {
-        return super.enableDatabase(name);
+        return client.enableDatabase(name);
     }
 
     /**
@@ -207,7 +208,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             value = "disable database",
             key = "disable database")
     public boolean disableDatabaseCmd(String name) throws KVDBException {
-        return super.disableDatabase(name);
+        return client.disableDatabase(name);
     }
 
     /**
@@ -221,7 +222,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             value = "drop database",
             key = "drop database")
     public boolean dropDatabaseCmd(String name) throws KVDBException {
-        return super.dropDatabase(name);
+        return client.dropDatabase(name);
     }
 
     /**
@@ -236,7 +237,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             value = "Switch to the database with the specified name",
             key = "use")
     public String useCmd(String name) throws KVDBException, InterruptedException {
-        DatabaseClusterInfo info = super.use(name);
+        DatabaseClusterInfo info = client.use(name);
         StringBuilder builder = new StringBuilder();
         builder.append("mode: ");
         builder.append(info.isClusterMode() ? "cluster" : "single");
@@ -267,7 +268,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = "batch begin")
     public boolean batchBeginCmd() throws KVDBException {
 
-        return super.batchBegin();
+        return client.batchBegin();
     }
 
     /**
@@ -281,7 +282,7 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = "batch abort")
     public boolean batchAbortCmd() throws KVDBException {
 
-        return super.batchAbort();
+        return client.batchAbort();
     }
 
     /**
@@ -295,6 +296,6 @@ public class Cmds extends KVDBClient implements Quit.Command {
             key = "batch commit")
     public boolean batchCommitCmd() throws KVDBException {
 
-        return super.batchCommit();
+        return client.batchCommit();
     }
 }

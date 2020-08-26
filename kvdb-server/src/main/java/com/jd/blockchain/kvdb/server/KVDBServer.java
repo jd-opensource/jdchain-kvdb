@@ -180,10 +180,9 @@ public class KVDBServer implements KVDBHandler {
             serverContext.processCommand(sourceKey, message);
         } else {
             // 解析客户端IP地址，针对非开放操作仅对本机地址通过管理服务端口开放
-            String remoteHost = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
             int serverPort = ((InetSocketAddress) ctx.channel().localAddress()).getPort();
             if (Command.CommandType.getCommand(command.getName()).isOpen()
-                    || (URIUtils.isLocalhost(remoteHost) && serverPort == serverContext.getConfig().getKvdbConfig().getManagerPort())) {
+                    || serverPort == serverContext.getConfig().getKvdbConfig().getManagerPort()) {
                 serverContext.processCommand(sourceKey, message);
             } else {
                 ctx.writeAndFlush(KVDBMessage.error(message.getId(), "un support command"));

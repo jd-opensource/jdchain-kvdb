@@ -285,6 +285,9 @@ public class KVDBClient implements KVDBOperator {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
+        if (keys.length == 0) {
+            throw new KVDBException("no key present");
+        }
         return operator.exists(keys);
     }
 
@@ -300,6 +303,9 @@ public class KVDBClient implements KVDBOperator {
     public Bytes[] get(Bytes... keys) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
+        }
+        if (keys.length == 0) {
+            throw new KVDBException("no key present");
         }
         return operator.get(keys);
     }

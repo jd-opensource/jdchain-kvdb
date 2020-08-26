@@ -8,7 +8,8 @@ import com.jd.blockchain.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,48 +43,80 @@ public class KVDBCluster implements KVDBOperator {
 
     @Override
     public boolean exists(Bytes key) throws KVDBException {
-        return operators[partition.partition(key.toBytes())].exists(key);
+        return operators[partition.partition(key)].exists(key);
     }
 
     /**
-     * TODO multiple keys optimization
-     *
      * @param keys
      * @return
      * @throws KVDBException
      */
     @Override
     public boolean[] exists(Bytes... keys) throws KVDBException {
-        boolean[] oks = new boolean[keys.length];
-        int i = 0;
-        for (Bytes key : keys) {
-            oks[i] = operators[partition.partition(key.toBytes())].exists(key);
-            i++;
+        try {
+            CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
+            for (int i = 0; i < keys.length; i++) {
+                final int index = i;
+                completionService.submit(() -> {
+                    try {
+                        return new ExecuteResultInBatch(index, operators[partition.partition(keys[index])].exists(keys[index]));
+                    } catch (KVDBException e) {
+                        return new ExecuteResultInBatch(index, e);
+                    }
+                });
+            }
+            boolean[] results = new boolean[keys.length];
+            for (int i = 0; i < keys.length; i++) {
+                ExecuteResultInBatch<Boolean> result = completionService.take().get();
+                if (!result.success()) {
+                    throw result.exception;
+                }
+                results[result.index] = result.data;
+            }
+            return results;
+        } catch (Exception e) {
+            LOGGER.error("Exists command error! --" + e.getMessage(), e);
+            throw new KVDBException("Exists command error");
         }
-        return oks;
     }
 
     @Override
     public Bytes get(Bytes key) throws KVDBException {
-        return operators[partition.partition(key.toBytes())].get(key);
+        return operators[partition.partition(key)].get(key);
     }
 
     /**
-     * TODO multiple keys optimization
-     *
      * @param keys
      * @return
      * @throws KVDBException
      */
     @Override
     public Bytes[] get(Bytes... keys) throws KVDBException {
-        Bytes[] vs = new Bytes[keys.length];
-        int i = 0;
-        for (Bytes key : keys) {
-            vs[i] = operators[partition.partition(key.toBytes())].get(key);
-            i++;
+        try {
+            CompletionService<ExecuteResultInBatch<Bytes>> completionService = new ExecutorCompletionService<>(executor);
+            for (int i = 0; i < keys.length; i++) {
+                final int index = i;
+                completionService.submit(() -> {
+                    try {
+                        return new ExecuteResultInBatch(index, operators[partition.partition(keys[index])].get(keys[index]));
+                    } catch (KVDBException e) {
+                        return new ExecuteResultInBatch(index, e);
+                    }
+                });
+            }
+            Bytes[] results = new Bytes[keys.length];
+            for (int i = 0; i < keys.length; i++) {
+                ExecuteResultInBatch<Bytes> result = completionService.take().get();
+                if (!result.success()) {
+                    throw result.exception;
+                }
+                results[result.index] = result.data;
+            }
+            return results;
+        } catch (Exception e) {
+            LOGGER.error("Get command error! --" + e.getMessage(), e);
+            throw new KVDBException("Get command error");
         }
-        return vs;
     }
 
     /**
@@ -106,76 +139,97 @@ public class KVDBCluster implements KVDBOperator {
      */
     @Override
     public boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException {
-        return operators[partition.partition(key.toBytes())].put(key, value);
+        return operators[partition.partition(key)].put(key, value, inBatch);
     }
 
     @Override
     public boolean batchBegin() throws KVDBException {
-        CountDownLatch cdl = new CountDownLatch(operators.length);
-        for (int i = 0; i < operators.length; i++) {
-            final int index = i;
-            executor.execute(() -> {
-                try {
-                    operators[index].batchBegin();
-                    cdl.countDown();
-                } catch (KVDBException e) {
-                    LOGGER.error("cluster batchBegin error", e);
-                }
-            });
-        }
         try {
-            cdl.await();
-        } catch (InterruptedException e) {
-            LOGGER.error("cluster batchBegin error", e);
-            return false;
+            CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
+            for (int i = 0; i < operators.length; i++) {
+                final int index = i;
+                completionService.submit(() -> {
+                    try {
+                        return new ExecuteResultInBatch(index, operators[index].batchBegin());
+                    } catch (KVDBException e) {
+                        return new ExecuteResultInBatch(index, e);
+                    }
+                });
+            }
+            for (int i = 0; i < operators.length; i++) {
+                ExecuteResultInBatch<Boolean> result = completionService.take().get();
+                if (!result.success()) {
+                    throw result.exception;
+                }
+                if (!result.data) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("BatchBegin command error! --" + e.getMessage(), e);
+            throw new KVDBException("BatchBegin command error");
         }
-        return true;
     }
 
     @Override
     public boolean batchAbort() throws KVDBException {
-        CountDownLatch cdl = new CountDownLatch(operators.length);
-        for (int i = 0; i < operators.length; i++) {
-            final int index = i;
-            executor.execute(() -> {
-                try {
-                    operators[index].batchAbort();
-                    cdl.countDown();
-                } catch (KVDBException e) {
-                    LOGGER.error("cluster batchAbort error", e);
-                }
-            });
-        }
         try {
-            cdl.await();
-        } catch (InterruptedException e) {
-            LOGGER.error("cluster batchAbort error", e);
-            return false;
+            CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
+            for (int i = 0; i < operators.length; i++) {
+                final int index = i;
+                completionService.submit(() -> {
+                    try {
+                        return new ExecuteResultInBatch(index, operators[index].batchAbort());
+                    } catch (KVDBException e) {
+                        return new ExecuteResultInBatch(index, e);
+                    }
+                });
+            }
+            for (int i = 0; i < operators.length; i++) {
+                ExecuteResultInBatch<Boolean> result = completionService.take().get();
+                if (!result.success()) {
+                    throw result.exception;
+                }
+                if (!result.data) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("BatchAbort command error! --" + e.getMessage(), e);
+            throw new KVDBException("BatchAbort command error");
         }
-        return true;
     }
 
     @Override
     public boolean batchCommit() throws KVDBException {
-        CountDownLatch cdl = new CountDownLatch(operators.length);
-        for (int i = 0; i < operators.length; i++) {
-            final int index = i;
-            executor.execute(() -> {
-                try {
-                    operators[index].batchCommit();
-                    cdl.countDown();
-                } catch (KVDBException e) {
-                    LOGGER.error("cluster batchCommit error", e);
-                }
-            });
-        }
         try {
-            cdl.await();
-        } catch (InterruptedException e) {
-            LOGGER.error("cluster batchCommit error", e);
-            return false;
+            CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
+            for (int i = 0; i < operators.length; i++) {
+                final int index = i;
+                completionService.submit(() -> {
+                    try {
+                        return new ExecuteResultInBatch(index, operators[index].batchCommit());
+                    } catch (KVDBException e) {
+                        return new ExecuteResultInBatch(index, e);
+                    }
+                });
+            }
+            for (int i = 0; i < operators.length; i++) {
+                ExecuteResultInBatch<Boolean> result = completionService.take().get();
+                if (!result.success()) {
+                    throw result.exception;
+                }
+                if (!result.data) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("BatchCommit command error! --" + e.getMessage(), e);
+            throw new KVDBException("BatchCommit command error");
         }
-        return true;
     }
 
     @Override
@@ -191,6 +245,29 @@ public class KVDBCluster implements KVDBOperator {
         }
         if (null != executor && !executor.isShutdown()) {
             executor.shutdown();
+        }
+    }
+
+    class ExecuteResultInBatch<E> {
+        private int index;
+        private E data;
+        private Exception exception;
+
+        private ExecuteResultInBatch() {
+        }
+
+        private ExecuteResultInBatch(int index, E data) {
+            this.index = index;
+            this.data = data;
+        }
+
+        private ExecuteResultInBatch(int index, Exception e) {
+            this.index = index;
+            this.exception = e;
+        }
+
+        public boolean success() {
+            return null != exception;
         }
     }
 }

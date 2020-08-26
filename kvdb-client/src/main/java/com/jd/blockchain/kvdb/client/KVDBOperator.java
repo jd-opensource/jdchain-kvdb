@@ -59,11 +59,11 @@ public interface KVDBOperator {
      *
      * @param key
      * @param value
-     * @param inBatch
+     * @param aSync
      * @return
      * @throws KVDBException
      */
-    boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException;
+    boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException;
 
     /**
      * 开启批处理
@@ -94,7 +94,7 @@ public interface KVDBOperator {
     /**
      * 提交批处理
      *
-     * @param size 此次批处理操作数
+     * @param size 此次批处理操作去重后的key数量
      * @return
      * @throws KVDBException
      */

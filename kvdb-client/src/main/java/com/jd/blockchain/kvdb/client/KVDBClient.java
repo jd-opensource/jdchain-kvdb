@@ -148,7 +148,7 @@ public class KVDBClient implements KVDBOperator {
                     }
                     selectedClients[i] = nettyClient;
                 }
-                operator = new KVDBCluster(selectedClients);
+                operator = new KVDBCluster(db, selectedClients);
             } else {
                 // 单实例模式下，无需再执行数据库切换操作，仅切换操作对象
                 operator = new KVDBSingle(clients.get(config.getHost() + config.getPort()));
@@ -316,11 +316,11 @@ public class KVDBClient implements KVDBOperator {
     }
 
     @Override
-    public boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException {
+    public boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
-        return operator.put(key, value, inBatch);
+        return operator.put(key, value, aSync);
     }
 
     @Override

@@ -2,11 +2,11 @@ package com.jd.blockchain.kvdb.engine.rocksdb;
 
 import com.jd.blockchain.kvdb.engine.Config;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
-import com.jd.blockchain.kvdb.engine.proto.Entity;
-import com.jd.blockchain.kvdb.engine.proto.EntityCoder;
-import com.jd.blockchain.kvdb.engine.proto.KV;
-import com.jd.blockchain.kvdb.engine.proto.KVItem;
-import com.jd.blockchain.kvdb.engine.proto.WalEntity;
+import com.jd.blockchain.kvdb.protocol.proto.wal.Entity;
+import com.jd.blockchain.kvdb.protocol.proto.wal.EntityCoder;
+import com.jd.blockchain.kvdb.protocol.proto.wal.KV;
+import com.jd.blockchain.kvdb.protocol.proto.wal.KVItem;
+import com.jd.blockchain.kvdb.protocol.proto.wal.WalEntity;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.FileUtils;
 import com.jd.blockchain.wal.FileLogger;

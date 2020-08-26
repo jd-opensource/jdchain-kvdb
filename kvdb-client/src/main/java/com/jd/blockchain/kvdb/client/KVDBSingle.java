@@ -93,9 +93,9 @@ public class KVDBSingle implements KVDBOperator {
     }
 
     @Override
-    public boolean put(Bytes key, Bytes value, boolean inBatch) throws KVDBException {
+    public boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException {
         Message msg = KVDBMessage.put(key, value);
-        if (inBatch) {
+        if (aSync) {
             return sendAsync(msg);
         }
         Response response = send(msg);

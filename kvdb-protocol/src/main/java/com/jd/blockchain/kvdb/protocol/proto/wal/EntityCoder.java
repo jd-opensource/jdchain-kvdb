@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.engine.proto;
+package com.jd.blockchain.kvdb.protocol.proto.wal;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.wal.WalDataCoder;

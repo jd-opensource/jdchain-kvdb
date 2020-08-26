@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.engine.proto;
+package com.jd.blockchain.kvdb.protocol.proto.wal;
 
 /**
  * 一次commit所有KV操作集合

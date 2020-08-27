@@ -146,6 +146,7 @@ public class KVDBBenchmark {
                             j++;
                             if (bm.batch && bm.keepAlive && bm.batchSize == j) {
                                 client.batchCommit();
+                                client.batchBegin();
                                 j = 0;
                             }
                         }
@@ -170,7 +171,6 @@ public class KVDBBenchmark {
             long endTime = System.currentTimeMillis();
             String result = String.format("requests:%d, clients:%d, batch:%s, batch_size:%d, kv_data_size:%dbytes, times:%dms, errors:%d, tps:%f",
                     bm.requests, bm.clients, bm.batch, bm.batchSize, bm.kvDataSize, endTime - startTime, failCount.get(), bm.requests / ((endTime - startTime) / 1000d));
-            System.out.println(result);
             System.out.println(result);
         } catch (Exception e) {
             e.printStackTrace();

@@ -421,6 +421,13 @@ public class KVDBCluster implements KVDBOperator {
         if (null != executor && !executor.isShutdown()) {
             executor.shutdown();
         }
+        if(null != wal) {
+            try {
+                wal.close();
+            } catch (IOException e) {
+                LOGGER.error("wal close error", e);
+            }
+        }
     }
 
     class ExecuteResultInBatch<E> {
@@ -442,7 +449,7 @@ public class KVDBCluster implements KVDBOperator {
         }
 
         public boolean success() {
-            return null != exception;
+            return null == exception;
         }
     }
 }

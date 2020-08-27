@@ -39,8 +39,8 @@ public class RocksDBCluster extends KVDBInstance {
     private RocksDBProxy[] dbPartitions;
 
     private ExecutorService executor;
-
-    private boolean checkpointDisable = false;
+    // 是否需要执行wal redo操作
+    private volatile boolean needRedo = true;
 
     private RocksDBCluster(String rootPath, RocksDBProxy[] dbPartitions, ExecutorService executor) {
         this(rootPath, dbPartitions, executor, null);
@@ -79,7 +79,7 @@ public class RocksDBCluster extends KVDBInstance {
                 instance = new RocksDBCluster(rootPath, dbPartitions, executor, new FileLogger<>(walConfig, EntityCoder.getInstance()));
             }
 
-            instance.redo();
+            instance.checkAndRedoWal();
 
             return instance;
         } catch (IOException e) {
@@ -88,57 +88,78 @@ public class RocksDBCluster extends KVDBInstance {
     }
 
     // 检查wal日志进行数据一致性检查
-    private void redo() throws IOException, RocksDBException {
-        if (wal != null) {
-            LOGGER.debug("redo wal...");
+    private void checkAndRedoWal() throws RocksDBException {
+        if (!needRedo) {
+            return;
+        } else {
+            if (wal != null) {
+                synchronized (wal) {
+                    WalIterator<Entity> iterator = wal.forwardIterator();
+                    try {
+                        if (iterator.hasNext()) {
+                            LOGGER.debug("redo wal...");
+                            while (iterator.hasNext()) {
+                                Entity e = iterator.next();
+                                WriteBatch[] batchs = new WriteBatch[dbPartitions.length];
+                                for (KV kv : e.getKVs()) {
+                                    int index = partitioner.partition(kv.getKey());
+                                    if (null == batchs[index]) {
+                                        batchs[index] = new WriteBatch();
+                                    }
+                                    batchs[index].put(kv.getKey(), kv.getValue());
+                                }
+                                for (int i = 0; i < dbPartitions.length; i++) {
+                                    if (batchs[i] != null && batchs[i].getDataSize() > 0) {
+                                        dbPartitions[i].write(batchs[i]);
+                                    }
+                                }
+                            }
 
-            WalIterator<Entity> iterator = wal.forwardIterator();
-            while (iterator.hasNext()) {
-                Entity e = iterator.next();
-                WriteBatch[] batchs = new WriteBatch[dbPartitions.length];
-                for (KV kv : e.getKVs()) {
-                    int index = partitioner.partition(kv.getKey());
-                    if (null == batchs[index]) {
-                        batchs[index] = new WriteBatch();
-                    }
-                    batchs[index].put(kv.getKey(), kv.getValue());
-                }
-                for (int i = 0; i < dbPartitions.length; i++) {
-                    if (batchs[i] != null && batchs[i].getDataSize() > 0) {
-                        dbPartitions[i].write(batchs[i]);
+                            wal.checkpoint();
+                            needRedo = false;
+                            LOGGER.info("redo wal complete");
+                        }
+                    } catch (Exception e) {
+                        LOGGER.info("redo wal exception", e);
+                        throw new RocksDBException("cluster wal redo error!");
                     }
                 }
             }
-
-            // 清空WAL
-            wal.clear();
-            LOGGER.info("redo wal complete");
         }
     }
 
     @Override
-    public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
-        if (null != wal) {
-            try {
-                wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
-            } catch (IOException e) {
-                LOGGER.error("DBCluster set, wal append error! --" + e.getMessage(), e);
-                throw new RocksDBException(e.toString());
+    public void set(byte[] key, byte[] value) throws RocksDBException {
+        if (wal != null) {
+            synchronized (wal) {
+                try {
+                    wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
+                } catch (IOException e) {
+                    LOGGER.error("cluster set, wal append error!", e);
+                    throw new RocksDBException(e.toString());
+                }
+
+                try {
+                    int pid = partitioner.partition(key);
+                    dbPartitions[pid].set(key, value);
+                } catch (Exception e) {
+                    needRedo = true;
+                    LOGGER.error("cluster set error!", e);
+                    throw e;
+                }
+                try {
+                    wal.checkpoint();
+                } catch (IOException e) {
+                    LOGGER.error("cluster set, wal checkpoint error!", e);
+                }
             }
-        }
-        try {
-            int pid = partitioner.partition(key);
-            dbPartitions[pid].set(key, value);
-        } catch (Exception e) {
-            checkpointDisable = true;
-            LOGGER.error("DBCluster set error! --" + e.getMessage(), e);
-            throw e;
-        }
-        if (null != wal && !checkpointDisable) {
+        } else {
             try {
-                wal.checkpoint();
-            } catch (IOException e) {
-                LOGGER.error("DBCluster set, wal checkpoint error! --" + e.getMessage(), e);
+                int pid = partitioner.partition(key);
+                dbPartitions[pid].set(key, value);
+            } catch (Exception e) {
+                LOGGER.error("cluster set error!", e);
+                throw e;
             }
         }
 
@@ -146,6 +167,7 @@ public class RocksDBCluster extends KVDBInstance {
 
     @Override
     public byte[] get(byte[] key) throws RocksDBException {
+        checkAndRedoWal();
         int pid = partitioner.partition(key);
         return dbPartitions[pid].get(key);
     }
@@ -202,7 +224,7 @@ public class RocksDBCluster extends KVDBInstance {
     }
 
     @Override
-    public synchronized void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
+    public void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
         if (null == kvs || kvs.size() == 0) {
             return;
         }
@@ -218,51 +240,80 @@ public class RocksDBCluster extends KVDBInstance {
             walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue());
             j++;
         }
-
         if (null != wal) {
-            try {
-                wal.append(WalEntity.newPutEntity(walkvs));
-            } catch (Exception e) {
-                LOGGER.error("DBCluster batch commit, wal append error! --" + e.getMessage(), e);
-                throw new RocksDBException(e.toString());
-            }
-        }
-        try {
-            CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
-            int batchThreads = 0;
-            for (int i = 0; i < batches.length; i++) {
-                final int index = i;
-                if (null != batches[i] && batches[i].size() > 0) {
-                    completionService.submit(() -> {
-                        try {
-                            dbPartitions[index].batchSet(batches[index]);
-                            return true;
-                        } catch (Exception e) {
-                            LOGGER.error("KVWrite batch task error! --" + e.getMessage(), e);
-                            return false;
+            synchronized (wal) {
+                try {
+                    wal.append(WalEntity.newPutEntity(walkvs));
+                } catch (Exception e) {
+                    LOGGER.error("cluster batch commit, wal append error!", e);
+                    throw new RocksDBException(e.toString());
+                }
+                try {
+                    CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
+                    int batchThreads = 0;
+                    for (int i = 0; i < batches.length; i++) {
+                        final int index = i;
+                        if (null != batches[i] && batches[i].size() > 0) {
+                            completionService.submit(() -> {
+                                try {
+                                    dbPartitions[index].batchSet(batches[index]);
+                                    return true;
+                                } catch (Exception e) {
+                                    LOGGER.error("kv Write batch task error!", e);
+                                    return false;
+                                }
+                            });
+
+                            batchThreads++;
                         }
-                    });
+                    }
+                    for (int i = 0; i < batchThreads; i++) {
+                        if (!completionService.take().get()) {
+                            LOGGER.error("sub thread batch commit error");
+                            throw new RocksDBException("sub thread batch commit error");
+                        }
+                    }
+                } catch (Exception e) {
+                    needRedo = true;
+                    LOGGER.error("cluster batch commit error!", e);
+                    throw new RocksDBException(e.toString());
+                }
 
-                    batchThreads++;
+                try {
+                    wal.checkpoint();
+                } catch (IOException e) {
+                    LOGGER.error("cluster batch commit, wal checkpoint error!", e);
                 }
             }
-            for (int i = 0; i < batchThreads; i++) {
-                if (!completionService.take().get()) {
-                    LOGGER.error("Sub thread batch commit error");
-                    throw new RocksDBException("Sub thread batch commit error");
-                }
-            }
-        } catch (Exception e) {
-            checkpointDisable = true;
-            LOGGER.error("DBCluster batch commit error! --" + e.getMessage(), e);
-            throw new RocksDBException(e.toString());
-        }
-
-        if (null != wal && !checkpointDisable) {
+        } else {
             try {
-                wal.checkpoint();
-            } catch (IOException e) {
-                LOGGER.error("DBCluster batch commit, wal checkpoint error! --" + e.getMessage(), e);
+                CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
+                int batchThreads = 0;
+                for (int i = 0; i < batches.length; i++) {
+                    final int index = i;
+                    if (null != batches[i] && batches[i].size() > 0) {
+                        completionService.submit(() -> {
+                            try {
+                                dbPartitions[index].batchSet(batches[index]);
+                                return true;
+                            } catch (Exception e) {
+                                LOGGER.error("kv Write batch task error!", e);
+                                return false;
+                            }
+                        });
+
+                        batchThreads++;
+                    }
+                }
+                for (int i = 0; i < batchThreads; i++) {
+                    if (!completionService.take().get()) {
+                        LOGGER.error("sub thread batch commit error");
+                        throw new RocksDBException("sub thread batch commit error");
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("cluster batch commit error!", e);
+                throw new RocksDBException(e.toString());
             }
         }
     }

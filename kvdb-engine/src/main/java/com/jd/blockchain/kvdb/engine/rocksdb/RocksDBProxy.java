@@ -42,7 +42,8 @@ public class RocksDBProxy extends KVDBInstance {
 
     private FileLogger<Entity> wal;
 
-    private boolean checkpointDisable = false;
+    // 是否需要执行wal redo操作
+    private volatile boolean needRedo = true;
 
     public String getPath() {
         return path;
@@ -124,7 +125,7 @@ public class RocksDBProxy extends KVDBInstance {
                 instance = new RocksDBProxy(db, path, new FileLogger(walConfig, EntityCoder.getInstance()));
             }
 
-            instance.redo();
+            instance.checkAndRedoWal();
 
             return instance;
         } catch (IOException e) {
@@ -137,59 +138,74 @@ public class RocksDBProxy extends KVDBInstance {
     }
 
     // 检查wal日志进行数据一致性检查
-    private void redo() throws IOException, RocksDBException {
-        if (wal != null) {
-            LOGGER.debug("redo wal...");
+    private void checkAndRedoWal() throws RocksDBException {
+        if (!needRedo) {
+            return;
+        } else {
+            if (wal != null) {
+                synchronized (wal) {
+                    WalIterator<Entity> iterator = wal.forwardIterator();
+                    try {
+                        if (iterator.hasNext()) {
 
-            WalIterator<Entity> iterator = wal.forwardIterator();
-            while (iterator.hasNext()) {
-                Entity e = iterator.next();
-                WriteBatch batch = new WriteBatch();
-                for (KV kv : e.getKVs()) {
-                    batch.put(kv.getKey(), kv.getValue());
+                            LOGGER.debug("redo wal...");
+                            while (iterator.hasNext()) {
+                                Entity e = iterator.next();
+                                WriteBatch batch = new WriteBatch();
+                                for (KV kv : e.getKVs()) {
+                                    batch.put(kv.getKey(), kv.getValue());
+                                }
+                                db.write(writeOptions, batch);
+                            }
+                            wal.checkpoint();
+                            needRedo = false;
+                            LOGGER.info("redo wal complete");
+                        }
+                    } catch (Exception e) {
+                        LOGGER.info("redo wal exception", e);
+                        throw new RocksDBException("wal redo error!");
+                    }
                 }
-                db.write(writeOptions, batch);
             }
-
-            // 清空WAL
-            wal.clear();
-            LOGGER.info("redo wal complete");
         }
     }
 
     @Override
     public byte[] get(byte[] key) throws RocksDBException {
+        checkAndRedoWal();
         return db.get(key);
     }
 
     @Override
-    public synchronized void set(byte[] key, byte[] value) throws RocksDBException {
+    public void set(byte[] key, byte[] value) throws RocksDBException {
         if (null != wal) {
-            try {
-                wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
-            } catch (IOException e) {
-                LOGGER.error("DBProxy set, wal append error! --" + e.getMessage(), e);
-                throw new RocksDBException(e.toString());
+            synchronized (wal) {
+                try {
+                    wal.append(WalEntity.newPutEntity(new KVItem(key, value)));
+                } catch (IOException e) {
+                    LOGGER.error("single kv set, wal append error!", e);
+                    throw new RocksDBException(e.toString());
+                }
+                try {
+                    db.put(writeOptions, key, value);
+                } catch (RocksDBException e) {
+                    needRedo = true;
+                    LOGGER.error("single kv set error!", e);
+                    throw e;
+                }
+                try {
+                    wal.checkpoint();
+                } catch (IOException e) {
+                    LOGGER.error("single kv set, wal checkpoint error!", e);
+                }
             }
-        }
-        try {
+        } else {
             db.put(writeOptions, key, value);
-        } catch (Exception e) {
-            checkpointDisable = true;
-            LOGGER.error("DBProxy set error! --" + e.getMessage(), e);
-            throw new RocksDBException(e.toString());
-        }
-        if (null != wal && !checkpointDisable) {
-            try {
-                wal.checkpoint();
-            } catch (IOException e) {
-                LOGGER.error("DBProxy set, wal checkpoint error! --" + e.getMessage(), e);
-            }
         }
     }
 
     @Override
-    public synchronized void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
+    public void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
         WriteBatch batch = new WriteBatch();
         KVItem[] walkvs = new KVItem[kvs.size()];
         int i = 0;
@@ -200,29 +216,40 @@ public class RocksDBProxy extends KVDBInstance {
             i++;
         }
         if (null != wal) {
-            try {
-                wal.append(WalEntity.newPutEntity(walkvs));
-            } catch (IOException e) {
-                LOGGER.error("DBProxy batch commit, wal append error! --" + e.getMessage(), e);
-                throw new RocksDBException(e.toString());
+            synchronized (wal) {
+                try {
+                    wal.append(WalEntity.newPutEntity(walkvs));
+                } catch (IOException e) {
+                    LOGGER.error("batch commit, wal append error!", e);
+                    throw new RocksDBException(e.toString());
+                }
+                try {
+                    if (kvs.size() > 1) {
+                        db.write(writeOptions, batch);
+                    } else {
+                        db.put(walkvs[0].getKey(), walkvs[0].getValue());
+                    }
+                } catch (RocksDBException e) {
+                    needRedo = true;
+                    LOGGER.error("batch commit error!", e);
+                    throw e;
+                }
+                try {
+                    wal.checkpoint();
+                } catch (IOException e) {
+                    LOGGER.error("batch commit, wal checkpoint error!", e);
+                }
             }
-        }
-        try {
-            if (kvs.size() > 1) {
-                db.write(writeOptions, batch);
-            } else {
-                db.put(walkvs[0].getKey(), walkvs[0].getValue());
-            }
-        } catch (Exception e) {
-            checkpointDisable = true;
-            LOGGER.error("DBProxy batch commit error! --" + e.getMessage(), e);
-            throw e;
-        }
-        if (null != wal && !checkpointDisable) {
+        } else {
             try {
-                wal.checkpoint();
-            } catch (IOException e) {
-                LOGGER.error("DBProxy batch commit, wal checkpoint error! --" + e.getMessage(), e);
+                if (kvs.size() > 1) {
+                    db.write(writeOptions, batch);
+                } else {
+                    db.put(walkvs[0].getKey(), walkvs[0].getValue());
+                }
+            } catch (Exception e) {
+                LOGGER.error("batch commit error!", e);
+                throw e;
             }
         }
     }

@@ -47,7 +47,7 @@ public class KVDBCluster implements KVDBOperator {
     // wal
     private Wal<Entity> wal;
     // 是否需要执行wal redo操作
-    private volatile boolean needRedo = false;
+    private volatile boolean needRedo = true;
 
     public KVDBCluster(String db, NettyClient[] clients) throws KVDBException, IOException {
         if (null != clients && clients.length > 0) {
@@ -78,7 +78,7 @@ public class KVDBCluster implements KVDBOperator {
         }
     }
 
-    private void checkAndRedoWal() {
+    private void checkAndRedoWal() throws KVDBException {
         if (!needRedo) {
             return;
         } else {
@@ -217,6 +217,7 @@ public class KVDBCluster implements KVDBOperator {
         checkAndRedoWal();
         try {
             synchronized (batchMode) {
+                batch.clear();
                 CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
                 for (int i = 0; i < operators.length; i++) {
                     final int index = i;
@@ -238,10 +239,8 @@ public class KVDBCluster implements KVDBOperator {
                     }
                 }
                 batchMode = true;
-                batch.clear();
 
                 return true;
-
             }
         } catch (Exception e) {
             LOGGER.error("batch begin error!", e);
@@ -254,6 +253,7 @@ public class KVDBCluster implements KVDBOperator {
         checkAndRedoWal();
         try {
             synchronized (batchMode) {
+                batch.clear();
                 CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
                 for (int i = 0; i < operators.length; i++) {
                     final int index = i;
@@ -275,7 +275,6 @@ public class KVDBCluster implements KVDBOperator {
                     }
                 }
                 batchMode = false;
-                batch.clear();
 
                 return true;
             }
@@ -289,6 +288,7 @@ public class KVDBCluster implements KVDBOperator {
     public boolean batchCommit() throws KVDBException {
         checkAndRedoWal();
         synchronized (batchMode) {
+            batchMode = false;
             synchronized (wal) {
                 KVItem[] walkvs = new KVItem[batch.size()];
                 int j = 0;
@@ -296,8 +296,18 @@ public class KVDBCluster implements KVDBOperator {
                     walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
                     j++;
                 }
+                batch.clear();
+
+                // append wal
                 try {
                     wal.append(WalEntity.newPutEntity(walkvs));
+                } catch (IOException e) {
+                    LOGGER.error("wal append error", e);
+                    throw new KVDBException(e.getMessage());
+                }
+
+                // sub batch commit, any error need redo
+                try {
                     CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
                     for (int i = 0; i < operators.length; i++) {
                         final int index = i;
@@ -318,25 +328,20 @@ public class KVDBCluster implements KVDBOperator {
                             throw new KVDBException("batch commit error");
                         }
                     }
-                    wal.checkpoint();
-
-                    return true;
-                } catch (IOException e) {
-                    needRedo = true;
-                    LOGGER.error("wal error", e);
-                    throw new KVDBException(e.getMessage());
-                } catch (KVDBException e) {
-                    needRedo = true;
-                    LOGGER.error("batch commit error!", e);
-                    throw e;
                 } catch (Exception e) {
                     needRedo = true;
                     LOGGER.error("batch commit error!", e);
                     throw new KVDBException(e.getMessage());
-                } finally {
-                    batchMode = false;
-                    batch.clear();
                 }
+
+                // wal checkpoint
+                try {
+                    wal.checkpoint();
+                } catch (IOException e) {
+                    LOGGER.error("wal checkpoint error", e);
+                }
+
+                return true;
             }
         }
     }
@@ -345,21 +350,31 @@ public class KVDBCluster implements KVDBOperator {
     public boolean batchCommit(long size) throws KVDBException {
         checkAndRedoWal();
         synchronized (batchMode) {
+            batchMode = false;
             synchronized (wal) {
-                try {
-                    if (size == batch.size()) {
-                        throw new KVDBException("batch commit size wrong, expected: " + size + ", actually: " + batch.size());
-                    }
-                    KVItem[] walkvs = new KVItem[batch.size()];
-                    int[] ps = new int[partition.getPartitionCount()];
-                    int j = 0;
-                    for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
-                        ps[partition.partition(entry.getKey())]++;
-                        walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
-                        j++;
-                    }
+                if (size == batch.size()) {
+                    throw new KVDBException("batch commit size wrong, expected: " + size + ", actually: " + batch.size());
+                }
+                KVItem[] walkvs = new KVItem[batch.size()];
+                int[] ps = new int[partition.getPartitionCount()];
+                int j = 0;
+                for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
+                    ps[partition.partition(entry.getKey())]++;
+                    walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
+                    j++;
+                }
+                batch.clear();
 
+                // wal append
+                try {
                     wal.append(WalEntity.newPutEntity(walkvs));
+                } catch (IOException e) {
+                    LOGGER.error("wal append error", e);
+                    throw new KVDBException(e.getMessage());
+                }
+
+                // sub batch commit, any error need redo
+                try {
                     CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
                     for (int i = 0; i < operators.length; i++) {
                         final int index = i;
@@ -380,25 +395,20 @@ public class KVDBCluster implements KVDBOperator {
                             throw new KVDBException("batch commit error");
                         }
                     }
-                    wal.checkpoint();
-
-                    return true;
-                } catch (IOException e) {
-                    needRedo = true;
-                    LOGGER.error("wal error", e);
-                    throw new KVDBException(e.getMessage());
-                } catch (KVDBException e) {
-                    needRedo = true;
-                    LOGGER.error("batch commit error!", e);
-                    throw e;
                 } catch (Exception e) {
                     needRedo = true;
                     LOGGER.error("batch commit error!", e);
                     throw new KVDBException(e.getMessage());
-                } finally {
-                    batchMode = false;
-                    batch.clear();
                 }
+
+                // wal checkpoint
+                try {
+                    wal.checkpoint();
+                } catch (IOException e) {
+                    LOGGER.error("wal checkpoint error", e);
+                }
+
+                return true;
             }
         }
     }

@@ -5,6 +5,7 @@ import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.KVDBURI;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
@@ -36,7 +37,7 @@ public class ClusterService {
     /**
      * 集群配置同步确认
      */
-    public void confirm() {
+    public void confirm() throws KVDBException {
         boolean confirmed = false;
         ClusterInfo localClusterInfo = serverContext.getClusterInfo();
         if (localClusterInfo.size() == 0) {

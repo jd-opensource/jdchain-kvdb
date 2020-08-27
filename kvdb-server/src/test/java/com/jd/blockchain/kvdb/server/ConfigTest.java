@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.server;
 
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.ClusterConfig;
 import com.jd.blockchain.kvdb.server.config.DBList;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
@@ -17,7 +18,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void testKVDBConfig() throws IOException {
+    public void testKVDBConfig() throws IOException, KVDBException {
         KVDBConfig config = new KVDBConfig(this.getClass().getResource("/config/config/kvdb.conf").getFile());
         Assert.assertEquals("0.0.0.0", config.getHost());
         Assert.assertEquals(7078, config.getPort());
@@ -27,7 +28,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void testDBListConfig() throws IOException {
+    public void testDBListConfig() throws IOException, KVDBException {
         KVDBConfig kvdbConfig = new KVDBConfig(this.getClass().getResource("/config/config/kvdb.conf").getFile());
         DBList config = new DBList(this.getClass().getResource("/config/system/dblist").getFile(), kvdbConfig);
         Assert.assertEquals(2, config.getDatabases().size());
@@ -37,7 +38,7 @@ public class ConfigTest {
     }
 
     @Test
-    public void testClusterConfig() throws IOException {
+    public void testClusterConfig() throws IOException, KVDBException {
         KVDBConfig kvdbConfig = new KVDBConfig(this.getClass().getResource("/config/config/kvdb.conf").getFile());
         DBList dbList = new DBList(this.getClass().getResource("/config/system/dblist").getFile(), kvdbConfig);
         ClusterConfig config = new ClusterConfig(this.getClass().getResource("/config/config/cluster.conf").getFile(), dbList);

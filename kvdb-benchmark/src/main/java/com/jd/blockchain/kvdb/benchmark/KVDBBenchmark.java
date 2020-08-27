@@ -5,16 +5,12 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.utils.ArgumentSet;
 import com.jd.blockchain.utils.Bytes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class KVDBBenchmark {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(KVDBBenchmark.class);
 
     private static final String HOST = "-h";
     private static final String PORT = "-p";
@@ -113,70 +109,72 @@ public class KVDBBenchmark {
     }
 
     public static void main(String[] args) {
-        KVDBBenchmark bm = new KVDBBenchmark(args);
-        ClientConfig config = new ClientConfig(bm.host, bm.port, bm.db);
-        config.setKeepAlive(bm.keepAlive);
-        AtomicLong requests = new AtomicLong(bm.requests);
-        AtomicLong failCount = new AtomicLong(0);
-        CountDownLatch startCdl = new CountDownLatch(1);
-        CountDownLatch endCdl = new CountDownLatch(bm.clients);
-        for (int i = 0; i < bm.clients; i++) {
-            final int index = i;
-            new Thread(() -> {
-                KVDBClient client = new KVDBClient(config);
-                if (bm.batch && bm.keepAlive) {
-                    client.batchBegin();
-                }
-                try {
-                    startCdl.await();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                long j = 0;
-                while (requests.getAndDecrement() > 0) {
-                    try {
-                        Bytes kv = randomBytes(bm.kvDataSize);
-                        if (bm.batch && bm.keepAlive) {
-                            client.put(kv, kv, true);
-                        } else {
-                            client.put(kv, kv);
-                        }
-                    } catch (KVDBException e) {
-                        failCount.incrementAndGet();
-                        LOGGER.error("put error", e);
-                    }
-                    j++;
-                    if (bm.batch && bm.keepAlive && bm.batchSize == j) {
-                        if (!client.batchCommit()) {
-                            LOGGER.error(index + " batch commit false");
-                        }
-                        client.batchBegin();
-                        j = 0;
-                    }
-                }
-                if (j > 0 && bm.batch && bm.keepAlive) {
-                    if (!client.batchCommit()) {
-                        LOGGER.error(index + " batch commit false");
-                    }
-                }
-                endCdl.countDown();
-                client.close();
-            }).start();
-        }
-
-        long startTime = System.currentTimeMillis();
-        startCdl.countDown();
         try {
-            endCdl.await();
-        } catch (InterruptedException e) {
+            KVDBBenchmark bm = new KVDBBenchmark(args);
+            ClientConfig config = new ClientConfig(bm.host, bm.port, bm.db);
+            config.setKeepAlive(bm.keepAlive);
+            AtomicLong requests = new AtomicLong(bm.requests);
+            AtomicLong failCount = new AtomicLong(0);
+            CountDownLatch startCdl = new CountDownLatch(1);
+            CountDownLatch endCdl = new CountDownLatch(bm.clients);
+            for (int i = 0; i < bm.clients; i++) {
+                final int index = i;
+                new Thread(() -> {
+                    try {
+                        KVDBClient client = new KVDBClient(config);
+                        if (bm.batch && bm.keepAlive) {
+                            client.batchBegin();
+                        }
+                        try {
+                            startCdl.await();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        long j = 0;
+                        while (requests.getAndDecrement() > 0) {
+                            try {
+                                Bytes kv = randomBytes(bm.kvDataSize);
+                                if (bm.batch && bm.keepAlive) {
+                                    client.put(kv, kv, true);
+                                } else {
+                                    client.put(kv, kv);
+                                }
+                            } catch (KVDBException e) {
+                                failCount.incrementAndGet();
+                                e.printStackTrace();
+                            }
+                            j++;
+                            if (bm.batch && bm.keepAlive && bm.batchSize == j) {
+                                client.batchCommit();
+                                j = 0;
+                            }
+                        }
+                        if (j > 0 && bm.batch && bm.keepAlive) {
+                            client.batchCommit();
+                        }
+                        endCdl.countDown();
+                        client.close();
+                    } catch (KVDBException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+            }
+
+            long startTime = System.currentTimeMillis();
+            startCdl.countDown();
+            try {
+                endCdl.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            long endTime = System.currentTimeMillis();
+            String result = String.format("requests:%d, clients:%d, batch:%s, batch_size:%d, kv_data_size:%dbytes, times:%dms, errors:%d, tps:%f",
+                    bm.requests, bm.clients, bm.batch, bm.batchSize, bm.kvDataSize, endTime - startTime, failCount.get(), bm.requests / ((endTime - startTime) / 1000d));
+            System.out.println(result);
+            System.out.println(result);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        long endTime = System.currentTimeMillis();
-        String result = String.format("requests:%d, clients:%d, batch:%s, batch_size:%d, kv_data_size:%dbytes, times:%dms, errors:%d, tps:%f",
-                bm.requests, bm.clients, bm.batch, bm.batchSize, bm.kvDataSize, endTime - startTime, failCount.get(), bm.requests / ((endTime - startTime) / 1000d));
-        LOGGER.info(result);
-        System.out.println(result);
-
     }
 
     private static final String STRING = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

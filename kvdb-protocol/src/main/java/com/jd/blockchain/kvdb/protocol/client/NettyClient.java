@@ -175,7 +175,7 @@ public class NettyClient implements KVDBHandler {
      */
     public Response send(Message message) {
         if (context == null) {
-            throw new KVDBException("channel context not ready");
+            new KVDBResponse(Constants.ERROR, Bytes.fromString("channel context not ready"));
         }
         ChannelPromise promise = this.context.newPromise();
         promises.put(message.getId(), promise);
@@ -218,7 +218,7 @@ public class NettyClient implements KVDBHandler {
      */
     public boolean sendAsync(Message message) {
         if (context == null) {
-            throw new KVDBException("channel context not ready");
+            new KVDBResponse(Constants.ERROR, Bytes.fromString("channel context not ready"));
         }
         writeAndFlush(message);
 

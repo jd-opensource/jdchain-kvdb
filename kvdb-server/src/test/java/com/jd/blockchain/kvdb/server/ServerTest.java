@@ -4,6 +4,7 @@ import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
@@ -15,10 +16,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.rocksdb.RocksDBException;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 public class ServerTest {
@@ -74,9 +73,7 @@ public class ServerTest {
         new Thread(() -> {
             try {
                 server1.start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (RocksDBException e) {
+            } catch (KVDBException e) {
                 e.printStackTrace();
             }
             cdl.countDown();
@@ -88,9 +85,7 @@ public class ServerTest {
         new Thread(() -> {
             try {
                 server2.start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (RocksDBException e) {
+            } catch (KVDBException e) {
                 e.printStackTrace();
             }
             cdl.countDown();

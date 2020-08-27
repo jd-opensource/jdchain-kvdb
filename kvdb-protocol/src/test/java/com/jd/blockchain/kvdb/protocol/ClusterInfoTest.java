@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.protocol;
 
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterItem;
 import org.junit.Assert;
@@ -8,7 +9,7 @@ import org.junit.Test;
 public class ClusterInfoTest {
 
     @Test
-    public void testMatch() {
+    public void testMatch() throws KVDBException {
         ClusterInfoCase[] cases = new ClusterInfoCase[]{
                 // 至少一方为空
                 new ClusterInfoCase(

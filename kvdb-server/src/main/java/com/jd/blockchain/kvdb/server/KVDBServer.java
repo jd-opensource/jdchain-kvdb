@@ -5,7 +5,7 @@ import com.jd.blockchain.kvdb.protocol.KVDBDecoder;
 import com.jd.blockchain.kvdb.protocol.KVDBEncoder;
 import com.jd.blockchain.kvdb.protocol.KVDBHandler;
 import com.jd.blockchain.kvdb.protocol.KVDBInitializerHandler;
-import com.jd.blockchain.kvdb.protocol.URIUtils;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Command;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
@@ -29,11 +29,9 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import org.reflections.Reflections;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 
@@ -71,7 +69,7 @@ public class KVDBServer implements KVDBHandler {
         }
     }
 
-    public void start() throws IOException, RocksDBException {
+    public void start() throws KVDBException {
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() * 2);
 
@@ -102,7 +100,7 @@ public class KVDBServer implements KVDBHandler {
         ready = true;
     }
 
-    public void stop() throws IOException {
+    public void stop() {
         try {
             if (future != null) {
                 closeFuture(future.channel().close());

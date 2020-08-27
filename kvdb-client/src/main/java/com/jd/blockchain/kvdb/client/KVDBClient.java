@@ -58,7 +58,7 @@ public class KVDBClient implements KVDBOperator {
     /**
      * 创建客户端等待就绪状态，当配置数据库不为空时执行切换数据库操作
      */
-    private void start() {
+    private void start() throws KVDBException {
         clients.put(config.getHost() + config.getPort(), newNettyClient(config));
         if (!StringUtils.isEmpty(config.getDatabase())) {
             use(config.getDatabase());
@@ -87,7 +87,7 @@ public class KVDBClient implements KVDBOperator {
         try {
             cdl.await(config.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            throw new KVDBTimeoutException("new netty client timeout");
+            throw new RuntimeException("new netty client timeout");
         }
         return client;
     }

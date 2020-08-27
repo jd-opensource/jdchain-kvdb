@@ -109,15 +109,15 @@ public class KVDBSession implements Session {
     /**
      * 提交批处理，执行rocksdb批处理操作
      *
-     * @throws RocksDBException
+     * @throws KVDBException
      */
     @Override
-    public void batchCommit() throws RocksDBException {
+    public void batchCommit() throws KVDBException {
         batchCommit(batch.size());
     }
 
     @Override
-    public void batchCommit(long size) throws RocksDBException {
+    public void batchCommit(long size) throws KVDBException {
         if (!batchMode) {
             throw new KVDBException("not in batch mode");
         }
@@ -126,14 +126,18 @@ public class KVDBSession implements Session {
             throw new KVDBException("batch size not match, expect:" + size + ", actually:" + batch.size());
         }
         try {
-            instance.batchSet(batch);
+            try {
+                instance.batchSet(batch);
+            } catch (RocksDBException e) {
+                throw new KVDBException(e);
+            }
         } finally {
             batch.clear();
         }
     }
 
     @Override
-    public boolean[] exists(Bytes... keys) throws RocksDBException {
+    public boolean[] exists(Bytes... keys) throws KVDBException {
         boolean[] values = new boolean[keys.length];
         for (int i = 0; i < keys.length; i++) {
             Bytes key = keys[i];
@@ -142,7 +146,11 @@ public class KVDBSession implements Session {
                 value = batch.get(key);
             }
             if (null == value) {
-                value = instance.get(key.toBytes());
+                try {
+                    value = instance.get(key.toBytes());
+                } catch (RocksDBException e) {
+                    throw new KVDBException(e);
+                }
             }
             values[i] = null != value ? true : false;
         }
@@ -151,7 +159,7 @@ public class KVDBSession implements Session {
     }
 
     @Override
-    public Bytes[] get(Bytes... keys) throws RocksDBException {
+    public Bytes[] get(Bytes... keys) throws KVDBException {
         Bytes[] values = new Bytes[keys.length];
         for (int i = 0; i < keys.length; i++) {
             final Bytes key = keys[i];
@@ -160,7 +168,11 @@ public class KVDBSession implements Session {
                 value = batch.get(key);
             }
             if (null == value) {
-                value = instance.get(key.toBytes());
+                try {
+                    value = instance.get(key.toBytes());
+                } catch (RocksDBException e) {
+                    throw new KVDBException(e);
+                }
             }
             values[i] = null != value ? new Bytes(value) : null;
         }
@@ -169,7 +181,7 @@ public class KVDBSession implements Session {
     }
 
     @Override
-    public void put(Map<Bytes, byte[]> kvs) throws RocksDBException {
+    public void put(Map<Bytes, byte[]> kvs) throws KVDBException {
         if (kvs.size() > MAX_BATCH_SIZE) {
             throw new KVDBException("too large executions");
         }
@@ -179,19 +191,27 @@ public class KVDBSession implements Session {
             }
             batch.putAll(kvs);
         } else {
-            instance.batchSet(kvs);
+            try {
+                instance.batchSet(kvs);
+            } catch (RocksDBException e) {
+                throw new KVDBException(e);
+            }
         }
     }
 
     @Override
-    public void put(Bytes key, byte[] value) throws RocksDBException {
+    public void put(Bytes key, byte[] value) throws KVDBException {
         if (batchMode) {
             if (batch.size() + 1 > MAX_BATCH_SIZE) {
                 throw new KVDBException("too large executions in batch");
             }
             batch.put(key, value);
         } else {
-            instance.set(key.toBytes(), value);
+            try {
+                instance.set(key.toBytes(), value);
+            } catch (RocksDBException e) {
+                throw new KVDBException(e);
+            }
         }
     }
 

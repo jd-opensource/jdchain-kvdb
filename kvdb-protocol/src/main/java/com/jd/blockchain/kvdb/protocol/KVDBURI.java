@@ -10,7 +10,7 @@ public class KVDBURI {
     private String origin;
     private URI uri;
 
-    public KVDBURI(String origin) {
+    public KVDBURI(String origin) throws KVDBException {
         this.origin = origin;
         this.uri = URI.create(origin);
         if(!SCHEME.equals(uri.getScheme())) {

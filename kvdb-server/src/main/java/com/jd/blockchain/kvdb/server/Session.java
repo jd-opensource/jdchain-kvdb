@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.utils.Bytes;
-import org.rocksdb.RocksDBException;
 
 import java.util.Map;
 
@@ -24,7 +24,6 @@ public interface Session {
      *
      * @param dbName
      * @param instance
-     * @throws RocksDBException
      */
     void setDB(String dbName, KVDBInstance instance);
 
@@ -58,64 +57,64 @@ public interface Session {
     /**
      * 开启批处理
      *
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    void batchBegin() throws RocksDBException;
+    void batchBegin() throws KVDBException;
 
     /**
      * 取消批处理
      *
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    void batchAbort() throws RocksDBException;
+    void batchAbort() throws KVDBException;
 
     /**
      * 提交批处理
      *
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    void batchCommit() throws RocksDBException;
+    void batchCommit() throws KVDBException;
 
     /**
      * 提交批处理
      *
      * @param size 批处理操作校验
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    void batchCommit(long size) throws RocksDBException;
+    void batchCommit(long size) throws KVDBException;
 
     /**
      * 键值存在性查询
      *
      * @param keys 支持多个键
      * @return
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    boolean[] exists(Bytes... keys) throws RocksDBException;
+    boolean[] exists(Bytes... keys) throws KVDBException;
 
     /**
      * 查询键值
      *
      * @param keys 支持多个键
      * @return
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    Bytes[] get(Bytes... keys) throws RocksDBException;
+    Bytes[] get(Bytes... keys) throws KVDBException;
 
     /**
      * 设置键值
      *
      * @param kvs 支持批量写入
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    void put(Map<Bytes, byte[]> kvs) throws RocksDBException;
+    void put(Map<Bytes, byte[]> kvs) throws KVDBException;
 
     /**
      * 设置键值
      *
      * @param key
      * @param value
-     * @throws RocksDBException
+     * @throws KVDBException
      */
-    void put(Bytes key, byte[] value) throws RocksDBException;
+    void put(Bytes key, byte[] value) throws KVDBException;
 }

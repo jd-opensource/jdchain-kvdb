@@ -10,7 +10,6 @@ import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseBaseInfo;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.ExitRequest;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -180,7 +179,7 @@ public class Cmds implements Quit.Command {
         } else if (partitions < 0) {
             throw new KVDBException("partitions can not be negative");
         }
-        return client.createDatabase(new KVDBDatabaseBaseInfo(name, "", partitions));
+        return client.createDatabase(new KVDBDatabaseBaseInfo(name, partitions));
     }
 
     /**

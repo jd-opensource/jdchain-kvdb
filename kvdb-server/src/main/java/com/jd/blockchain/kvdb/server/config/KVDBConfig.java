@@ -18,11 +18,11 @@ public class KVDBConfig {
     // 管理工具服务默认端口
     private static final int DEFAULT_MANAGER_PORT = 7060;
     // 默认分片数
-    private static final int DEFAULT_DB_PARTITIONS = 4;
+    private static final int DEFAULT_DB_PARTITIONS = 1;
     // 默认开启WAL
     private static final boolean DEFAULT_WAL_DISABLE = false;
     // 默认WAL刷盘机制
-    private static final int DEFAULT_WAL_FLUSH = 0;
+    private static final int DEFAULT_WAL_FLUSH = 1;
 
     // 服务器地址
     private String host;

@@ -13,6 +13,10 @@ public class KVDBDatabaseBaseInfo implements DatabaseBaseInfo {
     // 分片数
     private int partitions;
 
+    public KVDBDatabaseBaseInfo(String name, Integer partitions) {
+        this(name, "", partitions, true);
+    }
+
     public KVDBDatabaseBaseInfo(String name, String rootDir, Integer partitions) {
         this(name, rootDir, partitions, true);
     }

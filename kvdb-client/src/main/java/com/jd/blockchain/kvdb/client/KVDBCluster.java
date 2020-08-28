@@ -19,9 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,43 +39,57 @@ public class KVDBCluster implements KVDBOperator {
     // 数据库名称
     private String dbName;
     // 集群节点数据库实例实际操作对象
-    private KVDBSingle[] operators;
+    private KVDBOperator[] operators;
     // 是否处于批处理模式
     private Boolean batchMode = false;
     // 批处理数据
-    private Map<Bytes, Bytes> batch = new HashMap<>();
+    private Map<Bytes, Bytes> batch = new ConcurrentHashMap<>();
     // wal
     private Wal<Entity> wal;
     // 是否需要执行wal redo操作
     private volatile boolean needRedo = true;
 
+    public KVDBCluster(String db, KVDBOperator[] operators) throws KVDBException, IOException {
+        if (null != operators && operators.length > 0) {
+            this.dbName = db;
+            this.operators = operators;
+            init();
+        } else {
+            throw new KVDBException("no cluster config present");
+        }
+    }
+
     public KVDBCluster(String db, NettyClient[] clients) throws KVDBException, IOException {
         if (null != clients && clients.length > 0) {
             this.dbName = db;
-            operators = new KVDBSingle[clients.length];
+            this.operators = new KVDBSingle[clients.length];
             int i = 0;
             for (NettyClient client : clients) {
                 operators[i] = new KVDBSingle(client);
                 i++;
             }
-            partition = new SimpleMurmur3HashPartitioner(operators.length);
-            executor = Executors.newFixedThreadPool(operators.length);
-            wal = new FileLogger(new WalConfig(db, 1, true), new WalDataCoder<Entity>() {
-
-                @Override
-                public byte[] encode(Entity entity) {
-                    return BinaryProtocol.encode(entity, Entity.class);
-                }
-
-                @Override
-                public Entity decode(byte[] bytes) {
-                    return BinaryProtocol.decode(bytes, Entity.class);
-                }
-            });
-            checkAndRedoWal();
+            init();
         } else {
             throw new KVDBException("no cluster config present");
         }
+    }
+
+    private void init() throws IOException, KVDBException {
+        partition = new SimpleMurmur3HashPartitioner(operators.length);
+        executor = Executors.newFixedThreadPool(operators.length);
+        wal = new FileLogger(new WalConfig(this.dbName, 1, true), new WalDataCoder<Entity>() {
+
+            @Override
+            public byte[] encode(Entity entity) {
+                return BinaryProtocol.encode(entity, Entity.class);
+            }
+
+            @Override
+            public Entity decode(byte[] bytes) {
+                return BinaryProtocol.decode(bytes, Entity.class);
+            }
+        });
+        checkAndRedoWal();
     }
 
     private void checkAndRedoWal() throws KVDBException {
@@ -88,14 +102,16 @@ public class KVDBCluster implements KVDBOperator {
                     while (iterator.hasNext()) {
                         Entity entity = iterator.next();
                         for (KV kv : entity.getKVs()) {
-                            operators[partition.partition(kv.getKey())].put(new Bytes(kv.getKey()), new Bytes(kv.getValue()), false);
+                            if (!operators[partition.partition(kv.getKey())].put(new Bytes(kv.getKey()), new Bytes(kv.getValue()), false)) {
+                                throw new KVDBException("redo failed");
+                            }
                         }
                     }
                     wal.checkpoint();
                     needRedo = false;
                 } catch (Exception e) {
                     LOGGER.error("redo error in " + dbName, e);
-                    throw new KVDBException("redo error in " + dbName);
+                    throw new KVDBException(e);
                 }
             }
         }
@@ -288,6 +304,12 @@ public class KVDBCluster implements KVDBOperator {
     public boolean batchCommit() throws KVDBException {
         checkAndRedoWal();
         synchronized (batchMode) {
+            if (!batchMode) {
+                return false;
+            }
+            if (batch.size() == 0) {
+                throw new KVDBException("error batch size");
+            }
             batchMode = false;
             synchronized (wal) {
                 KVItem[] walkvs = new KVItem[batch.size()];
@@ -352,7 +374,10 @@ public class KVDBCluster implements KVDBOperator {
         synchronized (batchMode) {
             batchMode = false;
             synchronized (wal) {
-                if (size == batch.size()) {
+                if (size <= 0 || batch.size() == 0) {
+                    throw new KVDBException("error batch size");
+                }
+                if (size != batch.size()) {
                     throw new KVDBException("batch commit size wrong, expected: " + size + ", actually: " + batch.size());
                 }
                 KVItem[] walkvs = new KVItem[batch.size()];
@@ -415,13 +440,13 @@ public class KVDBCluster implements KVDBOperator {
 
     @Override
     public void close() {
-        for (KVDBSingle operator : operators) {
+        for (KVDBOperator operator : operators) {
             operator.close();
         }
         if (null != executor && !executor.isShutdown()) {
             executor.shutdown();
         }
-        if(null != wal) {
+        if (null != wal) {
             try {
                 wal.close();
             } catch (IOException e) {

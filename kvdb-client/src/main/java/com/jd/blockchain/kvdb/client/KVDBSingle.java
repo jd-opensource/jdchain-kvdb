@@ -26,11 +26,11 @@ public class KVDBSingle implements KVDBOperator {
         this.client = client;
     }
 
-    private Response send(Message message) throws KVDBException {
+    private Response send(Message message) {
         return client.send(message);
     }
 
-    private boolean sendAsync(Message message) throws KVDBException {
+    private boolean sendAsync(Message message) {
         return client.sendAsync(message);
     }
 

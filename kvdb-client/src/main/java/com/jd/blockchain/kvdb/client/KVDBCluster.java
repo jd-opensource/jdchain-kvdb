@@ -221,10 +221,12 @@ public class KVDBCluster implements KVDBOperator {
     public boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException {
         checkAndRedoWal();
         synchronized (batchMode) {
+            boolean result = operators[partition.partition(key)].put(key, value, aSync);
             if (batchMode) {
                 batch.put(key, value);
             }
-            return operators[partition.partition(key)].put(key, value, aSync);
+
+            return result;
         }
     }
 
@@ -313,8 +315,10 @@ public class KVDBCluster implements KVDBOperator {
             batchMode = false;
             synchronized (wal) {
                 KVItem[] walkvs = new KVItem[batch.size()];
+                int[] ps = new int[partition.getPartitionCount()];
                 int j = 0;
                 for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
+                    ps[partition.partition(entry.getKey())]++;
                     walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
                     j++;
                 }
@@ -335,7 +339,11 @@ public class KVDBCluster implements KVDBOperator {
                         final int index = i;
                         completionService.submit(() -> {
                             try {
-                                return new ExecuteResultInBatch(index, operators[index].batchCommit());
+                                if (ps[index] > 0) {
+                                    return new ExecuteResultInBatch(index, operators[index].batchCommit());
+                                } else {
+                                    return new ExecuteResultInBatch(index, true);
+                                }
                             } catch (KVDBException e) {
                                 return new ExecuteResultInBatch(index, e);
                             }
@@ -405,7 +413,11 @@ public class KVDBCluster implements KVDBOperator {
                         final int index = i;
                         completionService.submit(() -> {
                             try {
-                                return new ExecuteResultInBatch(index, operators[index].batchCommit(ps[index]));
+                                if (ps[index] > 0) {
+                                    return new ExecuteResultInBatch(index, operators[index].batchCommit(ps[index]));
+                                } else {
+                                    return new ExecuteResultInBatch(index, true);
+                                }
                             } catch (KVDBException e) {
                                 return new ExecuteResultInBatch(index, e);
                             }

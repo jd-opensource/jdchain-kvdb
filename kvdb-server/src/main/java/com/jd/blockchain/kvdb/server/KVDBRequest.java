@@ -21,7 +21,7 @@ public class KVDBRequest implements Request {
     }
 
     @Override
-    public String getId() {
+    public Long getId() {
         return message.getId();
     }
 

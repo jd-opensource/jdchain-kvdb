@@ -16,8 +16,8 @@ public interface Message {
      *
      * @return
      */
-    @DataField(order = 0, primitiveType = PrimitiveType.TEXT)
-    String getId();
+    @DataField(order = 0, primitiveType = PrimitiveType.INT64)
+    Long getId();
 
     /**
      * 消息体

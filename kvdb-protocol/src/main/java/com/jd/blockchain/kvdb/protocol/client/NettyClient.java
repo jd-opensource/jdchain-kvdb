@@ -7,7 +7,6 @@ import com.jd.blockchain.kvdb.protocol.KVDBDecoder;
 import com.jd.blockchain.kvdb.protocol.KVDBEncoder;
 import com.jd.blockchain.kvdb.protocol.KVDBHandler;
 import com.jd.blockchain.kvdb.protocol.KVDBInitializerHandler;
-import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBResponse;
@@ -58,8 +57,8 @@ public class NettyClient implements KVDBHandler {
     /**
      * 同步操作promise及response
      */
-    private ConcurrentHashMap<String, ChannelPromise> promises = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, Response> responses = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, ChannelPromise> promises = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, Response> responses = new ConcurrentHashMap<>();
 
     public NettyClient(ClientConfig config) {
         this(config, null);

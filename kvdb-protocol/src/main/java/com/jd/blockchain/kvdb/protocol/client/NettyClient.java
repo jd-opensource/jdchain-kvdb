@@ -181,18 +181,7 @@ public class NettyClient implements KVDBHandler {
         writeAndFlush(message);
         try {
             promise.await(config.getTimeout());
-            Response response = responses.get(message.getId());
-            if (null == response) {
-                for (int i = 0; i < config.getRetryTimes(); i++) {
-                    LOGGER.info("retry, id:{}, times:{}", message.getId(), (i + 1));
-                    promise.await(config.getTimeout());
-                    response = responses.get(message.getId());
-                    if (null != response) {
-                        break;
-                    }
-                }
-            }
-            return response;
+            return responses.get(message.getId());
         } catch (InterruptedException e) {
             return new KVDBResponse(Constants.ERROR, Bytes.fromString("interrupted"));
         } finally {

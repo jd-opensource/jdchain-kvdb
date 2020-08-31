@@ -222,7 +222,7 @@ public void close();
 `kvdb-cli`是基于[`SDK`](#SDK)的命令行工具实现：
 
 ```bash
-./kvdb-cli.sh -h <kvdb server host> -p <kvdb server port> -db <database> -t <time out in milliseconds>  -rt <retry times for time out> -bs <buffer size> -k <keep alive>
+./kvdb-cli.sh -h <kvdb server host> -p <kvdb server port> -db <database> -t <time out in milliseconds> -bs <buffer size> -k <keep alive>
 ```
 参数说明：
 
@@ -230,7 +230,6 @@ public void close();
 - `-p` 端口。选填，默认`6070`
 - `-db` 数据库。选填
 - `-t` 超时时间，毫秒。选填，默认`60000 ms`
-- `-rt` 超时重试等待次数。选填，默认`5`
 - `-bs` 发送/接收缓冲区大小。选填，默认`1024*1024`
 - `-k` 保持连接。选填，默认`true`
 
@@ -299,7 +298,7 @@ localhost:7060>set --key k --value v
 `kvdb-sever`性能测试工具，简单的数据插入测试。
 
 ```bash
-./kvdb-benchmark.sh -h <kvdb server host> -p <kvdb server port> -db <database> -c <time out in milliseconds>  -n <retry times for time out> -b <buffer size> -k <keep alive>
+./kvdb-benchmark.sh -h <kvdb server host> -p <kvdb server port> -db <database> -c <time out in milliseconds>  -n <request times> -b <buffer size> -k <keep alive>
 ```
 参数说明：
 

@@ -13,7 +13,6 @@ public class ConfigTest {
         Assert.assertEquals(7078, config.getPort());
         Assert.assertEquals(60000, config.getTimeout());
         Assert.assertEquals(1024 * 1024, config.getBufferSize());
-        Assert.assertEquals(5, config.getRetryTimes());
         Assert.assertTrue(config.getKeepAlive());
         Assert.assertEquals("test", config.getDatabase());
 
@@ -22,14 +21,12 @@ public class ConfigTest {
                 "-p", "6379",
                 "-t", "1000",
                 "-bs", "1024",
-                "-rt", "1",
                 "-k", "false",
                 "-db", "10"});
         Assert.assertEquals("localhost", config.getHost());
         Assert.assertEquals(6379, config.getPort());
         Assert.assertEquals(1000, config.getTimeout());
         Assert.assertEquals(1024, config.getBufferSize());
-        Assert.assertEquals(1, config.getRetryTimes());
         Assert.assertFalse(config.getKeepAlive());
         Assert.assertEquals("10", config.getDatabase());
     }

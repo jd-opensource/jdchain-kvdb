@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
+import com.jd.blockchain.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.engine.Config;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.proto.wal.Entity;
@@ -27,6 +28,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class RocksDBCluster extends KVDBInstance {
+
+    static {
+        DataContractRegistry.register(KV.class);
+        DataContractRegistry.register(Entity.class);
+    }
 
     public static final Logger LOGGER = LoggerFactory.getLogger(RocksDBCluster.class);
 
@@ -97,7 +103,7 @@ public class RocksDBCluster extends KVDBInstance {
                     WalIterator<Entity> iterator = wal.forwardIterator();
                     try {
                         if (iterator.hasNext()) {
-                            LOGGER.debug("redo wal...");
+                            LOGGER.info("redo wal...");
                             while (iterator.hasNext()) {
                                 Entity e = iterator.next();
                                 WriteBatch[] batchs = new WriteBatch[dbPartitions.length];
@@ -120,7 +126,7 @@ public class RocksDBCluster extends KVDBInstance {
                             LOGGER.info("redo wal complete");
                         }
                     } catch (Exception e) {
-                        LOGGER.info("redo wal exception", e);
+                        LOGGER.error("redo wal exception", e);
                         throw new RocksDBException("cluster wal redo error!");
                     }
                 }

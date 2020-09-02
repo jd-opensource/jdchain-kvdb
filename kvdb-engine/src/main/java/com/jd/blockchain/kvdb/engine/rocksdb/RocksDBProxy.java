@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
+import com.jd.blockchain.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.engine.Config;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.proto.wal.Entity;
@@ -31,6 +32,11 @@ import java.io.IOException;
 import java.util.Map;
 
 public class RocksDBProxy extends KVDBInstance {
+
+    static {
+        DataContractRegistry.register(KV.class);
+        DataContractRegistry.register(Entity.class);
+    }
 
     private static Logger LOGGER = LoggerFactory.getLogger(RocksDBProxy.class);
 
@@ -148,7 +154,7 @@ public class RocksDBProxy extends KVDBInstance {
                     try {
                         if (iterator.hasNext()) {
 
-                            LOGGER.debug("redo wal...");
+                            LOGGER.info("redo wal...");
                             while (iterator.hasNext()) {
                                 Entity e = iterator.next();
                                 WriteBatch batch = new WriteBatch();
@@ -162,7 +168,7 @@ public class RocksDBProxy extends KVDBInstance {
                             LOGGER.info("redo wal complete");
                         }
                     } catch (Exception e) {
-                        LOGGER.info("redo wal exception", e);
+                        LOGGER.error("redo wal exception", e);
                         throw new RocksDBException("wal redo error!");
                     }
                 }

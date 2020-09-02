@@ -31,6 +31,7 @@ import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,8 +58,7 @@ public class NettyClient implements KVDBHandler {
     /**
      * 同步操作promise及response
      */
-    private ConcurrentHashMap<Long, ChannelPromise> promises = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Long, Response> responses = new ConcurrentHashMap<>();
+    private Map<Long, PromiseAndResponse> promisesAndResponses = new ConcurrentHashMap<>();
 
     public NettyClient(ClientConfig config) {
         this(config, null);
@@ -153,16 +153,11 @@ public class NettyClient implements KVDBHandler {
 
     @Override
     public void receive(ChannelHandlerContext ctx, Message message) {
-        ChannelPromise promise = promises.get(message.getId());
+        PromiseAndResponse par = promisesAndResponses.get(message.getId());
         // 执行同步消息保存处理
-        if (null != promise) {
-            synchronized (this) {
-                promise = promises.get(message.getId());
-                if (null != promise) {
-                    responses.put(message.getId(), (Response) message.getContent());
-                    promise.setSuccess();
-                }
-            }
+        if (null != par) {
+            par.response = ((Response) message.getContent());
+            par.promise.setSuccess();
         }
     }
 
@@ -176,19 +171,16 @@ public class NettyClient implements KVDBHandler {
         if (context == null) {
             new KVDBResponse(Constants.ERROR, Bytes.fromString("channel context not ready"));
         }
-        ChannelPromise promise = this.context.newPromise();
-        promises.put(message.getId(), promise);
+        PromiseAndResponse par = new PromiseAndResponse(this.context.newPromise());
+        promisesAndResponses.put(message.getId(), par);
         writeAndFlush(message);
         try {
-            promise.await(config.getTimeout());
-            return responses.get(message.getId());
+            par.promise.await(config.getTimeout());
+            return par.response;
         } catch (InterruptedException e) {
             return new KVDBResponse(Constants.ERROR, Bytes.fromString("interrupted"));
         } finally {
-            synchronized (this) {
-                promises.remove(message.getId());
-                responses.remove(message.getId());
-            }
+            promisesAndResponses.remove(message.getId());
         }
     }
 
@@ -211,6 +203,18 @@ public class NettyClient implements KVDBHandler {
         writeAndFlush(message);
 
         return true;
+    }
+
+    /**
+     * 保存请求-响应
+     */
+    private class PromiseAndResponse {
+        private ChannelPromise promise;
+        private Response response;
+
+        public PromiseAndResponse(ChannelPromise promise) {
+            this.promise = promise;
+        }
     }
 
 }

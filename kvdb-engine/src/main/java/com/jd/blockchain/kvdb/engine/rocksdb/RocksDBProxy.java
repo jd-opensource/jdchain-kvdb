@@ -157,11 +157,12 @@ public class RocksDBProxy extends KVDBInstance {
                             LOGGER.info("redo wal...");
                             while (iterator.hasNext()) {
                                 Entity e = iterator.next();
-                                WriteBatch batch = new WriteBatch();
-                                for (KV kv : e.getKVs()) {
-                                    batch.put(kv.getKey(), kv.getValue());
+                                try (WriteBatch batch = new WriteBatch()) {
+                                    for (KV kv : e.getKVs()) {
+                                        batch.put(kv.getKey(), kv.getValue());
+                                    }
+                                    db.write(writeOptions, batch);
                                 }
-                                db.write(writeOptions, batch);
                             }
                             wal.checkpoint();
                             needRedo = false;
@@ -212,50 +213,51 @@ public class RocksDBProxy extends KVDBInstance {
 
     @Override
     public void batchSet(Map<Bytes, byte[]> kvs) throws RocksDBException {
-        WriteBatch batch = new WriteBatch();
-        KVItem[] walkvs = new KVItem[kvs.size()];
-        int i = 0;
-        for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
-            byte[] key = entry.getKey().toBytes();
-            batch.put(key, entry.getValue());
-            walkvs[i] = new KVItem(key, entry.getValue());
-            i++;
-        }
-        if (null != wal) {
-            synchronized (wal) {
-                try {
-                    wal.append(WalEntity.newPutEntity(walkvs));
-                } catch (IOException e) {
-                    LOGGER.error("batch commit, wal append error!", e);
-                    throw new RocksDBException(e.toString());
+        try (WriteBatch batch = new WriteBatch()) {
+            KVItem[] walkvs = new KVItem[kvs.size()];
+            int i = 0;
+            for (Map.Entry<Bytes, byte[]> entry : kvs.entrySet()) {
+                byte[] key = entry.getKey().toBytes();
+                batch.put(key, entry.getValue());
+                walkvs[i] = new KVItem(key, entry.getValue());
+                i++;
+            }
+            if (null != wal) {
+                synchronized (wal) {
+                    try {
+                        wal.append(WalEntity.newPutEntity(walkvs));
+                    } catch (IOException e) {
+                        LOGGER.error("batch commit, wal append error!", e);
+                        throw new RocksDBException(e.toString());
+                    }
+                    try {
+                        if (kvs.size() > 1) {
+                            db.write(writeOptions, batch);
+                        } else {
+                            db.put(walkvs[0].getKey(), walkvs[0].getValue());
+                        }
+                    } catch (RocksDBException e) {
+                        needRedo = true;
+                        LOGGER.error("batch commit error!", e);
+                        throw e;
+                    }
+                    try {
+                        wal.checkpoint();
+                    } catch (IOException e) {
+                        LOGGER.error("batch commit, wal checkpoint error!", e);
+                    }
                 }
+            } else {
                 try {
                     if (kvs.size() > 1) {
                         db.write(writeOptions, batch);
                     } else {
                         db.put(walkvs[0].getKey(), walkvs[0].getValue());
                     }
-                } catch (RocksDBException e) {
-                    needRedo = true;
+                } catch (Exception e) {
                     LOGGER.error("batch commit error!", e);
                     throw e;
                 }
-                try {
-                    wal.checkpoint();
-                } catch (IOException e) {
-                    LOGGER.error("batch commit, wal checkpoint error!", e);
-                }
-            }
-        } else {
-            try {
-                if (kvs.size() > 1) {
-                    db.write(writeOptions, batch);
-                } else {
-                    db.put(walkvs[0].getKey(), walkvs[0].getValue());
-                }
-            } catch (Exception e) {
-                LOGGER.error("batch commit error!", e);
-                throw e;
             }
         }
     }

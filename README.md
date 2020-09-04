@@ -52,7 +52,15 @@ dbs.rootdir=/usr/kvdb/dbs
 
 # 数据库实例默认的本地分区数
 dbs.partitions=4
+
+# 是否禁用WAL
+wal.disable=false
+
+# WAL刷新机制，-1跟随系统，0实时刷新，n(n>0)秒刷新一次
+wal.flush=1
 ```
+
+> `WAL`写入成功，但`RocksDB`写入失败，服务器将在后续所有数据库读写操作前根据`WAL`进行重试操作，直至成功。
 
 #### `cluster.conf`
 ```bash
@@ -136,6 +144,8 @@ LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level.root=error"
 KVDBClient client = new KVDBClient("kvdb://<host>:<port>/<database>");
 ```
 
+> 对于集群的连接，客户端将开启`WAL`，在`WAL`写入成功，部分服务器失败的情况下，客户端在执行后续所有操作前都将根据`WAL`日志执行重试操作，直至成功。
+
 3. 操作
 
 ```java
@@ -186,6 +196,17 @@ Bytes[] get(Bytes... keys) throws KVDBException;
 boolean put(Bytes key, Bytes value) throws KVDBException;
 
 /**
+ * 设置键值对
+ *
+ * @param key
+ * @param value
+ * @param aSync
+ * @return
+ * @throws KVDBException
+ */
+boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException;
+
+/**
  * 开启批处理
  *
  * @return
@@ -212,9 +233,18 @@ boolean batchAbort() throws KVDBException;
 boolean batchCommit() throws KVDBException;
 
 /**
-* 关闭客户端
-*/
-public void close();
+ * 提交批处理
+ *
+ * @param size 此次批处理操作去重后的key数量
+ * @return
+ * @throws KVDBException
+ */
+boolean batchCommit(long size) throws KVDBException;
+
+/**
+ * 关闭
+ */
+void close();
 ```
 
 ### 管理工具
@@ -307,19 +337,23 @@ localhost:7060>set --key k --value v
 - `-db` 数据库。必填
 - `-c` 客户端数量。选填，默认`20`
 - `-n` 请求数量。选填，默认`100000`
+- `-ds` 键/值字节数。选填，默认`16`
 - `-b` 是否使用批处理。选填，默认`false`
+- `-bs` 一次批处理键值对数。选填，默认`100`
 - `-k` 保持连接。选填，默认`true`
 
 示例：
 ```bash
-./kvdb-benchmark.sh -db test1 -c 20 -n 1000000
-requests:1000000, clients:20, batch:false, times:22113ms, errors:0, tps:45222.267444
+./kvdb-benchmark.sh -db test1 -c 1 -n 4000000 -b true -bs 1000 -ds 8
+requests:4000000, clients:1, batch:true, batch_size:1000, kv_data_size:8bytes, times:54014ms, tps:74054.874662
 ```
 其中：
 
 - `requests` 请求数量
 - `clients` 并发数
 - `batch` 是否开启批量模式
+- `batch_size` 一次批处理键值对数
+- `kv_data_size` 键/值字节数
 - `times` 总耗时
 - `tps` TPS
 

@@ -69,7 +69,7 @@ public class RocksDBProxy extends KVDBInstance {
 
     private static WriteOptions initWriteOptions() {
         WriteOptions options = new WriteOptions();
-        options.setDisableWAL(true);
+        options.setDisableWAL(false);
         options.setNoSlowdown(false);
         return options;
     }

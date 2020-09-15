@@ -5,6 +5,7 @@ import com.jd.blockchain.binaryproto.DataField;
 import com.jd.blockchain.binaryproto.PrimitiveType;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.KVDBURI;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 
 /**
  * 集群配置
@@ -26,5 +27,5 @@ public interface ClusterInfo {
      * @param remoteClusterInfo
      * @return
      */
-    boolean match(int localPort, KVDBURI remoteURI, ClusterInfo remoteClusterInfo);
+    boolean match(int localPort, KVDBURI remoteURI, ClusterInfo remoteClusterInfo) throws KVDBException;
 }

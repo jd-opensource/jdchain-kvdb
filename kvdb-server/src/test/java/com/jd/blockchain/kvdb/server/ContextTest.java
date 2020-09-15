@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
@@ -24,7 +25,7 @@ public class ContextTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws IOException {
         context.stop();
         FileUtils.deletePath(new File(context.getConfig().getKvdbConfig().getDbsRootdir()), true);
     }
@@ -76,4 +77,8 @@ public class ContextTest {
         Assert.assertFalse(context.getDatabaseInfo("test2").isClusterMode());
     }
 
+    @Test
+    public void testRedo() {
+
+    }
 }

@@ -55,6 +55,17 @@ public interface KVDBOperator {
     boolean put(Bytes key, Bytes value) throws KVDBException;
 
     /**
+     * 设置键值对
+     *
+     * @param key
+     * @param value
+     * @param aSync
+     * @return
+     * @throws KVDBException
+     */
+    boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException;
+
+    /**
      * 开启批处理
      *
      * @return
@@ -79,6 +90,15 @@ public interface KVDBOperator {
      * @throws KVDBException
      */
     boolean batchCommit() throws KVDBException;
+
+    /**
+     * 提交批处理
+     *
+     * @param size 此次批处理操作去重后的key数量
+     * @return
+     * @throws KVDBException
+     */
+    boolean batchCommit(long size) throws KVDBException;
 
     /**
      * 关闭

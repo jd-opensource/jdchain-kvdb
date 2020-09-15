@@ -3,22 +3,32 @@ package com.jd.blockchain.kvdb.server.config;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.PropertiesConfigurationLayout;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * 数据库配置，已开启服务的数据库会在kvdb-server启动后自动创建或加载
  */
 public class DBList {
 
-    private static final String PROPERTITY_PREFIX = "db";
-    private static final String PROPERTITY_SEPARATOR = ".";
-    private static final String PROPERTITY_ENABLE = "enable";
-    private static final String PROPERTITY_ROOTDIR = "rootdir";
-    private static final String PROPERTITY_PARTITIONS = "partitions";
+    public static final String PROPERTITY_PREFIX = "db";
+    public static final String PROPERTITY_SEPARATOR = ".";
+    public static final String PROPERTITY_ENABLE = "enable";
+    public static final String PROPERTITY_ROOTDIR = "rootdir";
+    public static final String PROPERTITY_PARTITIONS = "partitions";
 
     private String configFile;
 
@@ -35,7 +45,7 @@ public class DBList {
      * @param kvdbConfig
      * @throws IOException
      */
-    public DBList(String configFile, KVDBConfig kvdbConfig) throws IOException {
+    public DBList(String configFile, KVDBConfig kvdbConfig) throws IOException, KVDBException {
         this.configFile = configFile;
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
@@ -123,7 +133,7 @@ public class DBList {
      * @param dbInfo
      * @throws IOException
      */
-    public void createDatabase(DBInfo dbInfo) throws IOException {
+    public void createDatabase(DBInfo dbInfo) throws KVDBException {
         FileWriter fw = null;
         try {
             fw = new FileWriter(configFile, true);
@@ -134,7 +144,7 @@ public class DBList {
             dbs.put(dbInfo.getName(), dbInfo);
 
         } catch (IOException e) {
-            throw e;
+            throw new KVDBException(e);
         } finally {
             try {
                 if (null != fw) {
@@ -150,17 +160,21 @@ public class DBList {
      *
      * @param database
      */
-    public void enableDatabase(String database) throws ConfigurationException, IOException {
+    public void enableDatabase(String database) throws KVDBException {
         dbs.get(database).setEnable(true);
         PropertiesConfiguration config = new PropertiesConfiguration();
         PropertiesConfigurationLayout layout = new PropertiesConfigurationLayout();
         config.setLayout(layout);
-        try (FileReader reader = new FileReader(configFile)) {
-            layout.load(config, reader);
-        }
-        config.setProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + database + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE, true);
-        try (FileWriter fileWriter = new FileWriter(configFile)) {
-            layout.save(config, fileWriter);
+        try {
+            try (FileReader reader = new FileReader(configFile)) {
+                layout.load(config, reader);
+            }
+            config.setProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + database + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE, true);
+            try (FileWriter fileWriter = new FileWriter(configFile)) {
+                layout.save(config, fileWriter);
+            }
+        } catch (Exception e) {
+            throw new KVDBException(e);
         }
     }
 
@@ -169,17 +183,21 @@ public class DBList {
      *
      * @param database
      */
-    public void disableDatabase(String database) throws ConfigurationException, IOException {
+    public void disableDatabase(String database) throws KVDBException {
         dbs.get(database).setEnable(false);
         PropertiesConfiguration config = new PropertiesConfiguration();
         PropertiesConfigurationLayout layout = new PropertiesConfigurationLayout();
         config.setLayout(layout);
-        try (FileReader reader = new FileReader(configFile)) {
-            layout.load(config, reader);
-        }
-        config.setProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + database + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE, false);
-        try (FileWriter fileWriter = new FileWriter(configFile)) {
-            layout.save(config, fileWriter);
+        try {
+            try (FileReader reader = new FileReader(configFile)) {
+                layout.load(config, reader);
+            }
+            config.setProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + database + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE, false);
+            try (FileWriter fileWriter = new FileWriter(configFile)) {
+                layout.save(config, fileWriter);
+            }
+        } catch (Exception e) {
+            throw new KVDBException(e);
         }
     }
 
@@ -188,20 +206,24 @@ public class DBList {
      *
      * @param dbInfo
      */
-    public void dropDatabase(DBInfo dbInfo) throws ConfigurationException, IOException {
+    public void dropDatabase(DBInfo dbInfo) throws KVDBException {
         dbs.remove(dbInfo.getName());
         PropertiesConfiguration config = new PropertiesConfiguration();
         PropertiesConfigurationLayout layout = new PropertiesConfigurationLayout();
         config.setLayout(layout);
-        try (FileReader reader = new FileReader(configFile)) {
-            layout.load(config, reader);
+        try {
+            try (FileReader reader = new FileReader(configFile)) {
+                layout.load(config, reader);
+            }
+            config.clearProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE);
+            config.clearProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_ROOTDIR);
+            config.clearProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_PARTITIONS);
+            try (FileWriter fileWriter = new FileWriter(configFile)) {
+                layout.save(config, fileWriter);
+            }
+            FileUtils.forceDelete(new File(dbInfo.getDbRootdir() + File.separator + dbInfo.getName()));
+        } catch (Exception e) {
+            throw new KVDBException(e);
         }
-        config.clearProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_ENABLE);
-        config.clearProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_ROOTDIR);
-        config.clearProperty(PROPERTITY_PREFIX + PROPERTITY_SEPARATOR + dbInfo.getName() + PROPERTITY_SEPARATOR + PROPERTITY_PARTITIONS);
-        try (FileWriter fileWriter = new FileWriter(configFile)) {
-            layout.save(config, fileWriter);
-        }
-        FileUtils.forceDelete(new File(dbInfo.getDbRootdir() + File.separator + dbInfo.getName()));
     }
 }

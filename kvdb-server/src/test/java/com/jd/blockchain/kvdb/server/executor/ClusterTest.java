@@ -19,7 +19,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.rocksdb.RocksDBException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -58,7 +57,7 @@ public class ClusterTest {
         return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
     }
 
-    private Session newSessionWithTestDB() throws RocksDBException {
+    private Session newSessionWithTestDB() {
         Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
 
         session.setDB("test1", context.getDatabase("test1"));
@@ -111,7 +110,7 @@ public class ClusterTest {
     }
 
     @Test
-    public void testClusterInfo() throws RocksDBException {
+    public void testClusterInfo() {
         Session session = newSessionWithTestDB();
 
         Response response = execute(session, new ClusterInfoExecutor(), KVDBMessage.clusterInfo());

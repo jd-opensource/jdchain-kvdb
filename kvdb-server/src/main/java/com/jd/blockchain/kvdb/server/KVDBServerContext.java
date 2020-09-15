@@ -1,19 +1,21 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.kvdb.KVDBInstance;
+import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.KVDBURI;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.Command;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseClusterInfo;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.Executor;
 import com.jd.blockchain.utils.StringUtils;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,11 +44,10 @@ public class KVDBServerContext implements ServerContext {
     // 数据库实例-集群配置对照关系，数据库名-集群名
     private Map<String, String> dbClusterMapping;
 
-
-    public KVDBServerContext(ServerConfig config) throws RocksDBException {
+    public KVDBServerContext(ServerConfig config) throws KVDBException {
         this.config = config;
         // 创建或加载 dblist 中配置的数据库实例
-        rocksdbs = KVDB.initDBs(config.getDbList());
+        rocksdbs = KVDB.initDBs(config);
         // 保存集群配置
         clusterInfoMapping = config.getClusterMapping();
         // 保存数据库实例-集群对照关系
@@ -61,10 +62,6 @@ public class KVDBServerContext implements ServerContext {
 
     public ServerConfig getConfig() {
         return config;
-    }
-
-    public int getClients() {
-        return clients.size();
     }
 
     public Executor getExecutor(String command) {
@@ -83,14 +80,25 @@ public class KVDBServerContext implements ServerContext {
         return rocksdbs.get(name);
     }
 
-    public synchronized KVDBInstance createDatabase(DBInfo dbInfo) throws KVDBException, RocksDBException, IOException {
+    @Override
+    public synchronized DatabaseClusterInfo setDB(Session session, String dbName) throws KVDBException {
+        KVDBInstance kvdbInstance = rocksdbs.get(dbName);
+        if (null != kvdbInstance) {
+            session.setDB(dbName, kvdbInstance);
+
+            return getDatabaseInfo(dbName);
+        }
+
+        throw new KVDBException("database not exists");
+    }
+
+    public synchronized KVDBInstance createDatabase(DBInfo dbInfo) throws KVDBException {
         if (rocksdbs.containsKey(dbInfo.getName())) {
             throw new KVDBException("database already exists");
         }
-        KVDBInstance kvdbInstance = KVDB.createDB(config.getKvdbConfig(), dbInfo);
+        KVDBInstance kvdbInstance = KVDB.createDB(dbInfo, config.getKvdbConfig());
         config.getDbList().createDatabase(dbInfo);
         rocksdbs.put(dbInfo.getName(), kvdbInstance);
-
         return kvdbInstance;
     }
 
@@ -114,67 +122,55 @@ public class KVDBServerContext implements ServerContext {
 
     @Override
     public synchronized void enableDatabase(String database) throws KVDBException {
-        try {
-            // 数据库处于可用状态
-            if (rocksdbs.containsKey(database)) {
-                return;
-            }
-            DBInfo dbInfo = config.getDbList().getDatabase(database);
-            // 数据库不存在
-            if (null == dbInfo) {
-                throw new KVDBException("database not exists");
-            }
-            config.getDbList().enableDatabase(database);
-            rocksdbs.put(database, KVDB.initDB(dbInfo));
-        } catch (Exception e) {
-            throw new KVDBException(e.toString());
+        // 数据库处于可用状态
+        if (rocksdbs.containsKey(database)) {
+            return;
         }
+        DBInfo dbInfo = config.getDbList().getDatabase(database);
+        // 数据库不存在
+        if (null == dbInfo) {
+            throw new KVDBException("database not exists");
+        }
+        config.getDbList().enableDatabase(database);
+        rocksdbs.put(database, KVDB.initDB(dbInfo, config.getKvdbConfig()));
     }
 
     @Override
     public synchronized void disableDatabase(String database) throws KVDBException {
-        try {
-            // 数据库不处于可用状态
-            KVDBInstance instance = rocksdbs.get(database);
-            if (null == instance) {
-                throw new KVDBException("database not exists or disabled");
-            }
-            // 参与到集群中的数据库实例不可修改
-            if (dbClusterMapping.containsKey(database)) {
-                throw new KVDBException("database in cluster can not modified");
-            }
-            rocksdbs.remove(database);
-            // 关闭数据库
-            instance.close();
-            // 更新数据库状态
-            config.getDbList().disableDatabase(database);
-        } catch (Exception e) {
-            throw new KVDBException(e.toString());
+        // 数据库不处于可用状态
+        KVDBInstance instance = rocksdbs.get(database);
+        if (null == instance) {
+            throw new KVDBException("database not exists or disabled");
         }
+        // 参与到集群中的数据库实例不可修改
+        if (dbClusterMapping.containsKey(database)) {
+            throw new KVDBException("database in cluster can not modified");
+        }
+        rocksdbs.remove(database);
+        // 更新数据库状态
+        config.getDbList().disableDatabase(database);
+        // 关闭数据库
+        instance.close();
     }
 
     @Override
     public synchronized void dropDatabase(String database) throws KVDBException {
-        try {
-            // 数据库实例不存在
-            DBInfo dbInfo = config.getDbList().getDatabase(database);
-            if (null == dbInfo) {
-                throw new KVDBException("database not exists");
-            }
-            // 参与到集群中的数据库实例不可修改
-            if (dbClusterMapping.containsKey(database)) {
-                throw new KVDBException("database in cluster can not modified");
-            }
-            KVDBInstance instance = rocksdbs.get(database);
-            // 关闭数据库实例
-            if (null != instance) {
-                instance.close();
-            }
-            rocksdbs.remove(database);
-            // 更新配置并删除数据库目录
-            config.getDbList().dropDatabase(dbInfo);
-        } catch (Exception e) {
-            throw new KVDBException(e.toString());
+        // 数据库实例不存在
+        DBInfo dbInfo = config.getDbList().getDatabase(database);
+        if (null == dbInfo) {
+            throw new KVDBException("database not exists");
+        }
+        // 参与到集群中的数据库实例不可修改
+        if (dbClusterMapping.containsKey(database)) {
+            throw new KVDBException("database in cluster can not modified");
+        }
+        KVDBInstance instance = rocksdbs.get(database);
+        rocksdbs.remove(database);
+        // 更新配置并删除数据库目录
+        config.getDbList().dropDatabase(dbInfo);
+        // 关闭数据库实例
+        if (null != instance) {
+            instance.close();
         }
     }
 

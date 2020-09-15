@@ -1,4 +1,4 @@
-package com.jd.blockchain.kvdb.rocksdb;
+package com.jd.blockchain.kvdb.engine.rocksdb;
 
 import com.jd.blockchain.utils.hash.MurmurHash3;
 

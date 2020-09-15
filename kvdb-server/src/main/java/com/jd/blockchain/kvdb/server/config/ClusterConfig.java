@@ -5,7 +5,11 @@ import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * 集群配置
@@ -28,15 +32,15 @@ public class ClusterConfig {
      *
      * @param configFile
      * @param dbList     已开启服务的数据库实例配置信息
-     * @throws IOException
+     * @throws KVDBException
      */
-    public ClusterConfig(String configFile, DBList dbList) throws IOException {
+    public ClusterConfig(String configFile, DBList dbList) throws KVDBException, IOException {
         Properties properties = new Properties();
         properties.load(new FileInputStream(configFile));
         Set<String> clusterNames = new HashSet<>();
         for (Object key : properties.keySet()) {
             String[] item = ((String) key).split("\\.");
-            if(item[2].equals(PROPERTITY_PARTITIONS)) {
+            if (item[2].equals(PROPERTITY_PARTITIONS)) {
                 if (cluster.containsKey(item[1])) {
                     throw new KVDBException("duplicate cluster name : " + item[1]);
                 }

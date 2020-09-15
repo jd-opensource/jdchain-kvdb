@@ -2,7 +2,12 @@ package com.jd.blockchain.kvdb.server.executor;
 
 import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfos;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.Message;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseBaseInfo;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.KVDBRequest;
@@ -19,7 +24,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.rocksdb.RocksDBException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -58,7 +62,7 @@ public class SingleTest {
         return context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
     }
 
-    private Session newSessionWithTestDB() throws RocksDBException {
+    private Session newSessionWithTestDB() {
         Session session = context.getSession(UUID.randomUUID().toString(), key -> new KVDBSession(key, null));
 
         session.setDB("test1", context.getDatabase("test1"));
@@ -71,7 +75,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testBatchAbort() throws RocksDBException {
+    public void testBatchAbort() {
         Session session = newSessionWithTestDB();
         Response response = execute(session, new BatchAbortExecutor(), KVDBMessage.batchAbort());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
@@ -79,7 +83,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testBatchBegin() throws RocksDBException {
+    public void testBatchBegin() {
         Session session = newSessionWithTestDB();
         Response response = execute(session, new BatchBeginExecutor(), KVDBMessage.batchBegin());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
@@ -87,7 +91,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testBatchCommit() throws RocksDBException {
+    public void testBatchCommit() {
         Session session = newSessionWithTestDB();
         Response response = execute(session, new BatchCommitExecutor(), KVDBMessage.batchCommit());
         Assert.assertEquals(Constants.ERROR, response.getCode());
@@ -100,7 +104,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testExists() throws RocksDBException {
+    public void testExists() {
         Session session = newSessionWithTestDB();
         Response response = execute(session, new ExistsExecutor(), KVDBMessage.exists());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
@@ -119,7 +123,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testGet() throws RocksDBException {
+    public void testGet() {
         Session session = newSessionWithTestDB();
         Response response = execute(session, new GetExecutor(), KVDBMessage.get());
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
@@ -138,7 +142,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testPut() throws RocksDBException {
+    public void testPut() {
         Session session = newSessionWithTestDB();
 
         // kv must in pairs
@@ -173,7 +177,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testPutInBatch() throws RocksDBException {
+    public void testPutInBatch() {
         Session session1 = newSessionWithTestDB();
         Session session2 = newSessionWithTestDB();
 
@@ -338,7 +342,7 @@ public class SingleTest {
     }
 
     @Test
-    public void testClusterInfo() throws RocksDBException {
+    public void testClusterInfo() {
         Session session = newSessionWithTestDB();
 
         Response response = execute(session, new ClusterInfoExecutor(), KVDBMessage.clusterInfo());

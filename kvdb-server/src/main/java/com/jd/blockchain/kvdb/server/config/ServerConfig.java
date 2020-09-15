@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.server.config;
 
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBClusterInfo;
@@ -29,7 +30,7 @@ public class ServerConfig {
     private ClusterConfig clusterConfig;
     private DBList dbList;
 
-    public ServerConfig(String home) throws IOException {
+    public ServerConfig(String home) throws IOException, KVDBException {
         File file = new File(home);
         kvdbConfigFile = file.getAbsolutePath() + File.separator + CONFIG_DIR + File.separator + KVDB_CONFIG;
         clusterConfigFile = file.getAbsolutePath() + File.separator + CONFIG_DIR + File.separator + CLUSTER_CONFIG;

@@ -12,21 +12,36 @@ import com.jd.blockchain.utils.Bytes;
 @DataContract(code = Constants.COMMAND)
 public interface Command extends MessageContent {
 
+    String COMMAND_CREATE_DATABASE = "create database";
+    String COMMAND_DISABLE_DATABASE = "disable database";
+    String COMMAND_ENABLE_DATABASE = "enable database";
+    String COMMAND_DROP_DATABASE = "drop database";
+    String COMMAND_CLUSTER_INFO = "cluster";
+    String COMMAND_SHOW_DATABASES = "show databases";
+    String COMMAND_USE = "use";
+    String COMMAND_PUT = "put";
+    String COMMAND_GET = "get";
+    String COMMAND_EXISTS = "exists";
+    String COMMAND_BATCH_BEGIN = "batch begin";
+    String COMMAND_BATCH_ABORT = "batch abort";
+    String COMMAND_BATCH_COMMIT = "batch commit";
+    String COMMAND_UNKNOWN = "unknown";
+
     enum CommandType {
-        CREATE_DATABASE("create database", false),
-        DISABLE_DATABASE("disable database", false),
-        ENABLE_DATABASE("enable database", false),
-        DROP_DATABASE("drop database", false),
-        CLUSTER_INFO("cluster", true),
-        SHOW_DATABASES("show databases", false),
-        USE("use", true),
-        PUT("put", true),
-        GET("get", true),
-        EXISTS("exists", true),
-        BATCH_BEGIN("batch begin", true),
-        BATCH_ABORT("batch abort", true),
-        BATCH_COMMIT("batch commit", true),
-        UNKNOWN("unknown", true);
+        CREATE_DATABASE(COMMAND_CREATE_DATABASE, false),
+        DISABLE_DATABASE(COMMAND_DISABLE_DATABASE, false),
+        ENABLE_DATABASE(COMMAND_ENABLE_DATABASE, false),
+        DROP_DATABASE(COMMAND_DROP_DATABASE, false),
+        CLUSTER_INFO(COMMAND_CLUSTER_INFO, true),
+        SHOW_DATABASES(COMMAND_SHOW_DATABASES, false),
+        USE(COMMAND_USE, true),
+        PUT(COMMAND_PUT, true),
+        GET(COMMAND_GET, true),
+        EXISTS(COMMAND_EXISTS, true),
+        BATCH_BEGIN(COMMAND_BATCH_BEGIN, true),
+        BATCH_ABORT(COMMAND_BATCH_ABORT, true),
+        BATCH_COMMIT(COMMAND_BATCH_COMMIT, true),
+        UNKNOWN(COMMAND_UNKNOWN, true);
 
         // 操作名称
         String command;

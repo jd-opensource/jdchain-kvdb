@@ -20,4 +20,7 @@ public class Constants {
     public static final int CLUSTER_ITEM = 6;
     public static final int DATABASE_BASE_INFO = 7;
     public static final int DATABASE_BASE_INFO_LIST = 8;
+
+    public static final int WAL_KV = 100;
+    public static final int WAL_ENTITY = 101;
 }

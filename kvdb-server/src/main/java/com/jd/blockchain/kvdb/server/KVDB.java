@@ -62,7 +62,6 @@ public class KVDB {
      * @throws RocksDBException
      */
     public static KVDBInstance initDB(DBInfo dbInfo, KVDBConfig config) throws KVDBException {
-        Map<String, KVDBInstance> dbs = new HashMap<>();
         String dbPath = dbInfo.getDbRootdir() + File.separator + dbInfo.getName();
         FileUtils.makeDirectory(dbPath);
         Config logConfig = new Config(dbPath + File.separator + WAL_FILE, config.isWalDisable(), config.getWalFlush());
@@ -70,7 +69,7 @@ public class KVDB {
             if (dbInfo.getPartitions() > 1) {
                 return RocksDBCluster.open(dbPath, dbInfo.getPartitions(), logConfig);
             } else {
-                return dbs.put(dbInfo.getName(), RocksDBProxy.open(dbPath, logConfig));
+                return RocksDBProxy.open(dbPath, logConfig);
             }
         } catch (RocksDBException e) {
             throw new KVDBException(e);

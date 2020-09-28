@@ -207,7 +207,12 @@ public class Cmds implements Quit.Command {
             value = "disable database",
             key = "disable database")
     public boolean disableDatabaseCmd(String name) throws KVDBException {
-        return client.disableDatabase(name);
+        boolean ok = client.disableDatabase(name);
+        if(ok && name.equals(config.getDatabase())) {
+            config.setDatabase(null);
+        }
+
+        return ok;
     }
 
     /**
@@ -221,7 +226,12 @@ public class Cmds implements Quit.Command {
             value = "drop database",
             key = "drop database")
     public boolean dropDatabaseCmd(String name) throws KVDBException {
-        return client.dropDatabase(name);
+        boolean ok = client.dropDatabase(name);
+        if(ok && name.equals(config.getDatabase())) {
+            config.setDatabase(null);
+        }
+
+        return ok;
     }
 
     /**

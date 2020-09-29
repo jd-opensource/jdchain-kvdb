@@ -89,7 +89,7 @@ public class KVDBServerContext implements ServerContext {
             return getDatabaseInfo(dbName);
         }
 
-        throw new KVDBException("database not exists");
+        throw new KVDBException("database not exists or disabled");
     }
 
     public synchronized KVDBInstance createDatabase(DBInfo dbInfo) throws KVDBException {

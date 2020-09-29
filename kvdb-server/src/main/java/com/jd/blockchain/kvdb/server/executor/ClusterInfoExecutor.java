@@ -26,7 +26,7 @@ public class ClusterInfoExecutor implements Executor {
         } catch (Exception e) {
             LOGGER.error("{}-{}, execute cluster sync", request.getSession().getId(), request.getId(), e);
 
-            return KVDBMessage.error(request.getId(), e.toString());
+            return KVDBMessage.error(request.getId(), e.getMessage());
         }
     }
 }

@@ -25,7 +25,7 @@ public class GetExecutor implements Executor {
         } catch (Exception e) {
             LOGGER.error("{}-{} execute get error", request.getSession().getId(), request.getId(), e);
 
-            return KVDBMessage.error(request.getId(), e.toString());
+            return KVDBMessage.error(request.getId(), e.getMessage());
         }
     }
 }

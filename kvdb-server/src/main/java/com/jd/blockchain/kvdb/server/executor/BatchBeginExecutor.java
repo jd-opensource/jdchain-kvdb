@@ -23,7 +23,7 @@ public class BatchBeginExecutor implements Executor {
         } catch (Exception e) {
             LOGGER.error("{}-{} execute batch begin error", request.getSession().getId(), request.getId(), e);
 
-            return KVDBMessage.error(request.getId(), e.toString());
+            return KVDBMessage.error(request.getId(), e.getMessage());
         }
     }
 }

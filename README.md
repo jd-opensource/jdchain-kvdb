@@ -144,6 +144,8 @@ LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level.root=error"
 ```java
 // `host`、`port`为服务器地址和端口，`database`为数据库名称
 KVDBClient client = new KVDBClient("kvdb://<host>:<port>/<database>");
+# KVDBClient client = new KVDBClient(new KVDBURI("kvdb://<host>:<port>/<database>"));
+# KVDBClient client = new KVDBClient(new ClientConfig(host, port, db));
 ```
 
 > 对于集群的连接，客户端将开启`WAL`，在`WAL`写入成功，部分服务器失败的情况下，客户端在执行后续所有操作前都将根据`WAL`日志执行重试操作，直至成功。

@@ -103,10 +103,12 @@ cluster.<name>.2=kvdb://<host>:<port>/<dbname>
 
 修改`bin`目录下，`start.sh`文件：
 ```bash
-LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=error"
+LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=ERROR"
 ```
 默认日志路径：程序解压缩后主目录下`logs`目录
-默认日志等级：`error`
+默认日志等级：`ERROR`
+
+可配置日志等级：`ALL`,`TRACE`,`DEBUG`,`INFO`,`WARN`,`ERROR`,`FATAL`,`OFF`
 
 2. `kvdb-cli`
 

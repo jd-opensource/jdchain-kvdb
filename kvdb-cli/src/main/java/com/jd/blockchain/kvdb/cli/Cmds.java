@@ -10,6 +10,8 @@ import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBDatabaseBaseInfo;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
 import com.jd.blockchain.utils.io.BytesUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.shell.ExitRequest;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -21,12 +23,23 @@ import static org.springframework.shell.standard.ShellOption.NULL;
 @ShellComponent
 public class Cmds implements Quit.Command {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Cmds.class);
+
     final ClientConfig config;
     private KVDBClient client;
 
-    public Cmds(ClientConfig config) throws KVDBException {
+    public Cmds(ClientConfig config) {
         this.config = config;
-        this.client = new KVDBClient(config);
+        try {
+            this.client = new KVDBClient(config);
+        } catch (KVDBException e) {
+            LOGGER.error("client start error", e);
+            System.out.println("error: " + e.getMessage());
+            if (null != client) {
+                client.close();
+            }
+            System.exit(0);
+        }
     }
 
     @ShellMethod(

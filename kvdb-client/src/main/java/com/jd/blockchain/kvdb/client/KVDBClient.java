@@ -73,7 +73,7 @@ public class KVDBClient implements KVDBOperator {
      * @param config
      * @return
      */
-    private NettyClient newNettyClient(ClientConfig config) {
+    private NettyClient newNettyClient(ClientConfig config) throws KVDBException {
         CountDownLatch cdl = new CountDownLatch(1);
         NettyClient client = new NettyClient(config, () -> {
             if (cdl.getCount() > 0) {
@@ -86,8 +86,12 @@ public class KVDBClient implements KVDBOperator {
         });
         try {
             cdl.await(config.getTimeout(), TimeUnit.MILLISECONDS);
+            if (!client.isReady()) {
+                throw new KVDBException("connect time out, make sure the kvdb server is started");
+            }
         } catch (InterruptedException e) {
-            throw new RuntimeException("new netty client timeout");
+            LOGGER.error("wait interrupted", e);
+            throw new KVDBException(e.getMessage());
         }
         return client;
     }

@@ -217,4 +217,8 @@ public class NettyClient implements KVDBHandler {
         }
     }
 
+    public boolean isReady() {
+        return null != context;
+    }
+
 }

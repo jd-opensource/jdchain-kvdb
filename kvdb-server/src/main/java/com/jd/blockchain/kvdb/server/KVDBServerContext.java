@@ -122,6 +122,10 @@ public class KVDBServerContext implements ServerContext {
 
     @Override
     public synchronized void enableDatabase(String database) throws KVDBException {
+        // 参与到集群中的数据库实例不可修改
+        if (dbClusterMapping.containsKey(database)) {
+            throw new KVDBException("database in cluster can not modified");
+        }
         // 数据库处于可用状态
         if (rocksdbs.containsKey(database)) {
             return;
@@ -130,10 +134,6 @@ public class KVDBServerContext implements ServerContext {
         // 数据库不存在
         if (null == dbInfo) {
             throw new KVDBException("database not exists");
-        }
-        // 参与到集群中的数据库实例不可修改
-        if (dbClusterMapping.containsKey(database)) {
-            throw new KVDBException("database in cluster can not modified");
         }
         config.getDbList().enableDatabase(database);
         rocksdbs.put(database, KVDB.initDB(dbInfo, config.getKvdbConfig()));

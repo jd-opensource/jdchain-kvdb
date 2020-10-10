@@ -82,7 +82,7 @@ cluster.<name>.2=kvdb://<host>:<port>/<dbname>
 ...
 ```
 > 一个数据库实例只能加入唯一的集群；一旦加入集群，则不能再被客户端以单库连接方式访问，对该库实例的连接自动转为集群连接。集群中配置的数据库必须在`dblist`中已存在且设置为`true`
-> 所有`host`使用可通畅连接的地址，不同分片服务器中同一集群配置必须完全一致
+> 所有`host`使用明确的可通畅连接的地址，不同服务器节点中同一集群配置必须完全一致
 
 #### `dblist`
 ```bash
@@ -284,7 +284,7 @@ KVDB Commands
         batch begin: 开启批处理
         batch commit: 提交批处理
         cluster info: 服务器集群配置信息
-        create database: 创建数据库实例
+        create database: 创建数据库实例，仅在当前连接的`kvdb`服务器创建数据库实例，集群数据库创建只能通过修改`cluster.conf`进行配置。
         disable database: 关闭数据库实例，加入集群的实例不可修改
         drop database: 删除数据库实例，加入集群的实例不可修改
         enable database: 开放数据库实例，加入集群的实例不可修改

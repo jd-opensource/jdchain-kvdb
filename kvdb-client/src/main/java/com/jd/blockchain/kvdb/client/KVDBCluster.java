@@ -309,10 +309,11 @@ public class KVDBCluster implements KVDBOperator {
             if (!batchMode) {
                 return false;
             }
+            batchMode = false;
             if (batch.size() == 0) {
+                batchAbort();
                 throw new KVDBException("error batch size");
             }
-            batchMode = false;
             synchronized (wal) {
                 KVItem[] walkvs = new KVItem[batch.size()];
                 int[] ps = new int[partition.getPartitionCount()];

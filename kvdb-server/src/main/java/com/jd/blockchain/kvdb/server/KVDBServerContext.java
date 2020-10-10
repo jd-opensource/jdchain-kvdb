@@ -131,6 +131,10 @@ public class KVDBServerContext implements ServerContext {
         if (null == dbInfo) {
             throw new KVDBException("database not exists");
         }
+        // 参与到集群中的数据库实例不可修改
+        if (dbClusterMapping.containsKey(database)) {
+            throw new KVDBException("database in cluster can not modified");
+        }
         config.getDbList().enableDatabase(database);
         rocksdbs.put(database, KVDB.initDB(dbInfo, config.getKvdbConfig()));
     }

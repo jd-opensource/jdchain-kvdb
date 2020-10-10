@@ -304,150 +304,157 @@ public class KVDBCluster implements KVDBOperator {
 
     @Override
     public boolean batchCommit() throws KVDBException {
-        checkAndRedoWal();
-        synchronized (batchMode) {
-            if (!batchMode) {
-                return false;
-            }
-            batchMode = false;
-            if (batch.size() == 0) {
-                batchAbort();
-                throw new KVDBException("error batch size");
-            }
-            synchronized (wal) {
-                KVItem[] walkvs = new KVItem[batch.size()];
-                int[] ps = new int[partition.getPartitionCount()];
-                int j = 0;
-                for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
-                    ps[partition.partition(entry.getKey())]++;
-                    walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
-                    j++;
+        try {
+            checkAndRedoWal();
+            synchronized (batchMode) {
+                if (!batchMode) {
+                    return false;
                 }
-                batch.clear();
-
-                // append wal
-                try {
-                    wal.append(WalEntity.newPutEntity(walkvs));
-                } catch (IOException e) {
-                    LOGGER.error("wal append error", e);
-                    throw new KVDBException(e.getMessage());
+                batchMode = false;
+                if (batch.size() == 0) {
+                    throw new KVDBException("error batch size");
                 }
+                synchronized (wal) {
+                    KVItem[] walkvs = new KVItem[batch.size()];
+                    int[] ps = new int[partition.getPartitionCount()];
+                    int j = 0;
+                    for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
+                        ps[partition.partition(entry.getKey())]++;
+                        walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
+                        j++;
+                    }
+                    batch.clear();
 
-                // sub batch commit, any error need redo
-                try {
-                    CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
-                    for (int i = 0; i < operators.length; i++) {
-                        final int index = i;
-                        completionService.submit(() -> {
-                            try {
-                                if (ps[index] > 0) {
-                                    return new ExecuteResultInBatch(index, operators[index].batchCommit());
-                                } else {
-                                    return new ExecuteResultInBatch(index, true);
+                    // append wal
+                    try {
+                        wal.append(WalEntity.newPutEntity(walkvs));
+                    } catch (IOException e) {
+                        LOGGER.error("wal append error", e);
+                        throw new KVDBException(e.getMessage());
+                    }
+
+                    // sub batch commit, any error need redo
+                    try {
+                        CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
+                        for (int i = 0; i < operators.length; i++) {
+                            final int index = i;
+                            completionService.submit(() -> {
+                                try {
+                                    if (ps[index] > 0) {
+                                        return new ExecuteResultInBatch(index, operators[index].batchCommit());
+                                    } else {
+                                        return new ExecuteResultInBatch(index, true);
+                                    }
+                                } catch (KVDBException e) {
+                                    return new ExecuteResultInBatch(index, e);
                                 }
-                            } catch (KVDBException e) {
-                                return new ExecuteResultInBatch(index, e);
+                            });
+                        }
+                        for (int i = 0; i < operators.length; i++) {
+                            ExecuteResultInBatch<Boolean> result = completionService.take().get();
+                            if (!result.success()) {
+                                throw result.exception;
                             }
-                        });
-                    }
-                    for (int i = 0; i < operators.length; i++) {
-                        ExecuteResultInBatch<Boolean> result = completionService.take().get();
-                        if (!result.success()) {
-                            throw result.exception;
+                            if (!result.data) {
+                                throw new KVDBException("batch commit error");
+                            }
                         }
-                        if (!result.data) {
-                            throw new KVDBException("batch commit error");
-                        }
+                    } catch (Exception e) {
+                        needRedo = true;
+                        LOGGER.error("batch commit error!", e);
+                        throw new KVDBException(e.getMessage());
                     }
-                } catch (Exception e) {
-                    needRedo = true;
-                    LOGGER.error("batch commit error!", e);
-                    throw new KVDBException(e.getMessage());
-                }
 
-                // wal checkpoint
-                try {
-                    wal.checkpoint();
-                } catch (IOException e) {
-                    LOGGER.error("wal checkpoint error", e);
-                }
+                    // wal checkpoint
+                    try {
+                        wal.checkpoint();
+                    } catch (IOException e) {
+                        LOGGER.error("wal checkpoint error", e);
+                    }
 
-                return true;
+                    return true;
+                }
             }
+        } finally {
+            batchAbort();
         }
     }
 
     @Override
     public boolean batchCommit(long size) throws KVDBException {
-        checkAndRedoWal();
-        synchronized (batchMode) {
-            batchMode = false;
-            synchronized (wal) {
-                if (size <= 0 || batch.size() == 0) {
-                    throw new KVDBException("error batch size");
-                }
-                if (size != batch.size()) {
-                    throw new KVDBException("batch commit size wrong, expected: " + size + ", actually: " + batch.size());
-                }
-                KVItem[] walkvs = new KVItem[batch.size()];
-                int[] ps = new int[partition.getPartitionCount()];
-                int j = 0;
-                for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
-                    ps[partition.partition(entry.getKey())]++;
-                    walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
-                    j++;
-                }
-                batch.clear();
+        try {
+            checkAndRedoWal();
+            synchronized (batchMode) {
+                batchMode = false;
+                synchronized (wal) {
+                    if (size <= 0 || batch.size() == 0) {
+                        throw new KVDBException("error batch size");
+                    }
+                    if (size != batch.size()) {
+                        throw new KVDBException("batch commit size wrong, expected: " + size + ", actually: " + batch.size());
+                    }
+                    KVItem[] walkvs = new KVItem[batch.size()];
+                    int[] ps = new int[partition.getPartitionCount()];
+                    int j = 0;
+                    for (Map.Entry<Bytes, Bytes> entry : batch.entrySet()) {
+                        ps[partition.partition(entry.getKey())]++;
+                        walkvs[j] = new KVItem(entry.getKey().toBytes(), entry.getValue().toBytes());
+                        j++;
+                    }
+                    batch.clear();
 
-                // wal append
-                try {
-                    wal.append(WalEntity.newPutEntity(walkvs));
-                } catch (IOException e) {
-                    LOGGER.error("wal append error", e);
-                    throw new KVDBException(e.getMessage());
-                }
+                    // wal append
+                    try {
+                        wal.append(WalEntity.newPutEntity(walkvs));
+                    } catch (IOException e) {
+                        LOGGER.error("wal append error", e);
+                        throw new KVDBException(e.getMessage());
+                    }
 
-                // sub batch commit, any error need redo
-                try {
-                    CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
-                    for (int i = 0; i < operators.length; i++) {
-                        final int index = i;
-                        completionService.submit(() -> {
-                            try {
-                                if (ps[index] > 0) {
-                                    return new ExecuteResultInBatch(index, operators[index].batchCommit(ps[index]));
-                                } else {
-                                    return new ExecuteResultInBatch(index, true);
+                    // sub batch commit, any error need redo
+                    try {
+                        CompletionService<ExecuteResultInBatch<Boolean>> completionService = new ExecutorCompletionService<>(executor);
+                        for (int i = 0; i < operators.length; i++) {
+                            final int index = i;
+                            completionService.submit(() -> {
+                                try {
+                                    if (ps[index] > 0) {
+                                        return new ExecuteResultInBatch(index, operators[index].batchCommit(ps[index]));
+                                    } else {
+                                        return new ExecuteResultInBatch(index, true);
+                                    }
+                                } catch (KVDBException e) {
+                                    return new ExecuteResultInBatch(index, e);
                                 }
-                            } catch (KVDBException e) {
-                                return new ExecuteResultInBatch(index, e);
+                            });
+                        }
+                        for (int i = 0; i < operators.length; i++) {
+                            ExecuteResultInBatch<Boolean> result = completionService.take().get();
+                            if (!result.success()) {
+                                throw result.exception;
                             }
-                        });
-                    }
-                    for (int i = 0; i < operators.length; i++) {
-                        ExecuteResultInBatch<Boolean> result = completionService.take().get();
-                        if (!result.success()) {
-                            throw result.exception;
+                            if (!result.data) {
+                                throw new KVDBException("batch commit error");
+                            }
                         }
-                        if (!result.data) {
-                            throw new KVDBException("batch commit error");
-                        }
+                    } catch (Exception e) {
+                        needRedo = true;
+                        LOGGER.error("batch commit error!", e);
+                        throw new KVDBException(e.getMessage());
                     }
-                } catch (Exception e) {
-                    needRedo = true;
-                    LOGGER.error("batch commit error!", e);
-                    throw new KVDBException(e.getMessage());
-                }
 
-                // wal checkpoint
-                try {
-                    wal.checkpoint();
-                } catch (IOException e) {
-                    LOGGER.error("wal checkpoint error", e);
-                }
+                    // wal checkpoint
+                    try {
+                        wal.checkpoint();
+                    } catch (IOException e) {
+                        LOGGER.error("wal checkpoint error", e);
+                    }
 
-                return true;
+                    return true;
+                }
             }
+        } finally {
+            batchAbort();
         }
     }
 

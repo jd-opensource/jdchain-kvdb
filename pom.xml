@@ -16,6 +16,7 @@
 	</properties>
 
 	<modules>
+		<module>wal</module>
 		<module>kvdb-engine</module>
 		<module>kvdb-protocol</module>
 		<module>kvdb-client</module>

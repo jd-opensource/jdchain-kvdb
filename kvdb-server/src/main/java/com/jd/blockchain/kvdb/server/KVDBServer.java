@@ -80,7 +80,6 @@ public class KVDBServer implements KVDBHandler {
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .childHandler(new KVDBInitializerHandler(this))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.TCP_NODELAY, true)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 

@@ -81,8 +81,6 @@ public class KVDBServer implements KVDBHandler {
                 .childHandler(new KVDBInitializerHandler(this))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.TCP_NODELAY, true)
-                .option(ChannelOption.SO_RCVBUF, 1024 * 1024)
-                .option(ChannelOption.SO_SNDBUF, 1024 * 1024)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 
@@ -141,7 +139,7 @@ public class KVDBServer implements KVDBHandler {
     public void channel(SocketChannel channel) {
         LOGGER.debug("new channel: {}", sourceKey(channel));
 
-        channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024 * 1024, 0, 4, 0, 4))
+        channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4))
                 .addLast("kvdbDecoder", new KVDBDecoder())
                 .addLast(new LengthFieldPrepender(4, 0, false))
                 .addLast("kvdbEncoder", new KVDBEncoder())

@@ -74,8 +74,6 @@ public class NettyClient implements KVDBHandler {
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.TCP_NODELAY, true)
-                .option(ChannelOption.SO_RCVBUF, config.getBufferSize())
-                .option(ChannelOption.SO_SNDBUF, config.getBufferSize())
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .handler(new KVDBInitializerHandler(this));
         start();
@@ -122,7 +120,7 @@ public class NettyClient implements KVDBHandler {
     @Override
     public void channel(SocketChannel channel) {
         LOGGER.info("init channel: {}:{}", config.getHost(), config.getPort());
-        channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(config.getBufferSize(), 0, 4, 0, 4))
+        channel.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4))
                 .addLast("kvdbDecoder", new KVDBDecoder())
                 .addLast(new LengthFieldPrepender(4, 0, false))
                 .addLast("kvdbEncoder", new KVDBEncoder())

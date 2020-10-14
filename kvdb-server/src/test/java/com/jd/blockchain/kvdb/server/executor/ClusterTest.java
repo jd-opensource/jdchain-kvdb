@@ -90,7 +90,7 @@ public class ClusterTest {
         Session session = newSession();
 
         Response response = execute(session, new EnableDatabaseExecutor(), KVDBMessage.enableDatabase("test1"));
-        Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        Assert.assertEquals(Constants.ERROR, response.getCode());
     }
 
     @Test

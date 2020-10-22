@@ -22,8 +22,8 @@ public class PutExecutor implements Executor {
 
     @Override
     public Message execute(Request request) {
-        LOGGER.debug("{}-{} execute put: {}", request.getSession().getId(), request.getId(), request.getCommand().getParameters());
         try {
+            LOGGER.debug("{}-{} execute put: {}", request.getSession().getId(), request.getId(), request.getCommand().getParameters()[0]);
             if (null == request.getSession().getDBInstance()) {
                 return KVDBMessage.error(request.getId(), "no database selected");
             }

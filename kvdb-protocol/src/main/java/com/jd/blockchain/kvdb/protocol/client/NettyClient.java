@@ -74,6 +74,7 @@ public class NettyClient implements KVDBHandler {
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.SO_KEEPALIVE, true)
+                .option(ChannelOption.TCP_NODELAY, true)
                 .handler(new KVDBInitializerHandler(this));
         start();
     }

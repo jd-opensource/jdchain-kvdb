@@ -1,6 +1,7 @@
 package com.jd.blockchain.kvdb.protocol.proto.impl;
 
 import com.jd.blockchain.kvdb.protocol.KVDBURI;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 
@@ -39,7 +40,7 @@ public class KVDBClusterInfo implements ClusterInfo {
      * @return
      */
     @Override
-    public boolean match(int localPort, KVDBURI uri, ClusterInfo clusterInfo) {
+    public boolean match(int localPort, KVDBURI uri, ClusterInfo clusterInfo) throws KVDBException {
         // 远端集群配置项不能为空
         if (null == clusterInfo || clusterInfo.size() == 0) {
             return false;

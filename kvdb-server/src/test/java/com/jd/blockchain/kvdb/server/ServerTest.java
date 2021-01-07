@@ -4,11 +4,13 @@ import com.jd.blockchain.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
+import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
+import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -51,7 +53,15 @@ public class ServerTest {
         Assert.assertEquals(Constants.SUCCESS, response.getCode());
         DatabaseClusterInfo clusterInfo = BinaryProtocol.decodeAs(response.getResult()[0].toBytes(), DatabaseClusterInfo.class);
         Assert.assertFalse(clusterInfo.isClusterMode());
-
+        for (int i = 0; i < 100; i++) {
+            response = client.send(KVDBMessage.put(Bytes.fromInt(i), Bytes.fromInt(i)));
+            Assert.assertEquals(Constants.SUCCESS, response.getCode());
+        }
+        client.send(KVDBMessage.batchBegin());
+        for (int i = 0; i < 10000; i++) {
+            Assert.assertTrue(client.sendAsync(KVDBMessage.put(Bytes.fromInt(i), Bytes.fromInt(i))));
+        }
+        client.send(KVDBMessage.batchCommit());
         server.stop();
     }
 
@@ -61,7 +71,11 @@ public class ServerTest {
         KVDBServer server1 = new KVDBServer(context1);
         CountDownLatch cdl = new CountDownLatch(2);
         new Thread(() -> {
-            server1.start();
+            try {
+                server1.start();
+            } catch (KVDBException e) {
+                e.printStackTrace();
+            }
             cdl.countDown();
 
         }).start();
@@ -69,7 +83,11 @@ public class ServerTest {
         KVDBServerContext context2 = new KVDBServerContext(new ServerConfig(this.getClass().getResource("/server/cluster/2").getFile()));
         KVDBServer server2 = new KVDBServer(context2);
         new Thread(() -> {
-            server2.start();
+            try {
+                server2.start();
+            } catch (KVDBException e) {
+                e.printStackTrace();
+            }
             cdl.countDown();
         }).start();
 

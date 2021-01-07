@@ -1,9 +1,19 @@
 package com.jd.blockchain.kvdb.protocol.exception;
 
-public class KVDBException extends RuntimeException {
+public class KVDBException extends Exception {
 
-    public KVDBException(String message) {
-        super(message);
+    private String message;
+
+    public KVDBException(Exception e) {
+        super(e);
     }
 
+    public KVDBException(String message) {
+        this.message = message;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
 }

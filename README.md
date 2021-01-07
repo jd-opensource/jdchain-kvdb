@@ -52,7 +52,15 @@ dbs.rootdir=/usr/kvdb/dbs
 
 # 数据库实例默认的本地分区数
 dbs.partitions=4
+
+# 是否禁用WAL
+wal.disable=false
+
+# WAL刷新机制，-1跟随系统，0实时刷新，n(n>0)秒刷新一次
+wal.flush=1
 ```
+
+> `WAL`写入成功，但`RocksDB`写入失败，服务器将在后续所有数据库读写操作前根据`WAL`进行重试操作，直至成功。
 
 #### `cluster.conf`
 ```bash
@@ -74,6 +82,7 @@ cluster.<name>.2=kvdb://<host>:<port>/<dbname>
 ...
 ```
 > 一个数据库实例只能加入唯一的集群；一旦加入集群，则不能再被客户端以单库连接方式访问，对该库实例的连接自动转为集群连接。集群中配置的数据库必须在`dblist`中已存在且设置为`true`
+> 所有`host`使用明确的可通畅连接的地址，不同服务器节点中同一集群配置必须完全一致
 
 #### `dblist`
 ```bash
@@ -95,10 +104,12 @@ cluster.<name>.2=kvdb://<host>:<port>/<dbname>
 
 修改`bin`目录下，`start.sh`文件：
 ```bash
-LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=error"
+LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level=ERROR"
 ```
 默认日志路径：程序解压缩后主目录下`logs`目录
-默认日志等级：`error`
+默认日志等级：`ERROR`
+
+可配置日志等级：`ALL`,`TRACE`,`DEBUG`,`INFO`,`WARN`,`ERROR`,`FATAL`,`OFF`
 
 2. `kvdb-cli`
 
@@ -134,7 +145,11 @@ LOG_SET="-Dlogging.path="$HOME/logs" -Dlogging.level.root=error"
 ```java
 // `host`、`port`为服务器地址和端口，`database`为数据库名称
 KVDBClient client = new KVDBClient("kvdb://<host>:<port>/<database>");
+# KVDBClient client = new KVDBClient(new KVDBURI("kvdb://<host>:<port>/<database>"));
+# KVDBClient client = new KVDBClient(new ClientConfig(host, port, db));
 ```
+
+> 对于集群的连接，客户端将开启`WAL`，在`WAL`写入成功，部分服务器失败的情况下，客户端在执行后续所有操作前都将根据`WAL`日志执行重试操作，直至成功。
 
 3. 操作
 
@@ -186,6 +201,17 @@ Bytes[] get(Bytes... keys) throws KVDBException;
 boolean put(Bytes key, Bytes value) throws KVDBException;
 
 /**
+ * 设置键值对
+ *
+ * @param key
+ * @param value
+ * @param aSync
+ * @return
+ * @throws KVDBException
+ */
+boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException;
+
+/**
  * 开启批处理
  *
  * @return
@@ -212,9 +238,18 @@ boolean batchAbort() throws KVDBException;
 boolean batchCommit() throws KVDBException;
 
 /**
-* 关闭客户端
-*/
-public void close();
+ * 提交批处理
+ *
+ * @param size 此次批处理操作去重后的key数量
+ * @return
+ * @throws KVDBException
+ */
+boolean batchCommit(long size) throws KVDBException;
+
+/**
+ * 关闭
+ */
+void close();
 ```
 
 ### 管理工具
@@ -222,16 +257,15 @@ public void close();
 `kvdb-cli`是基于[`SDK`](#SDK)的命令行工具实现：
 
 ```bash
-./kvdb-cli.sh -h <kvdb server host> -p <kvdb server port> -db <database> -t <time out in milliseconds>  -rt <retry times for time out> -bs <buffer size> -k <keep alive>
+./kvdb-cli.sh -h <kvdb server host> -p <kvdb server port> -db <database> -t <time out in milliseconds> -bs <buffer size> -k <keep alive>
 ```
 参数说明：
 
 - `-h` 服务器地址。选填，默认`localhost`
-- `-p` 端口。选填，默认`6070`
+- `-p` 管理端口。选填，默认`7060`
 - `-db` 数据库。选填
 - `-t` 超时时间，毫秒。选填，默认`60000 ms`
-- `-rt` 超时重试等待次数。选填，默认`5`
-- `-bs` 发送/接收缓冲区大小。选填，默认`1024*1024`
+- `-bs` 发送/接收缓冲区大小。选填，默认`1048576`
 - `-k` 保持连接。选填，默认`true`
 
 所有支持指令操作：
@@ -250,7 +284,7 @@ KVDB Commands
         batch begin: 开启批处理
         batch commit: 提交批处理
         cluster info: 服务器集群配置信息
-        create database: 创建数据库实例
+        create database: 创建数据库实例，仅在当前连接的`kvdb`服务器创建数据库实例，集群数据库创建只能通过修改`cluster.conf`进行配置。
         disable database: 关闭数据库实例，加入集群的实例不可修改
         drop database: 删除数据库实例，加入集群的实例不可修改
         enable database: 开放数据库实例，加入集群的实例不可修改
@@ -299,7 +333,7 @@ localhost:7060>set --key k --value v
 `kvdb-sever`性能测试工具，简单的数据插入测试。
 
 ```bash
-./kvdb-benchmark.sh -h <kvdb server host> -p <kvdb server port> -db <database> -c <time out in milliseconds>  -n <retry times for time out> -b <buffer size> -k <keep alive>
+./kvdb-benchmark.sh -h <kvdb server host> -p <kvdb server port> -db <database> -c <time out in milliseconds>  -n <request times> -b <buffer size> -k <keep alive>
 ```
 参数说明：
 
@@ -308,19 +342,23 @@ localhost:7060>set --key k --value v
 - `-db` 数据库。必填
 - `-c` 客户端数量。选填，默认`20`
 - `-n` 请求数量。选填，默认`100000`
+- `-ds` 键/值字节数。选填，默认`16`
 - `-b` 是否使用批处理。选填，默认`false`
+- `-bs` 一次批处理键值对数。选填，默认`100`
 - `-k` 保持连接。选填，默认`true`
 
 示例：
 ```bash
-./kvdb-benchmark.sh -db test1 -c 20 -n 1000000
-requests:1000000, clients:20, batch:false, times:22113ms, errors:0, tps:45222.267444
+./kvdb-benchmark.sh -db test1 -c 1 -n 4000000 -b true -bs 1000 -ds 8
+requests:4000000, clients:1, batch:true, batch_size:1000, kv_data_size:8bytes, times:54014ms, tps:74054.874662
 ```
 其中：
 
 - `requests` 请求数量
 - `clients` 并发数
 - `batch` 是否开启批量模式
+- `batch_size` 一次批处理键值对数
+- `kv_data_size` 键/值字节数
 - `times` 总耗时
 - `tps` TPS
 

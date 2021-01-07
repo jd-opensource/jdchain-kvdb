@@ -7,7 +7,12 @@ import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBTimeoutException;
-import com.jd.blockchain.kvdb.protocol.proto.*;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfo;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseBaseInfos;
+import com.jd.blockchain.kvdb.protocol.proto.DatabaseClusterInfo;
+import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.StringUtils;
@@ -53,7 +58,7 @@ public class KVDBClient implements KVDBOperator {
     /**
      * 创建客户端等待就绪状态，当配置数据库不为空时执行切换数据库操作
      */
-    private void start() {
+    private void start() throws KVDBException {
         clients.put(config.getHost() + config.getPort(), newNettyClient(config));
         if (!StringUtils.isEmpty(config.getDatabase())) {
             use(config.getDatabase());
@@ -68,7 +73,7 @@ public class KVDBClient implements KVDBOperator {
      * @param config
      * @return
      */
-    private NettyClient newNettyClient(ClientConfig config) {
+    private NettyClient newNettyClient(ClientConfig config) throws KVDBException {
         CountDownLatch cdl = new CountDownLatch(1);
         NettyClient client = new NettyClient(config, () -> {
             if (cdl.getCount() > 0) {
@@ -81,8 +86,12 @@ public class KVDBClient implements KVDBOperator {
         });
         try {
             cdl.await(config.getTimeout(), TimeUnit.MILLISECONDS);
+            if (!client.isReady()) {
+                throw new KVDBException("connect time out, make sure the kvdb server is started");
+            }
         } catch (InterruptedException e) {
-            throw new KVDBTimeoutException("new netty client timeout");
+            LOGGER.error("wait interrupted", e);
+            throw new KVDBException(e.getMessage());
         }
         return client;
     }
@@ -91,7 +100,9 @@ public class KVDBClient implements KVDBOperator {
      * 关闭客户端
      */
     public void close() {
-        operator.close();
+        if (null != operator) {
+            operator.close();
+        }
         for (Map.Entry<String, NettyClient> entry : clients.entrySet()) {
             entry.getValue().stop();
         }
@@ -105,7 +116,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected synchronized DatabaseClusterInfo use(String db) throws KVDBException {
+    public synchronized DatabaseClusterInfo use(String db) throws KVDBException {
         if (StringUtils.isEmpty(db)) {
             throw new KVDBException("database is empty");
         }
@@ -141,7 +152,7 @@ public class KVDBClient implements KVDBOperator {
                     }
                     selectedClients[i] = nettyClient;
                 }
-                operator = new KVDBCluster(selectedClients);
+                operator = new KVDBCluster(db, selectedClients);
             } else {
                 // 单实例模式下，无需再执行数据库切换操作，仅切换操作对象
                 operator = new KVDBSingle(clients.get(config.getHost() + config.getPort()));
@@ -162,7 +173,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
+    public boolean createDatabase(DatabaseBaseInfo parameter) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.createDatabase(new Bytes(BinaryProtocol.encode(parameter, DatabaseBaseInfo.class))));
         if (null == response) {
@@ -181,7 +192,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean enableDatabase(String database) throws KVDBException {
+    public boolean enableDatabase(String database) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.enableDatabase(database));
         if (null == response) {
@@ -200,7 +211,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean disableDatabase(String database) throws KVDBException {
+    public boolean disableDatabase(String database) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.disableDatabase(database));
         if (null == response) {
@@ -219,7 +230,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected boolean dropDatabase(String database) throws KVDBException {
+    public boolean dropDatabase(String database) throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort())
                 .send(KVDBMessage.dropDatabase(database));
         if (null == response) {
@@ -237,7 +248,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected ClusterItem[] clusterInfo() throws KVDBException {
+    public ClusterItem[] clusterInfo() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.clusterInfo());
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -254,7 +265,7 @@ public class KVDBClient implements KVDBOperator {
      * @return
      * @throws KVDBException
      */
-    protected DatabaseBaseInfo[] showDatabases() throws KVDBException {
+    public DatabaseBaseInfo[] showDatabases() throws KVDBException {
         Response response = clients.get(config.getHost() + config.getPort()).send(KVDBMessage.showDatabases());
         if (null == response) {
             throw new KVDBTimeoutException("time out");
@@ -278,6 +289,9 @@ public class KVDBClient implements KVDBOperator {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
+        if (keys.length == 0) {
+            throw new KVDBException("no key present");
+        }
         return operator.exists(keys);
     }
 
@@ -294,15 +308,23 @@ public class KVDBClient implements KVDBOperator {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
+        if (keys.length == 0) {
+            throw new KVDBException("no key present");
+        }
         return operator.get(keys);
     }
 
     @Override
     public boolean put(Bytes key, Bytes value) throws KVDBException {
+        return put(key, value, false);
+    }
+
+    @Override
+    public boolean put(Bytes key, Bytes value, boolean aSync) throws KVDBException {
         if (StringUtils.isEmpty(config.getDatabase())) {
             throw new KVDBException("no database selected");
         }
-        return operator.put(key, value);
+        return operator.put(key, value, aSync);
     }
 
     @Override
@@ -327,5 +349,13 @@ public class KVDBClient implements KVDBOperator {
             throw new KVDBException("no database selected");
         }
         return operator.batchCommit();
+    }
+
+    @Override
+    public boolean batchCommit(long size) throws KVDBException {
+        if (StringUtils.isEmpty(config.getDatabase())) {
+            throw new KVDBException("no database selected");
+        }
+        return operator.batchCommit(size);
     }
 }

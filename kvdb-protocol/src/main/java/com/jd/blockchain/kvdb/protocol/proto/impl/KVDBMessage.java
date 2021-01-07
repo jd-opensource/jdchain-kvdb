@@ -5,26 +5,28 @@ import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.MessageContent;
 import com.jd.blockchain.utils.Bytes;
 
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.jd.blockchain.kvdb.protocol.proto.Command.CommandType.*;
 
 public class KVDBMessage implements Message {
 
-    private String id;
+    private static AtomicLong idIndexer = new AtomicLong(0);
+
+    private Long id;
 
     private MessageContent content;
 
     public KVDBMessage(MessageContent content) {
-        this(UUID.randomUUID().toString(), content);
+        this(idIndexer.getAndIncrement(), content);
     }
 
-    public KVDBMessage(String id, MessageContent content) {
+    public KVDBMessage(Long id, MessageContent content) {
         this.id = id;
         this.content = content;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -33,7 +35,7 @@ public class KVDBMessage implements Message {
     }
 
     @Override
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
@@ -98,15 +100,15 @@ public class KVDBMessage implements Message {
 
     //----------- Messages for response
 
-    public static Message success(String id, Bytes... value) {
+    public static Message success(Long id, Bytes... value) {
         return new KVDBMessage(id, new KVDBResponse(Constants.SUCCESS, value));
     }
 
-    public static Message error(String id, String description) {
+    public static Message error(Long id, String description) {
         return new KVDBMessage(id, new KVDBResponse(Constants.ERROR, Bytes.fromString(description)));
     }
 
-    public static Message error(String id, byte[] description) {
+    public static Message error(Long id, byte[] description) {
         return new KVDBMessage(id, new KVDBResponse(Constants.ERROR, new Bytes(description)));
     }
 }

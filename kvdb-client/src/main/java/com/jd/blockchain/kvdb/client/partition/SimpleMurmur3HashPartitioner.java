@@ -1,5 +1,6 @@
 package com.jd.blockchain.kvdb.client.partition;
 
+import com.jd.blockchain.utils.Bytes;
 import com.jd.blockchain.utils.hash.MurmurHash3;
 
 public class SimpleMurmur3HashPartitioner implements Partitioner {
@@ -24,6 +25,11 @@ public class SimpleMurmur3HashPartitioner implements Partitioner {
         }
         int hash = MurmurHash3.murmurhash3_x86_32(key, 0, key.length, HASH_SEED);
         return partition(hash, partitionCount);
+    }
+
+    @Override
+    public int partition(Bytes key) {
+        return partition(key.toBytes());
     }
 
     private static int partition(int hash, int partitionCount) {

@@ -8,7 +8,7 @@ import com.jd.blockchain.kvdb.protocol.proto.Command;
 public interface Request {
 
     // 消息ID
-    String getId();
+    Long getId();
 
     // 操作命令
     Command getCommand();

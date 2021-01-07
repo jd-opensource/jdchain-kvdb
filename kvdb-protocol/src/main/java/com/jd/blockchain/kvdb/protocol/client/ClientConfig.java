@@ -14,7 +14,6 @@ public class ClientConfig {
     private static final String PORT = "-p";
     private static final String TIMEOUT = "-t";
     private static final String BUFFER_SIZE = "-bs";
-    private static final String RETRY_TIME = "-rt";
     private static final String KEEP_ALIVE = "-k";
     private static final String DB = "-db";
     private static final String DEFAULT_HOST = "localhost";
@@ -24,7 +23,6 @@ public class ClientConfig {
     private static final int DEFAULT_PORT = 7078;
     private static final int DEFAULT_TIMEOUT = 60000;
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
-    private static final int DEFAULT_RETRY_TIMES = 5;
     private static final boolean DEFAULT_KEEP_ALIVE = true;
 
     // 请求地址
@@ -35,15 +33,13 @@ public class ClientConfig {
     private int timeout;
     // 缓冲区大小
     private int bufferSize;
-    // 超时等待重试次数
-    private int retryTimes;
     // 是否保持连接
     private boolean keepAlive;
     // 连接的数据库实例名称
     private String db;
 
     public ClientConfig(String[] args) {
-        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, TIMEOUT, BUFFER_SIZE, RETRY_TIME, KEEP_ALIVE, DB));
+        ArgumentSet arguments = ArgumentSet.resolve(args, ArgumentSet.setting().prefix(HOST, PORT, TIMEOUT, BUFFER_SIZE, KEEP_ALIVE, DB));
         ArgumentSet.ArgEntry hostArg = arguments.getArg(HOST);
         if (null != hostArg) {
             this.host = hostArg.getValue();
@@ -68,12 +64,6 @@ public class ClientConfig {
         } else {
             this.bufferSize = DEFAULT_BUFFER_SIZE;
         }
-        ArgumentSet.ArgEntry rtArg = arguments.getArg(RETRY_TIME);
-        if (null != rtArg) {
-            this.retryTimes = Integer.valueOf(rtArg.getValue());
-        } else {
-            this.retryTimes = DEFAULT_RETRY_TIMES;
-        }
         ArgumentSet.ArgEntry kaArg = arguments.getArg(KEEP_ALIVE);
         if (null != kaArg) {
             this.keepAlive = Boolean.valueOf(kaArg.getValue());
@@ -87,15 +77,14 @@ public class ClientConfig {
     }
 
     public ClientConfig(String host, int port, String db) {
-        this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_RETRY_TIMES, DEFAULT_KEEP_ALIVE, db);
+        this(host, port, DEFAULT_TIMEOUT, DEFAULT_BUFFER_SIZE, DEFAULT_KEEP_ALIVE, db);
     }
 
-    public ClientConfig(String host, int port, int timeout, int bufferSize, int retryTimes, boolean keepAlive, String db) {
+    public ClientConfig(String host, int port, int timeout, int bufferSize, boolean keepAlive, String db) {
         this.host = host;
         this.port = port;
         this.timeout = timeout;
         this.bufferSize = bufferSize;
-        this.retryTimes = retryTimes;
         this.keepAlive = keepAlive;
         this.db = db;
     }
@@ -130,14 +119,6 @@ public class ClientConfig {
 
     public void setBufferSize(int bufferSize) {
         this.bufferSize = bufferSize;
-    }
-
-    public int getRetryTimes() {
-        return retryTimes;
-    }
-
-    public void setRetryTimes(int retryTimes) {
-        this.retryTimes = retryTimes;
     }
 
     public boolean getKeepAlive() {

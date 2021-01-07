@@ -14,14 +14,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
+import static com.jd.blockchain.kvdb.protocol.proto.Command.COMMAND_SHOW_DATABASES;
+
+@KVDBExecutor(command = COMMAND_SHOW_DATABASES)
 public class ShowDatabasesExecutor implements Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowDatabasesExecutor.class);
 
     @Override
     public Message execute(Request request) {
+        LOGGER.debug("{}-{} execute show databases", request.getSession().getId(), request.getId());
         try {
-            LOGGER.debug("execute show databases");
             Collection<DBInfo> dbs = request.getServerContext().getConfig().getDbList().getDatabases();
             KVDBDatabaseBaseInfo[] infos = new KVDBDatabaseBaseInfo[dbs.size()];
             int i = 0;
@@ -29,10 +32,12 @@ public class ShowDatabasesExecutor implements Executor {
                 infos[i] = new KVDBDatabaseBaseInfo(db.getName(), db.getDbRootdir(), db.getPartitions(), db.isEnable());
                 i++;
             }
+
             return KVDBMessage.success(request.getId(), new Bytes(BinaryProtocol.encode(new KVDBDatabaseBaseInfos(infos), DatabaseBaseInfos.class)));
         } catch (Exception e) {
-            LOGGER.error("execute show databases", e);
-            return KVDBMessage.error(request.getId(), e.toString());
+            LOGGER.error("{}-{} execute show databases", request.getSession().getId(), request.getId(), e);
+
+            return KVDBMessage.error(request.getId(), e.getMessage());
         }
     }
 }

@@ -10,7 +10,7 @@
 	<properties>
 		<framework.version>1.2.1.RELEASE</framework.version>
 		<rocksdb.version>6.3.6</rocksdb.version>
-		<log4j.version>2.11.1</log4j.version>
+		<log4j.version>2.14.0</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<junit.version>4.12</junit.version>
 	</properties>

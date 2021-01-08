@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.jd.blockchain</groupId>
             <artifactId>wal</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
     </dependencies>

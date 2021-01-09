@@ -59,7 +59,6 @@
         <dependency>
             <groupId>com.jd.blockchain</groupId>
             <artifactId>binary-proto</artifactId>
-            <version>${framework.version}</version>
         </dependency>
 
     </dependencies>

@@ -8,7 +8,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<framework.version>1.4.0.RELEASE</framework.version>
+		<binaryproto.version>1.4.1.RELEASE</binaryproto.version>
 		<rocksdb.version>6.3.6</rocksdb.version>
 		<log4j.version>2.11.1</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
@@ -27,6 +27,7 @@
 	</modules>
 
 	<dependencies>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -64,6 +65,17 @@
 		</dependency>
 
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.jd.blockchain</groupId>
+				<artifactId>binary-proto</artifactId>
+				<version>${binaryproto.version}</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>

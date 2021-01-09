@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.protocol.proto.wal;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
+import com.jd.binaryproto.BinaryProtocol;
 import com.jd.blockchain.wal.WalDataCoder;
 
 public class EntityCoder implements WalDataCoder<Entity> {

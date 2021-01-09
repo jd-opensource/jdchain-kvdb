@@ -1,10 +1,10 @@
 package com.jd.blockchain.kvdb.protocol.proto.wal;
 
-import com.jd.blockchain.binaryproto.DataContract;
-import com.jd.blockchain.binaryproto.DataField;
-import com.jd.blockchain.binaryproto.PrimitiveType;
-
 import static com.jd.blockchain.kvdb.protocol.Constants.WAL_KV;
+
+import com.jd.binaryproto.DataContract;
+import com.jd.binaryproto.DataField;
+import com.jd.binaryproto.PrimitiveType;
 
 @DataContract(code = WAL_KV)
 public interface KV {

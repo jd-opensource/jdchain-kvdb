@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.client;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
+import com.jd.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.wal.Entity;
 import com.jd.blockchain.utils.Bytes;

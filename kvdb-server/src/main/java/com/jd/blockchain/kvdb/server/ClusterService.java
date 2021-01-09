@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.server;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
+import com.jd.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.KVDBURI;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;

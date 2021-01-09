@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
-import com.jd.blockchain.binaryproto.DataContractRegistry;
+import com.jd.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.engine.Config;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.proto.wal.Entity;

@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.client;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
+import com.jd.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.client.partition.Partitioner;
 import com.jd.blockchain.kvdb.client.partition.SimpleMurmur3HashPartitioner;
 import com.jd.blockchain.kvdb.protocol.client.NettyClient;

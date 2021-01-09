@@ -1,7 +1,7 @@
 package com.jd.blockchain.kvdb.protocol;
 
-import com.jd.blockchain.binaryproto.BinaryProtocol;
-import com.jd.blockchain.binaryproto.DataContractRegistry;
+import com.jd.binaryproto.BinaryProtocol;
+import com.jd.binaryproto.DataContractRegistry;
 import com.jd.blockchain.kvdb.protocol.proto.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

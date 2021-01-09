@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.protocol.proto.wal;
 
-import com.jd.blockchain.binaryproto.DataContract;
-import com.jd.blockchain.binaryproto.DataField;
-
 import java.io.Serializable;
+
+import com.jd.binaryproto.DataContract;
+import com.jd.binaryproto.DataField;
 
 import static com.jd.blockchain.kvdb.protocol.Constants.WAL_ENTITY;
 

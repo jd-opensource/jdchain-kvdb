@@ -3,13 +3,15 @@ package com.jd.blockchain.kvdb.client;
 import com.jd.binaryproto.BinaryProtocol;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.wal.Entity;
-import com.jd.blockchain.utils.Bytes;
-import com.jd.blockchain.utils.io.FileUtils;
 import com.jd.blockchain.wal.FileLogger;
 import com.jd.blockchain.wal.Wal;
 import com.jd.blockchain.wal.WalConfig;
 import com.jd.blockchain.wal.WalDataCoder;
 import com.jd.blockchain.wal.WalIterator;
+
+import utils.Bytes;
+import utils.io.FileUtils;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

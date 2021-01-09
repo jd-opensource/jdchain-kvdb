@@ -8,11 +8,13 @@ import com.jd.blockchain.kvdb.protocol.proto.wal.EntityCoder;
 import com.jd.blockchain.kvdb.protocol.proto.wal.KV;
 import com.jd.blockchain.kvdb.protocol.proto.wal.KVItem;
 import com.jd.blockchain.kvdb.protocol.proto.wal.WalEntity;
-import com.jd.blockchain.utils.Bytes;
-import com.jd.blockchain.utils.io.FileUtils;
 import com.jd.blockchain.wal.FileLogger;
 import com.jd.blockchain.wal.WalConfig;
 import com.jd.blockchain.wal.WalIterator;
+
+import utils.Bytes;
+import utils.io.FileUtils;
+
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.Cache;
 import org.rocksdb.CompressionType;

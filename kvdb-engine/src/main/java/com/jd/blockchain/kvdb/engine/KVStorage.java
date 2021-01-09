@@ -1,7 +1,8 @@
 package com.jd.blockchain.kvdb.engine;
 
-import com.jd.blockchain.utils.Bytes;
 import org.rocksdb.RocksDBException;
+
+import utils.Bytes;
 
 import java.util.Map;
 

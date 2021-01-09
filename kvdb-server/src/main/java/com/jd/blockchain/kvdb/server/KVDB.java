@@ -8,7 +8,9 @@ import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
 import com.jd.blockchain.kvdb.server.config.KVDBConfig;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
-import com.jd.blockchain.utils.io.FileUtils;
+
+import utils.io.FileUtils;
+
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 

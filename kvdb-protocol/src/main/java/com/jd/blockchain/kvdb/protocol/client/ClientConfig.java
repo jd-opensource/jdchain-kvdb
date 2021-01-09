@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.protocol.client;
 
-import com.jd.blockchain.utils.ArgumentSet;
+import utils.ArgumentSet;
 
 /**
  * 客户端参数

@@ -1,7 +1,9 @@
 package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
-import com.jd.blockchain.utils.ArgumentSet;
+
+import utils.ArgumentSet;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

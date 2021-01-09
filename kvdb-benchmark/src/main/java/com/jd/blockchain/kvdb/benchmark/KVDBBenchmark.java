@@ -1,7 +1,8 @@
 package com.jd.blockchain.kvdb.benchmark;
 
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
-import com.jd.blockchain.utils.ArgumentSet;
+
+import utils.ArgumentSet;
 
 import java.util.concurrent.CountDownLatch;
 

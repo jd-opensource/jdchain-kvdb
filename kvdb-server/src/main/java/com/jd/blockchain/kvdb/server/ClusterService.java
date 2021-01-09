@@ -10,7 +10,9 @@ import com.jd.blockchain.kvdb.protocol.proto.ClusterInfo;
 import com.jd.blockchain.kvdb.protocol.proto.ClusterItem;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
-import com.jd.blockchain.utils.io.BytesUtils;
+
+import utils.io.BytesUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,7 +2,9 @@ package com.jd.blockchain.kvdb.server;
 
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
 import com.jd.blockchain.kvdb.server.executor.*;
-import com.jd.blockchain.utils.io.FileUtils;
+
+import utils.io.FileUtils;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

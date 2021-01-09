@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.engine.rocksdb;
 
-import com.jd.blockchain.utils.hash.MurmurHash3;
+import utils.hash.MurmurHash3;
 
 public class SimpleMurmur3HashPartitioner implements Partitioner {
 

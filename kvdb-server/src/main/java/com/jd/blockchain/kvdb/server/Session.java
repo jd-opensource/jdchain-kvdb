@@ -3,7 +3,8 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
-import com.jd.blockchain.utils.Bytes;
+
+import utils.Bytes;
 
 import java.util.Map;
 

@@ -3,8 +3,9 @@ package com.jd.blockchain.kvdb.benchmark;
 import com.jd.blockchain.kvdb.client.KVDBClient;
 import com.jd.blockchain.kvdb.protocol.client.ClientConfig;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
-import com.jd.blockchain.utils.Bytes;
-import com.jd.blockchain.utils.io.BytesUtils;
+
+import utils.Bytes;
+import utils.io.BytesUtils;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;

@@ -6,7 +6,9 @@ import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBMessage;
 import com.jd.blockchain.kvdb.server.Request;
 import com.jd.blockchain.kvdb.server.config.DBInfo;
-import com.jd.blockchain.utils.StringUtils;
+
+import utils.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

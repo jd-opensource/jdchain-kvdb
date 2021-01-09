@@ -4,7 +4,8 @@ import com.jd.binaryproto.DataContract;
 import com.jd.binaryproto.DataField;
 import com.jd.binaryproto.PrimitiveType;
 import com.jd.blockchain.kvdb.protocol.Constants;
-import com.jd.blockchain.utils.Bytes;
+
+import utils.Bytes;
 
 /**
  * 返回消息

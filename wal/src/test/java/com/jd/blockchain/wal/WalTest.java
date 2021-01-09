@@ -1,10 +1,11 @@
 package com.jd.blockchain.wal;
 
-import com.jd.blockchain.utils.io.BytesUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import utils.io.BytesUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;

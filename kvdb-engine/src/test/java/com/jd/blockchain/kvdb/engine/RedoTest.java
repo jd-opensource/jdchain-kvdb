@@ -2,8 +2,10 @@ package com.jd.blockchain.kvdb.engine;
 
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBCluster;
 import com.jd.blockchain.kvdb.engine.rocksdb.RocksDBProxy;
-import com.jd.blockchain.utils.io.BytesUtils;
-import com.jd.blockchain.utils.io.FileUtils;
+
+import utils.io.BytesUtils;
+import utils.io.FileUtils;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

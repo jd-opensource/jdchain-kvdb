@@ -10,7 +10,7 @@ import com.jd.blockchain.kvdb.protocol.KVDBInitializerHandler;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.Response;
 import com.jd.blockchain.kvdb.protocol.proto.impl.KVDBResponse;
-import com.jd.blockchain.utils.Bytes;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -28,6 +28,8 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import utils.Bytes;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

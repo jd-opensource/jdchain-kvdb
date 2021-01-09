@@ -3,7 +3,8 @@ package com.jd.blockchain.kvdb.protocol.proto.impl;
 import com.jd.blockchain.kvdb.protocol.Constants;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
 import com.jd.blockchain.kvdb.protocol.proto.MessageContent;
-import com.jd.blockchain.utils.Bytes;
+
+import utils.Bytes;
 
 import java.util.concurrent.atomic.AtomicLong;
 

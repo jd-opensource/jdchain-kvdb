@@ -1,9 +1,9 @@
 package com.jd.blockchain.kvdb.protocol;
 
-import com.jd.blockchain.utils.StringUtils;
-
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+
+import utils.StringUtils;
 
 public class URIUtils {
 

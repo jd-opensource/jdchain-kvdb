@@ -1,7 +1,8 @@
 package com.jd.blockchain.kvdb.protocol.proto.impl;
 
 import com.jd.blockchain.kvdb.protocol.proto.Response;
-import com.jd.blockchain.utils.Bytes;
+
+import utils.Bytes;
 
 public class KVDBResponse implements Response {
 

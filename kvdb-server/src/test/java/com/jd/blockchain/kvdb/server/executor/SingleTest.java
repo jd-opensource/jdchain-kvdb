@@ -15,9 +15,11 @@ import com.jd.blockchain.kvdb.server.KVDBServerContext;
 import com.jd.blockchain.kvdb.server.KVDBSession;
 import com.jd.blockchain.kvdb.server.Session;
 import com.jd.blockchain.kvdb.server.config.ServerConfig;
-import com.jd.blockchain.utils.Bytes;
-import com.jd.blockchain.utils.io.BytesUtils;
-import com.jd.blockchain.utils.io.FileUtils;
+
+import utils.Bytes;
+import utils.io.BytesUtils;
+import utils.io.FileUtils;
+
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.PropertiesConfigurationLayout;
 import org.junit.After;

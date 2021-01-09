@@ -3,8 +3,10 @@ package com.jd.blockchain.kvdb.server;
 import com.jd.blockchain.kvdb.engine.KVDBInstance;
 import com.jd.blockchain.kvdb.protocol.exception.KVDBException;
 import com.jd.blockchain.kvdb.protocol.proto.Message;
-import com.jd.blockchain.utils.Bytes;
+
 import io.netty.channel.ChannelHandlerContext;
+import utils.Bytes;
+
 import org.rocksdb.RocksDBException;
 
 import java.util.HashMap;

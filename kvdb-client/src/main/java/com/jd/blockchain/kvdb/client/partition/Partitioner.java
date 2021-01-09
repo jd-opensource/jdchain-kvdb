@@ -1,6 +1,6 @@
 package com.jd.blockchain.kvdb.client.partition;
 
-import com.jd.blockchain.utils.Bytes;
+import utils.Bytes;
 
 /**
  * 分区计算器；

@@ -8,7 +8,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<binaryproto.version>1.5.0.RELEASE</binaryproto.version>
+		<binaryproto.version>1.5.1.RELEASE</binaryproto.version>
 		<rocksdb.version>6.3.6</rocksdb.version>
 		<log4j.version>2.11.1</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
